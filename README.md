@@ -1,4 +1,25 @@
 # PvP_IVs
+
+## Family and league comparison
+
+Open `familyRanks.html` (also linked from the single-Pokémon page). Search a base
+Pokémon such as Eevee, enter its Attack/Defense/Stamina IVs, and compare every
+selected family member across Little, Great, Ultra, and Master leagues. Each form
+and league has a checkbox. Blank IVs show the best spread for each combination.
+IV floor and minimum/maximum level apply to every result; the default ceiling is
+level 50, with level 51 available for Best Buddy. Selections and results can be
+shared by copying the URL.
+
+The feature reuses `includes/pokeListObj.js` for family relationships and stats,
+and `includes/calculate.js` for rankings. No separate evolution-tree file or API
+is needed. The existing data describes families rather than directed evolution
+paths: regional, Mega, and speculative forms retain their names, and specific
+evolution requirements are not enforced except for Tyrogue's IV-dependent branches.
+These are stat-product comparisons, not cup-eligibility or species-strength ratings.
+
+Run locally with `python3 -m http.server 8000` from the repository, then visit
+`http://localhost:8000/familyRanks.html`. Calculations run in a Web Worker and
+cache up to 48 Pokémon/league/settings combinations. Tests: `node --test familyRanks.test.cjs`.
 Description of features and functionality for the Pokémon Go PvP IVs website: https://pvpivs.com. If you have any questions, feel free to comment / open issues here on GitHub or reach out on [our Discord](https://discord.gg/UD4Temq) (tag @DeathByToast#0529)
 
 #### Dark Mode

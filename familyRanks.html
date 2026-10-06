@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Family & League IV Rankings | PvP IVs</title>
+  <link rel="stylesheet" href="includes/familyRanks.css">
+  <script defer src="includes/pokeListObj.js"></script>
+  <script defer src="includes/familyRanksCore.js"></script>
+  <script defer src="includes/familyRanks.js"></script>
+</head>
+<body>
+<main>
+  <nav><a href="index.html">PvP IVs · Single Pokémon rankings</a></nav>
+  <h1>One Pokémon. Every possibility.</h1>
+  <p class="intro">Search a base form and compare its IVs across its evolution family and leagues.</p>
+  <form id="comparisonForm">
+    <div class="inputs">
+      <label class="pokemon">Pokémon<input id="pokemon" list="pokemonNames" placeholder="e.g. Eevee" autocomplete="off" required><datalist id="pokemonNames"></datalist></label>
+      <label>Attack IV<input id="attack" type="number" min="0" max="15" placeholder="0–15"></label>
+      <label>Defense IV<input id="defense" type="number" min="0" max="15" placeholder="0–15"></label>
+      <label>Stamina IV<input id="stamina" type="number" min="0" max="15" placeholder="0–15"></label>
+    </div>
+    <p class="hint">Enter all three IVs to rate your Pokémon, or leave them blank to see the best IVs for each combination.</p>
+    <fieldset><legend>Leagues</legend><div id="leagues" class="toggles"></div></fieldset>
+    <fieldset><legend>Evolution family</legend><div id="evolutions" class="toggles">Choose a Pokémon to show its family.</div></fieldset>
+    <details><summary>Calculation settings</summary><div class="inputs settings">
+      <label>IV floor<input id="floor" type="number" min="0" max="15" value="0" required></label>
+      <label>Minimum level<input id="min" type="number" min="1" max="51" step="0.5" value="1" required></label>
+      <label>Maximum level<input id="max" type="number" min="1" max="51" step="0.5" value="50" required></label>
+    </div><p class="hint">Use level 51 for Best Buddy. The IV floor applies to every comparison.</p></details>
+    <button type="submit">Compare IVs</button>
+  </form>
+  <p id="status" role="status" aria-live="polite">Choose a Pokémon to begin.</p>
+  <div id="results" class="results"></div>
+  <p class="hint">Ratings measure stat product relative to the best IV spread for that Pokémon and league, not strength against other species. CP limits alone do not establish cup eligibility. Family forms and stats come from the repository’s Pokémon data; regional, Mega, and speculative forms retain their labels. Evolution requirements other than Tyrogue’s IV rule are not checked.</p>
+</main>
+</body>
+</html>
