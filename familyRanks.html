@@ -12,16 +12,20 @@
 <body>
 <main>
   <nav><a href="index.html">PvP IVs · Single Pokémon rankings</a></nav>
-  <h1>One Pokémon. Every possibility.</h1>
-  <p class="intro">Search a base form and compare its IVs across its evolution family and leagues.</p>
+  <h1>Find your best evolutions.</h1>
+  <p class="intro">Compare your Pokémon together and find the best IV candidate for every evolution and league.</p>
   <form id="comparisonForm">
     <div class="inputs">
-      <label class="pokemon">Pokémon<input id="pokemon" list="pokemonNames" placeholder="e.g. Eevee" autocomplete="off" required><datalist id="pokemonNames"></datalist></label>
+      <label class="pokemon">Pokémon<input id="pokemon" list="pokemonNames" placeholder="e.g. Eevee" autocomplete="off"><datalist id="pokemonNames"></datalist></label>
       <label>Attack IV<input id="attack" type="number" min="0" max="15" placeholder="0–15"></label>
       <label>Defense IV<input id="defense" type="number" min="0" max="15" placeholder="0–15"></label>
       <label>Stamina IV<input id="stamina" type="number" min="0" max="15" placeholder="0–15"></label>
     </div>
     <p class="hint">Enter all three IVs to rate your Pokémon, or leave them blank to see the best IVs for each combination.</p>
+    <label class="bulk-label" for="bulkIVs">Bulk candidates · one per line</label>
+    <textarea id="bulkIVs" rows="6" spellcheck="false" placeholder="Eevee, 0, 15, 15, Eevee A&#10;Eevee, 2, 15, 15, Eevee B&#10;Bulbasaur, 1, 14, 15, Bulbasaur A"></textarea>
+    <p class="hint">Use Pokémon, Attack, Defense, Stamina, optional label. For one species, choose it above and paste IVs such as 0/15/15, one set per line. Bulk entries replace the single IV inputs. Labels help identify each Pokémon in your inventory.</p>
+    <div id="inputErrors" role="alert"></div>
     <fieldset><legend>Leagues</legend><div id="leagues" class="toggles"></div></fieldset>
     <fieldset><legend>Evolution family</legend><div id="evolutions" class="toggles">Choose a Pokémon to show its family.</div></fieldset>
     <details><summary>Calculation settings</summary><div class="inputs settings">
@@ -33,6 +37,7 @@
   </form>
   <p id="status" role="status" aria-live="polite">Choose a Pokémon to begin.</p>
   <div id="results" class="results"></div>
+  <p class="hint"><span class="winner-key">★ Best candidate</span> marks the lowest IV rank among your entries for that evolution and league; tied candidates are all highlighted. Sort each league by stat-product rating or group results by evolution. Compare ratings within a species when deciding which Pokémon to evolve.</p>
   <p class="hint">Ratings measure stat product relative to the best IV spread for that Pokémon and league, not strength against other species. CP limits alone do not establish cup eligibility. Family forms and stats come from the repository’s Pokémon data; regional, Mega, and speculative forms retain their labels. Evolution requirements other than Tyrogue’s IV rule are not checked.</p>
 </main>
 </body>

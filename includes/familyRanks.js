@@ -7,10 +7,10 @@
   const normalize = name => name.trim().replace(/_/g, ' ').toLowerCase();
   const resolve = value => names.find(name => normalize(name) === normalize(value));
   const params = new URLSearchParams(location.search);
-  let currentMon = null, generation = 0, pending = 0, failures = 0;
-  let worker;
-  const cells = new Map();
+  let familySignature = '', generation = 0, pending = 0;
+  let worker, rows = [], settings = {}, selectedLeagues = [];
   const ivIds = ['attack', 'defense', 'stamina'];
+  const sorts = new Map(), winnersOnly = new Map();
   function toggle(parent, value, label, checked) {
     const wrapper = document.createElement('label');
     const input = document.createElement('input');
@@ -30,115 +30,175 @@
   }
   function syncFamily() {
     const mon = resolve($('pokemon').value);
-    if (mon === currentMon) return mon;
-    generation++; cells.clear(); $('results').replaceChildren();
-    currentMon = mon; $('evolutions').replaceChildren();
-    if (!mon) {
-      $('evolutions').textContent = 'Choose a Pokémon to show its family.';
-      return null;
-    }
-    for (const name of FamilyRanks.family(mon, pokeListObj)) {
-      toggle($('evolutions'), name, display(name), true);
-    }
-    return mon;
+    const bulk = $('bulkIVs').value.trim();
+    const sources = bulk ? [...new Set(FamilyRanks.parseCandidates(bulk, mon, pokeListObj).candidates.map(entry => entry.mon))] : mon ? [mon] : [];
+    const signature = JSON.stringify(sources.slice().sort());
+    if (signature === familySignature) return;
+    const old = new Map([...$('evolutions').querySelectorAll('input')].map(input => [input.value, input.checked]));
+    familySignature = signature;
+    $('evolutions').replaceChildren();
+    const evos = [...new Set(sources.flatMap(source => FamilyRanks.family(source, pokeListObj)))];
+    for (const evo of evos) toggle($('evolutions'), evo, display(evo), old.has(evo) ? old.get(evo) : true);
+    if (!evos.length) $('evolutions').textContent = 'Choose a Pokémon or enter named bulk candidates to show their families.';
   }
   function message(text) { $('status').textContent = text; }
   function invalidate() {
-    generation++; cells.clear(); $('results').replaceChildren();
+    generation++; rows = []; $('results').replaceChildren(); $('inputErrors').replaceChildren();
     message('Update your selection, then compare IVs.');
   }
-  function detailLink(mon, league, ivs, settings) {
+  function detailLink(mon, league, ivs) {
     const query = new URLSearchParams({mon, cp: league, IVs: ivs.join('_'),
       f: settings.floor, min: settings.min, max: settings.max});
     const link = document.createElement('a'); link.href = 'index.html?' + query;
     link.textContent = 'Full rankings'; return link;
   }
-  function compare() {
-    invalidate();
-    if (!form.reportValidity()) { message('Check the highlighted input.'); return; }
-    const mon = syncFamily();
-    if (!mon) { message('Choose a Pokémon from the suggestions.'); return; }
-    const rawIVs = ivIds.map(id => $(id).value);
-    const ivs = rawIVs.every(value => value === '') ? null : rawIVs.map(Number);
-    if (ivs && rawIVs.some(value => value === '')) {
-      message('Enter all three IVs, or leave all three blank.'); return;
-    }
-    const settings = Object.fromEntries(['floor', 'min', 'max'].map(id => [id, Number($(id).value)]));
-    if (settings.min > settings.max) { message('Minimum level must not exceed maximum level.'); return; }
-    if (ivs && ivs.some(value => value < settings.floor)) {
-      message('Your IVs are below the selected IV floor. Lower the floor to rate this spread.'); return;
-    }
-    const evos = selection('evolutions'), leagues = selection('leagues');
-    if (!evos.length || !leagues.length) { message('Select at least one family member and one league.'); return; }
-    if (!worker) { message('The calculation worker is unavailable. Reload this page from a web server.'); return; }
-    const query = new URLSearchParams({mon, leagues: leagues.join(','), evos: evos.join(','), ...settings});
-    if (ivs) query.set('IVs', ivs.join('_'));
-    history.replaceState(null, '', '?' + query);
-    const id = ++generation;
+  function renderLeague(league, container) {
+    container.replaceChildren();
+    let entries = FamilyRanks.sortResults(rows.filter(row => row.league === league), sorts.get(league) || 'evolution');
+    if (winnersOnly.get(league)) entries = entries.filter(row => row.best);
+    if (!entries.length) { container.textContent = 'No eligible candidates for this selection.'; return; }
     const table = document.createElement('table');
-    const caption = document.createElement('caption');
-    caption.textContent = display(mon) + (ivs ? ' · Your IVs: ' + ivs.join('/') : ' · Best IVs for each combination');
-    table.append(caption);
     const head = table.createTHead().insertRow();
-    const corner = document.createElement('th'); corner.textContent = 'Pokémon'; corner.scope = 'col'; head.append(corner);
-    for (const league of leagues) {
-      const th = document.createElement('th'); th.scope = 'col';
-      th.textContent = FamilyRanks.leagues.find(item => item[0] === league)[1]; head.append(th);
+    for (const title of ['Evolution', 'Candidate', 'IVs', 'IV rank', 'Rating', 'Level / CP', 'Details']) {
+      const th = document.createElement('th'); th.scope = 'col'; th.textContent = title; head.append(th);
     }
     const body = table.createTBody();
-    pending = 0; failures = 0;
-    const requests = [];
-    for (const evo of evos) {
-      const row = body.insertRow(); const label = document.createElement('th');
-      label.scope = 'row'; label.textContent = display(evo); row.append(label);
-      for (const league of leagues) {
-        const cell = row.insertCell();
-        if (!FamilyRanks.eligible(mon, evo, ivs)) { cell.textContent = 'Unavailable for these Tyrogue IVs'; continue; }
-        cell.textContent = 'Calculating…';
-        cells.set(JSON.stringify([evo, league]), {cell, settings}); pending++;
-        requests.push({id, mon: evo, league, ivs, ...settings});
+    for (const entry of entries) {
+      const tr = body.insertRow();
+      if (entry.best) tr.className = 'best-candidate';
+      const evo = document.createElement('th'); evo.scope = 'row'; evo.textContent = display(entry.evo); tr.append(evo);
+      const candidate = tr.insertCell();
+      const label = document.createElement('strong'); label.textContent = entry.candidate.label;
+      const source = document.createElement('span'); source.textContent = display(entry.candidate.mon) + ' · Entry ' + entry.candidate.key;
+      candidate.append(label, source);
+      if (entry.best) { const badge = document.createElement('span'); badge.className = 'winner-badge'; badge.textContent = '★ Best candidate'; candidate.append(badge); }
+      tr.insertCell().textContent = (entry.result ? entry.result.ivs : entry.candidate.ivs || []).join('/');
+      if (entry.result) {
+        tr.insertCell().textContent = '#' + entry.result.rank + ' / ' + entry.result.total;
+        tr.insertCell().textContent = entry.result.perfection.toFixed(2) + '%';
+        tr.insertCell().textContent = 'L' + entry.result.level + ' · ' + entry.result.cp + ' CP';
+        tr.insertCell().append(detailLink(entry.evo, league, entry.result.ivs));
+      } else {
+        const cell = tr.insertCell(); cell.colSpan = 4; cell.textContent = entry.error || 'Exceeds CP limit at minimum level';
       }
     }
-    $('results').append(table);
-    message('Calculating ' + pending + ' comparisons…');
-    for (const request of requests) worker.postMessage(request);
+    container.append(table);
+  }
+  function render() {
+    rows = FamilyRanks.markBest(rows);
+    $('results').replaceChildren();
+    for (const league of selectedLeagues) {
+      const section = document.createElement('section'); section.className = 'league-results';
+      const toolbar = document.createElement('div'); toolbar.className = 'league-toolbar';
+      const heading = document.createElement('h2'); heading.textContent = FamilyRanks.leagues.find(item => item[0] === league)[1] + ' League';
+      const label = document.createElement('label'); label.textContent = 'Sort ' + heading.textContent + ' ';
+      const sort = document.createElement('select');
+      for (const [value, text] of [['evolution', 'Evolution → best IV rank'], ['rating', 'Best rating first']]) {
+        const option = document.createElement('option'); option.value = value; option.textContent = text; sort.append(option);
+      }
+      sort.value = sorts.get(league) || 'evolution'; label.append(sort);
+      const filterLabel = document.createElement('label');
+      const filter = document.createElement('input'); filter.type = 'checkbox'; filter.checked = !!winnersOnly.get(league);
+      filterLabel.append(filter, document.createTextNode(' Show best only · ' + heading.textContent));
+      const tableContainer = document.createElement('div'); tableContainer.className = 'table-scroll';
+      sort.addEventListener('change', () => { sorts.set(league, sort.value); renderLeague(league, tableContainer); });
+      filter.addEventListener('change', () => { winnersOnly.set(league, filter.checked); renderLeague(league, tableContainer); });
+      toolbar.append(heading, label, filterLabel); section.append(toolbar, tableContainer); $('results').append(section);
+      renderLeague(league, tableContainer);
+    }
+  }
+  function compare() {
+    invalidate();
+    const bulk = $('bulkIVs').value.trim();
+    // Single controls are ignored during bulk comparisons, including their validity.
+    ivIds.forEach(id => { $(id).disabled = !!bulk; });
+    if (!form.reportValidity()) { message('Check the highlighted input.'); return; }
+    syncFamily();
+    const mon = resolve($('pokemon').value);
+    let candidates;
+    if (bulk) {
+      const parsed = FamilyRanks.parseCandidates(bulk, mon, pokeListObj);
+      if (parsed.errors.length) {
+        parsed.errors.forEach(error => { const p = document.createElement('p'); p.textContent = error; $('inputErrors').append(p); });
+        message('Fix the listed lines before comparing. No entries were skipped.'); return;
+      }
+      candidates = parsed.candidates;
+    } else {
+      if (!mon) { message('Choose a Pokémon or enter named bulk candidates.'); return; }
+      const rawIVs = ivIds.map(id => $(id).value);
+      if (rawIVs.some(value => value !== '') && rawIVs.some(value => value === '')) {
+        message('Enter all three IVs, or leave all three blank.'); return;
+      }
+      candidates = [{key: 1, mon, ivs: rawIVs.every(value => value === '') ? null : rawIVs.map(Number), label: 'Entry 1'}];
+    }
+    if (!candidates.length) { message('Enter at least one candidate.'); return; }
+    settings = Object.fromEntries(['floor', 'min', 'max'].map(id => [id, Number($(id).value)]));
+    if (settings.min > settings.max) { message('Minimum level must not exceed maximum level.'); return; }
+    const evos = selection('evolutions'); selectedLeagues = selection('leagues');
+    if (!evos.length || !selectedLeagues.length) { message('Select at least one family member and one league.'); return; }
+    if (!worker) { message('The calculator is unavailable. Reload this page from a web server.'); return; }
+    const query = new URLSearchParams({leagues: selectedLeagues.join(','), evos: evos.join(','), ...settings});
+    if (mon) query.set('mon', mon);
+    if (bulk) query.set('batch', bulk);
+    else if (candidates[0].ivs) query.set('IVs', candidates[0].ivs.join('_'));
+    history.replaceState(null, '', '?' + query);
+    const id = ++generation, groups = new Map();
+    for (const candidate of candidates) {
+      for (const evo of FamilyRanks.family(candidate.mon, pokeListObj).filter(evo => evos.includes(evo))) {
+        for (const league of selectedLeagues) {
+          let error;
+          if (candidate.ivs && candidate.ivs.some(value => value < settings.floor)) error = 'Below selected IV floor';
+          else if (!FamilyRanks.eligible(candidate.mon, evo, candidate.ivs)) error = 'Unavailable for these Tyrogue IVs';
+          rows.push({candidate, evo, league, result: null, error});
+          if (error) continue;
+          const key = JSON.stringify([evo, league]);
+          if (!groups.has(key)) groups.set(key, {id, mon: evo, league, candidates: [], ...settings});
+          groups.get(key).candidates.push(candidate);
+        }
+      }
+    }
+    pending = groups.size;
+    if (!pending) { render(); message('No eligible candidates. Check evolution selections, IV floor and evolution requirements.'); return; }
+    message('Calculating ' + candidates.length + ' candidates across ' + pending + ' evolution / league combinations…');
+    for (const request of groups.values()) worker.postMessage(request);
   }
   try {
     worker = new Worker('includes/familyRanksWorker.js');
     worker.onmessage = event => {
-      const {id, mon, league, result, error} = event.data;
+      const {id, mon, league, results, error} = event.data;
       if (id !== generation) return;
-      const target = cells.get(JSON.stringify([mon, league]));
-      if (!target) return;
-      const {cell, settings} = target; cell.replaceChildren();
-      if (error) { cell.textContent = 'Calculation failed: ' + error; failures++; }
-      else if (!result) { cell.textContent = 'Exceeds CP limit at minimum level'; }
-      else {
-        const rank = document.createElement('strong'); rank.textContent = '#' + result.rank + ' of ' + result.total;
-        const percent = document.createElement('span'); percent.textContent = result.perfection.toFixed(2) + '% stat product';
-        const spread = document.createElement('span'); spread.textContent = 'IVs ' + result.ivs.join('/') + ' · L' + result.level + ' · ' + result.cp + ' CP';
-        cell.append(rank, percent, spread, detailLink(mon, league, result.ivs, settings));
+      const ratings = new Map((results || []).map(item => [item.key, item.result]));
+      for (const row of rows) {
+        if (row.evo !== mon || row.league !== league || row.error) continue;
+        row.result = ratings.get(row.candidate.key) || null;
+        if (error) row.error = 'Calculation failed: ' + error;
       }
       pending--;
-      message(pending ? 'Calculating… ' + pending + ' comparisons remaining.' :
-        failures ? 'Finished with ' + failures + ' calculation errors.' : 'Comparison complete. Toggle forms or leagues to refine your results.');
+      if (pending) message('Calculating… ' + pending + ' evolution / league combinations remaining.');
+      else {
+        render();
+        const failed = rows.filter(row => row.error && row.error.startsWith('Calculation failed')).length;
+        message('Comparison complete: ' + rows.length + ' results.' + (failed ? ' ' + failed + ' calculation errors.' : ' Green rows mark your best candidate for each evolution and league.'));
+      }
     };
     worker.onerror = () => {
       worker.terminate(); worker = null; generation++;
-      for (const {cell} of cells.values()) if (cell.textContent === 'Calculating…') cell.textContent = 'Calculation unavailable';
       message('Unable to load the calculator. Reload this page from a web server.');
     };
   } catch (error) { message('Open this page from a web server to enable calculations.'); }
   form.addEventListener('submit', event => { event.preventDefault(); compare(); });
-  form.addEventListener('input', () => { invalidate(); syncFamily(); });
+  form.addEventListener('input', () => {
+    ivIds.forEach(id => { $(id).disabled = !!$('bulkIVs').value.trim(); });
+    invalidate(); syncFamily();
+  });
   for (const id of ['floor', 'min', 'max']) if (params.has(id)) $(id).value = params.get(id);
   if (params.has('IVs')) params.get('IVs').split('_').slice(0, 3).forEach((value, i) => { $(ivIds[i]).value = value; });
-  if (params.has('mon')) {
-    $('pokemon').value = display(params.get('mon')); syncFamily();
-    if (params.has('evos')) {
-      const enabled = params.get('evos').split(',');
-      $('evolutions').querySelectorAll('input').forEach(input => { input.checked = enabled.includes(input.value); });
-    }
-    compare();
+  if (params.has('mon')) $('pokemon').value = display(params.get('mon'));
+  if (params.has('batch')) $('bulkIVs').value = params.get('batch');
+  syncFamily();
+  if (params.has('evos')) {
+    const enabled = params.get('evos').split(',');
+    $('evolutions').querySelectorAll('input').forEach(input => { input.checked = enabled.includes(input.value); });
   }
+  if (params.has('mon') || params.has('batch')) compare();
 })();

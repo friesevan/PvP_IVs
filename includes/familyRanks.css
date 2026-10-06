@@ -9,7 +9,11 @@ form { background: var(--panel); border: 1px solid var(--line); border-radius: 1
 .inputs, .toggles { display: flex; flex-wrap: wrap; gap: 12px; }
 .inputs > label { display: flex; flex-direction: column; gap: 6px; width: 115px; }
 .inputs > .pokemon { flex: 1; min-width: 200px; }
-input { font: inherit; padding: 9px; border: 1px solid var(--line); border-radius: 6px; min-width: 0; }
+input, textarea, select { font: inherit; padding: 9px; border: 1px solid var(--line); border-radius: 6px; min-width: 0; }
+textarea { display: block; width: 100%; resize: vertical; margin-top: 8px; font-family: ui-monospace, monospace; }
+.bulk-label { font-weight: 650; }
+#inputErrors { color: #b12727; }
+input:disabled { opacity: .5; }
 input:focus-visible, button:focus-visible, a:focus-visible { outline: 3px solid #d39a20; outline-offset: 3px; }
 fieldset { border: 0; border-top: 1px solid var(--line); margin: 18px 0; padding: 12px 0 0; }
 legend { font-weight: 650; padding-right: 12px; }
@@ -18,7 +22,15 @@ input[type=checkbox] { accent-color: var(--accent); width: 17px; height: 17px; }
 .hint { font-size: 13px; color: var(--muted); }
 summary { cursor: pointer; margin-bottom: 14px; }
 button { background: var(--accent); color: #fff; font: inherit; font-weight: 650; padding: 10px 20px; border: 0; border-radius: 7px; cursor: pointer; margin-top: 18px; }
-.results { overflow-x: auto; background: var(--panel); border-radius: 12px; }
+.results { display: grid; gap: 24px; }
+.league-results { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+.league-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 24px; padding: 16px; }
+.league-toolbar h2 { margin: 0; font-size: 22px; flex: 1; }
+.league-toolbar label { display: flex; align-items: center; gap: 8px; font-size: 14px; }
+.table-scroll { overflow-x: auto; }
+.best-candidate { background: #e0f2e8; }
+.winner-badge, .winner-key { color: #126139; font-weight: 650; }
+.best-candidate th { background: transparent; }
 table { border-collapse: collapse; width: 100%; min-width: 620px; }
 th, td { padding: 16px; text-align: left; border-bottom: 1px solid var(--line); vertical-align: top; }
 th { background: var(--bg); }
@@ -26,4 +38,4 @@ td strong, td span { display: block; }
 td span { font-size: 13px; color: var(--muted); }
 td strong { font-variant-numeric: tabular-nums; }
 @media (max-width: 600px) { main { padding: 20px 12px; } form { padding: 16px; } .inputs > label { flex: 1; min-width: 78px; } .inputs > .pokemon { flex-basis: 100%; } }
-@media (prefers-color-scheme: dark) { :root { --bg: #16242d; --panel: #20313c; --text: #edf4f6; --muted: #b2c6d1; --line: #405866; --accent: #83d8b9; } button { color: #16242d; } }
+@media (prefers-color-scheme: dark) { :root { --bg: #16242d; --panel: #20313c; --text: #edf4f6; --muted: #b2c6d1; --line: #405866; --accent: #83d8b9; } button { color: #16242d; } .best-candidate { background: #244e3a; } .winner-badge, .winner-key { color: #a0efc4; } #inputErrors { color: #ffaaaa; } }

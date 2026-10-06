@@ -10,6 +10,28 @@ IV floor and minimum/maximum level apply to every result; the default ceiling is
 level 50, with level 51 available for Best Buddy. Selections and results can be
 shared by copying the URL.
 
+For bulk comparisons, paste one candidate per line into **Bulk candidates**:
+
+```text
+Eevee, 0, 15, 15, Eevee A
+Eevee, 2, 15, 15, Eevee B
+Bulbasaur, 1, 14, 15, Bulbasaur A
+```
+
+For one species, select it above and paste lines such as `0/15/15`. Bulk input
+replaces the single IV inputs. Optional labels identify individual inventory
+Pokémon; unlabeled entries retain their input line numbers. Each league displays
+all candidate/evolution results in its own table, with independent sorting by
+evolution and IV rank or by highest stat-product rating. Green **Best candidate**
+rows mark the lowest rank submitted for each evolution/league combination,
+including ties. **Show best only** reduces each league to those recommendations.
+Impossible evolutions, IVs below the selected floor, and CP-limit failures are
+shown explicitly and cannot win. Invalid bulk lines must be fixed before the
+comparison runs. Batch requests calculate each evolution/league once for all
+candidates. Ratings across different species do not indicate relative battle
+strength, and a candidate can be best for more than one evolution; results do
+not allocate individual Pokémon to mutually exclusive evolutions.
+
 The feature reuses `includes/pokeListObj.js` for family relationships and stats,
 and `includes/calculate.js` for rankings. No separate evolution-tree file or API
 is needed. The existing data describes families rather than directed evolution
