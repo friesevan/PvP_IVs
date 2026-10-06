@@ -9,7 +9,8 @@ form { background: var(--panel); border: 1px solid var(--line); border-radius: 1
 .inputs, .toggles { display: flex; flex-wrap: wrap; gap: 12px; }
 .inputs > label { display: flex; flex-direction: column; gap: 6px; width: 115px; }
 .inputs > .pokemon { flex: 1; min-width: 200px; }
-input, select { font: inherit; padding: 9px; border: 1px solid var(--line); border-radius: 6px; min-width: 0; }
+input, select, textarea { font: inherit; padding: 9px; border: 1px solid var(--line); border-radius: 6px; min-width: 0; }
+textarea { width: 100%; display: block; resize: vertical; margin: 8px 0; font-family: ui-monospace, monospace; }
 .iv-entry { align-items: end; margin-bottom: 14px; }
 .entry-number { align-self: center; min-width: 80px; }
 button.secondary { background: var(--bg); color: var(--text); border: 1px solid var(--line); margin-top: 0; }
@@ -30,7 +31,27 @@ button { background: var(--accent); color: #fff; font: inherit; font-weight: 650
 .matrix-toolbar h2 { margin: 0; font-size: 22px; flex: 1; }
 .matrix-toolbar label { display: flex; align-items: center; gap: 8px; font-size: 14px; }
 .table-scroll { overflow-x: auto; }
-.best-candidate { background: #e0f2e8; }
+.rated-cell { background: hsl(var(--rating-hue) 65% 91%); }
+.best-candidate { box-shadow: inset 0 0 0 3px #18713b; }
+.recommended-cell { outline: 2px dashed #295bb5; outline-offset: -6px; }
+.chosen-cell { outline: 3px solid #295bb5; outline-offset: -7px; }
+.plan-badge { color: #244b95; font-weight: 700; }
+button.choose-cell { background: transparent; color: inherit; margin: 0; padding: 0; text-align: left; font-weight: normal; width: 100%; }
+.choose-cell strong, .choose-cell span { display: block; }
+.choose-cell:hover { text-decoration: underline; }
+.choose-cell:focus-visible { outline-offset: 3px; }
+button.hide-column { padding: 0 6px; margin: 0 0 0 8px; color: var(--muted); background: transparent; }
+.gradient-key { display: inline-block; width: 100px; height: 12px; background: linear-gradient(to right, hsl(0 65% 80%), hsl(65 65% 80%), hsl(130 65% 80%)); border: 1px solid var(--line); vertical-align: middle; }
+.saved-search, #recommendations:not(:empty) { background: var(--panel); padding: 20px; border: 1px solid var(--line); border-radius: 12px; margin-bottom: 20px; }
+#recommendations h2 { margin-top: 0; }
+.save-actions { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+.save-actions button { margin: 0; }
+.plan-list { list-style: none; padding: 0; }
+.plan-list li { display: flex; gap: 16px; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--line); }
+.plan-list button { flex-shrink: 0; padding: 6px 10px; }
+.unfilled-slot { color: var(--muted); font-size: 14px; }
+.column-picker-table { min-width: 500px; }
+.column-picker-table td { text-align: center; }
 .winner-badge, .winner-key { color: #126139; font-weight: 650; }
 caption { padding: 12px; text-align: left; color: var(--muted); }
 .comparison-matrix { width: max-content; min-width: 100%; }
@@ -46,4 +67,4 @@ td strong, td span { display: block; }
 td span { font-size: 13px; color: var(--muted); }
 td strong { font-variant-numeric: tabular-nums; }
 @media (max-width: 600px) { main { padding: 20px 12px; } form { padding: 16px; } .inputs > label { flex: 1; min-width: 78px; } .inputs > .pokemon { flex-basis: 100%; } }
-@media (prefers-color-scheme: dark) { :root { --bg: #16242d; --panel: #20313c; --text: #edf4f6; --muted: #b2c6d1; --line: #405866; --accent: #83d8b9; } button { color: #16242d; } .best-candidate { background: #244e3a; } .winner-badge, .winner-key { color: #a0efc4; } #inputErrors { color: #ffaaaa; } }
+@media (prefers-color-scheme: dark) { :root { --bg: #16242d; --panel: #20313c; --text: #edf4f6; --muted: #b2c6d1; --line: #405866; --accent: #83d8b9; } button { color: #16242d; } .rated-cell { background: hsl(var(--rating-hue) 40% 22%); } .best-candidate { box-shadow: inset 0 0 0 3px #83d8b9; } .winner-badge, .winner-key { color: #a0efc4; } .recommended-cell, .chosen-cell { outline-color: #98baff; } .plan-badge { color: #afcaff; } #inputErrors { color: #ffaaaa; } }

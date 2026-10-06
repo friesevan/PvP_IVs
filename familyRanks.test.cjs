@@ -131,3 +131,79 @@ test('batch worker ratings agree with the existing calculator, preserve keys and
   assert.ok(allRows.every(row => row.result && row.result.rank > 0));
   assert.equal(new Set(core.markBest(allRows).filter(row => row.best).map(row => row.evo + ':' + row.league)).size, 36);
 });
+
+function allocationFixture(costs) {
+  const candidates = costs.map((_, i) => ({key:i+1, mon:'Eevee', ivs:[i,15,15]}));
+  const columns = costs[0].map((_, i) => ({evo:'Evolution'+i, league:'1500'}));
+  const results = candidates.flatMap((candidate,i) => columns.map((column,j) => ({candidate,...column,
+    result: costs[i][j] === null ? null : {rank:costs[i][j],total:4096}})));
+  return {candidates,columns,results};
+}
+test('allocation beats greedy rankings and never reuses a spread', () => {
+  const f = allocationFixture([[1,2],[2,100]]);
+  const plan = core.allocate(f.candidates,f.columns,f.results);
+  assert.equal(plan.assignments.length,2);
+  assert.equal(plan.totalRank,4);
+  assert.equal(new Set(plan.assignments.map(item => item.candidate.key)).size,2);
+});
+test('locks constrain the optimum; missing candidates leave slots unfilled; invalids never allocate', () => {
+  const f = allocationFixture([[1,2],[2,100]]);
+  const choices = [{ivs:[0,15,15],...f.columns[0]}];
+  const plan = core.allocate(f.candidates,f.columns,f.results,choices);
+  assert.equal(plan.totalRank,101);
+  assert.equal(plan.assignments[0].locked,true);
+  const scarce = allocationFixture([[100,1,null]]);
+  const result = core.allocate(scarce.candidates,scarce.columns,scarce.results);
+  assert.equal(result.assignments.length,1);
+  assert.equal(result.totalRank,1);
+  assert.equal(result.unfilled.length,2);
+  assert.throws(() => core.allocate(f.candidates,f.columns,f.results,[...choices,{ivs:[0,15,15],...f.columns[1]}]));
+});
+test('hidden columns do not compete for candidates and empty reports have no allocations', () => {
+  const f = allocationFixture([[1,2],[2,100]]);
+  const plan = core.allocate(f.candidates,[f.columns[0]],f.results);
+  assert.equal(plan.totalRank,1);
+  assert.equal(plan.unused.length,1);
+  const empty = core.allocate(f.candidates,[],f.results);
+  assert.equal(empty.assignments.length,0);
+  assert.equal(empty.unused.length,2);
+});
+test('allocation matches exhaustive search for 100 deterministic small matrices', () => {
+  let seed = 31;
+  const random = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; };
+  for (let trial=0;trial<100;trial++) {
+    const costs = Array.from({length:1+trial%4}, () => Array.from({length:1+trial%3}, () => random()<.3 ? null : 1+Math.floor(random()*100)));
+    const f = allocationFixture(costs);
+    let bestCount=-1, bestRank=Infinity;
+    function exhaustive(slot,used,count,rank) {
+      if (slot===f.columns.length) { if (count>bestCount || (count===bestCount && rank<bestRank)) {bestCount=count;bestRank=rank;} return; }
+      exhaustive(slot+1,used,count,rank);
+      for (let i=0;i<costs.length;i++) if (!used.has(i) && costs[i][slot]!==null) {
+        used.add(i);exhaustive(slot+1,used,count+1,rank+costs[i][slot]);used.delete(i);
+      }
+    }
+    exhaustive(0,new Set(),0,0);
+    const plan = core.allocate(f.candidates,f.columns,f.results);
+    assert.equal(plan.assignments.length,bestCount,'coverage trial '+trial);
+    assert.equal(plan.totalRank,bestRank,'rank trial '+trial);
+  }
+});
+test('saved search round-trips exact Applin columns, IVs, settings and choices', () => {
+  const state = {mon:'Applin',ivs:[[1,15,15],[2,15,15]],floor:0,min:1,max:50,
+    columns:[['Applin','500'],['Flapple','1500'],['Appletun','1500'],['Hydrapple','1500'],['Hydrapple','ML']],
+    choices:[{ivs:[1,15,15],evo:'Hydrapple',league:'ML'}]};
+  const restored = core.importSearch(core.exportSearch(state),data);
+  assert.equal(JSON.stringify(restored),JSON.stringify(state));
+  for (const patch of [{mon:'Unknown'},{ivs:[[16,15,15]]},{max:52},{columns:[['Umbreon','ML']]},
+    {choices:[...state.choices,{ivs:[1,15,15],evo:'Flapple',league:'1500'}]}]) {
+    assert.throws(() => core.importSearch(core.exportSearch({...state,...patch}),data));
+  }
+  assert.throws(() => core.importSearch('PVPIVS1:{broken',data));
+  assert.throws(() => core.importSearch('something else',data));
+});
+test('gradient score maps best, midpoint and worst ranks to a stable percentile', () => {
+  assert.equal(core.percentile({rank:1,total:4096}),100);
+  assert.equal(core.percentile({rank:4096,total:4096}),0);
+  assert.equal(core.percentile({rank:51,total:101}),50);
+  assert.equal(core.percentile({rank:1,total:1}),100);
+});

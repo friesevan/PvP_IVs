@@ -67,5 +67,93 @@
       return (first && second ? first.rank - second.rank : 0) || a.key - b.key;
     });
   }
-  root.FamilyRanks = {leagues, family, eligible, summarize, candidatesFromRows, markBest, uniqueCandidates, sortCandidates};
+  const columnKey = (evo, league) => JSON.stringify([evo, league]);
+  function percentile(result) {
+    return result.total <= 1 ? 100 : 100 * (result.total - result.rank) / (result.total - 1);
+  }
+  // Rectangular Hungarian assignment: cover the most slots, then minimize total rank.
+  function allocate(candidates, columns, results, choices = []) {
+    const cells = new Map(results.filter(row => row.result).map(row =>
+      [JSON.stringify([row.candidate.key, row.evo, row.league]), row]));
+    const used = new Set(), fixed = new Map();
+    for (const choice of choices) {
+      const column = columnKey(choice.evo, choice.league);
+      const candidate = candidates.find(item => item.ivs.join('/') === choice.ivs.join('/'));
+      if (!columns.some(item => columnKey(item.evo, item.league) === column) || !candidate ||
+          used.has(candidate.key) || fixed.has(column) ||
+          !cells.has(JSON.stringify([candidate.key, choice.evo, choice.league]))) {
+        throw new Error('A chosen cell is unavailable or reuses an IV spread or column.');
+      }
+      used.add(candidate.key); fixed.set(column, {candidate, ...choice, locked: true,
+        result: cells.get(JSON.stringify([candidate.key, choice.evo, choice.league])).result});
+    }
+    const available = candidates.filter(item => !used.has(item.key));
+    const slots = columns.filter(item => !fixed.has(columnKey(item.evo, item.league)));
+    const m = slots.length, n = available.length + m;
+    let maxRank = 1;
+    for (const row of results) if (row.result) maxRank = Math.max(maxRank, row.result.rank);
+    const penalty = (maxRank + 1) * (m + 1);
+    const cost = (i, j) => {
+      if (j >= available.length) return penalty;
+      const row = cells.get(JSON.stringify([available[j].key, slots[i].evo, slots[i].league]));
+      return row ? row.result.rank : penalty * (m + 1);
+    };
+    const u = Array(m + 1).fill(0), v = Array(n + 1).fill(0), p = Array(n + 1).fill(0), way = Array(n + 1).fill(0);
+    for (let i = 1; i <= m; i++) {
+      p[0] = i;
+      let j0 = 0;
+      const minv = Array(n + 1).fill(Infinity), visited = Array(n + 1).fill(false);
+      do {
+        visited[j0] = true;
+        const i0 = p[j0]; let delta = Infinity, j1 = 0;
+        for (let j = 1; j <= n; j++) if (!visited[j]) {
+          const cur = cost(i0 - 1, j - 1) - u[i0] - v[j];
+          if (cur < minv[j]) { minv[j] = cur; way[j] = j0; }
+          if (minv[j] < delta) { delta = minv[j]; j1 = j; }
+        }
+        for (let j = 0; j <= n; j++) {
+          if (visited[j]) { u[p[j]] += delta; v[j] -= delta; }
+          else minv[j] -= delta;
+        }
+        j0 = j1;
+      } while (p[j0] !== 0);
+      do { const j1 = way[j0]; p[j0] = p[j1]; j0 = j1; } while (j0);
+    }
+    for (let j = 1; j <= available.length; j++) if (p[j]) {
+      const slot = slots[p[j] - 1], candidate = available[j - 1];
+      const row = cells.get(JSON.stringify([candidate.key, slot.evo, slot.league]));
+      if (row) { used.add(candidate.key); fixed.set(columnKey(slot.evo, slot.league), {...slot, candidate, result: row.result, locked: false}); }
+    }
+    const assignments = columns.map(slot => fixed.get(columnKey(slot.evo, slot.league))).filter(Boolean);
+    return {assignments, unfilled: columns.filter(slot => !fixed.has(columnKey(slot.evo, slot.league))),
+      unused: candidates.filter(item => !used.has(item.key)), totalRank: assignments.reduce((sum, item) => sum + item.result.rank, 0)};
+  }
+  function exportSearch(state) { return 'PVPIVS1:' + JSON.stringify(state); }
+  function importSearch(text, data) {
+    if (!text.trim().startsWith('PVPIVS1:')) throw new Error('Paste a search string beginning with PVPIVS1:.');
+    let state;
+    try { state = JSON.parse(text.trim().slice(8)); } catch (_) { throw new Error('The search string is not valid JSON.'); }
+    if (!state || typeof state.mon !== 'string' || !Object.prototype.hasOwnProperty.call(data, state.mon)) throw new Error('The saved base Pokémon is unknown.');
+    if (!Array.isArray(state.ivs) || !state.ivs.length || state.ivs.some(ivs => !Array.isArray(ivs) ||
+        ivs.length !== 3 || ivs.some(value => !Number.isInteger(value) || value < 0 || value > 15))) throw new Error('The saved IV entries are invalid.');
+    if (!Number.isInteger(state.floor) || state.floor < 0 || state.floor > 15 ||
+        ![state.min, state.max].every(value => Number.isFinite(value) && value >= 1 && value <= 51 && Number.isInteger(value * 2)) ||
+        state.min > state.max) throw new Error('The saved calculation settings are invalid.');
+    const members = family(state.mon, data), validLeagues = leagues.map(item => item[0]);
+    if (!Array.isArray(state.columns) || !state.columns.length || state.columns.some(item => !Array.isArray(item) ||
+        item.length !== 2 || !members.includes(item[0]) || !validLeagues.includes(item[1]))) throw new Error('The saved columns are invalid.');
+    const columns = [...new Map(state.columns.map(item => [JSON.stringify(item), item])).values()];
+    const choices = state.choices || [], chosenSpreads = new Set(), chosenColumns = new Set();
+    if (!Array.isArray(choices)) throw new Error('The saved choices are invalid.');
+    for (const choice of choices) {
+      if (!choice || !Array.isArray(choice.ivs) || !state.ivs.some(ivs => JSON.stringify(ivs) === JSON.stringify(choice.ivs)) ||
+          !columns.some(item => item[0] === choice.evo && item[1] === choice.league) ||
+          choice.ivs.some(value => value < state.floor) || !eligible(state.mon, choice.evo, choice.ivs) ||
+          chosenSpreads.has(JSON.stringify(choice.ivs)) || chosenColumns.has(columnKey(choice.evo, choice.league))) throw new Error('The saved choices reuse a spread or column, or refer to a missing entry.');
+      chosenSpreads.add(JSON.stringify(choice.ivs)); chosenColumns.add(columnKey(choice.evo, choice.league));
+    }
+    return {...state, columns, choices};
+  }
+  root.FamilyRanks = {leagues, family, eligible, summarize, candidatesFromRows, markBest, uniqueCandidates, sortCandidates,
+    columnKey, percentile, allocate, exportSearch, importSearch};
 })(typeof self !== 'undefined' ? self : globalThis);

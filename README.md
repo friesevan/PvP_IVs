@@ -23,16 +23,41 @@ ranking columns (Eevee plus its eight evolutions, across four leagues).
 
 Click a league heading under a family member, or use **Sort rows by**, to sort
 complete IV rows by their ranking in that column, best first. Invalid results
-sort last. Green **Best candidate** cells mark the lowest submitted rank for that
-column, including ties. **Show spreads that win at least one column** displays
-only spreads recommended for one or more evolution/league combinations.
+sort last. A red/yellow/green gradient shows IV rank percentile (rank 1 is 100%,
+the worst rank is 0%). Green borders and stars identify the best submitted spread
+in each column, including ties. This is separate from the resource allocation
+recommendation, which may select a runner-up to improve the overall plan.
+
+Use the **Individual evolution / league columns** checkbox grid to select exact
+combinations. Column-heading × buttons hide individual columns, and the grid
+re-adds them immediately. For example, select Little Applin, Great Flapple,
+Great Appletun, Great Hydrapple and Master Hydrapple. Only visible columns compete
+for Pokémon in the plan. Broad league/family toggles remain available.
+
+The **Recommended evolution plan** treats each unique IV spread as one Pokémon
+and each visible column as one desired slot. It computes a globally optimal
+assignment: maximize the number of filled slots, then minimize the sum of IV
+ranks, without reusing a spread or filling a slot twice. Unfilled slots and unused
+spreads are listed. Dashed blue cell borders mark recommendations. Click a valid
+cell or **Lock choice** to reserve that spread for the specified evolution and
+league, and the remaining assignments are recomputed. Clicking it again or
+**Release** unlocks it. Selecting a different destination moves that spread's
+choice and replaces any choice already occupying that destination. Solid blue
+borders distinguish locked choices. Hiding a locked column releases that choice;
+changing Pokémon, IV entries or calculation settings clears choices.
+
+**Save or restore a search** exports a portable `PVPIVS1:` text string with the
+base Pokémon, IV entries, exact visible columns, settings and locked choices.
+Copy it to any text note and paste it back with **Load & compare**. Strings are
+validated before replacing the current form. The generated browser URL also
+restores these settings; original single-IV URLs still work.
 
 Impossible evolutions, IVs below the selected floor, and CP-limit failures are
-shown explicitly and cannot win. Every IV row must contain three integers from
-0 to 15. Batch requests calculate each evolution/league once for all candidates.
-Ratings across different species do not indicate relative battle strength, and
-a candidate can be best for more than one evolution; results do not allocate
-individual Pokémon to mutually exclusive evolutions.
+shown explicitly and cannot win or be allocated. Every IV row must contain three
+integers from 0 to 15. Batch requests calculate each evolution/league once for all
+candidates. IV rankings do not establish cup eligibility or compare the battle
+strength of different species. The planner assumes the input Pokémon can meet
+other evolution requirements and reach the configured levels.
 
 The feature reuses `includes/pokeListObj.js` for family relationships and stats,
 and `includes/calculate.js` for rankings. No separate evolution-tree file or API
