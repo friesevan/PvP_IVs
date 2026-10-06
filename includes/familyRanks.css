@@ -1,0 +1,29 @@
+:root { color-scheme: light dark; --bg: #f4f7f9; --panel: #fff; --text: #20313f; --muted: #526673; --line: #cad6dd; --accent: #176851; }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.5 system-ui, sans-serif; }
+main { max-width: 1180px; margin: auto; padding: 32px 24px; }
+a { color: var(--accent); }
+h1 { font-size: clamp(28px, 4vw, 42px); line-height: 1.15; margin-bottom: 12px; }
+.intro { color: var(--muted); margin-bottom: 28px; }
+form { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 24px; }
+.inputs, .toggles { display: flex; flex-wrap: wrap; gap: 12px; }
+.inputs > label { display: flex; flex-direction: column; gap: 6px; width: 115px; }
+.inputs > .pokemon { flex: 1; min-width: 200px; }
+input { font: inherit; padding: 9px; border: 1px solid var(--line); border-radius: 6px; min-width: 0; }
+input:focus-visible, button:focus-visible, a:focus-visible { outline: 3px solid #d39a20; outline-offset: 3px; }
+fieldset { border: 0; border-top: 1px solid var(--line); margin: 18px 0; padding: 12px 0 0; }
+legend { font-weight: 650; padding-right: 12px; }
+.toggles label { display: flex; gap: 8px; align-items: center; background: var(--bg); border: 1px solid var(--line); padding: 8px 12px; border-radius: 7px; cursor: pointer; }
+input[type=checkbox] { accent-color: var(--accent); width: 17px; height: 17px; }
+.hint { font-size: 13px; color: var(--muted); }
+summary { cursor: pointer; margin-bottom: 14px; }
+button { background: var(--accent); color: #fff; font: inherit; font-weight: 650; padding: 10px 20px; border: 0; border-radius: 7px; cursor: pointer; margin-top: 18px; }
+.results { overflow-x: auto; background: var(--panel); border-radius: 12px; }
+table { border-collapse: collapse; width: 100%; min-width: 620px; }
+th, td { padding: 16px; text-align: left; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { background: var(--bg); }
+td strong, td span { display: block; }
+td span { font-size: 13px; color: var(--muted); }
+td strong { font-variant-numeric: tabular-nums; }
+@media (max-width: 600px) { main { padding: 20px 12px; } form { padding: 16px; } .inputs > label { flex: 1; min-width: 78px; } .inputs > .pokemon { flex-basis: 100%; } }
+@media (prefers-color-scheme: dark) { :root { --bg: #16242d; --panel: #20313c; --text: #edf4f6; --muted: #b2c6d1; --line: #405866; --accent: #83d8b9; } button { color: #16242d; } }
