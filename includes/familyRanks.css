@@ -71,3 +71,44 @@ td strong { font-variant-numeric: tabular-nums; }
 
 .entry-level { max-width: 340px; font-size: 14px; color: var(--muted); align-self: center; }
 .level-warning { color: #ac3028; font-weight: 600; }
+
+/* Shared geometry keeps long eligibility messages from stretching the matrix. */
+:root { --bg: #f5f7fb; --text: #24334a; --muted: #607088; --line: #dde4ed; --accent: #19735d; }
+main { max-width: 1320px; padding: 40px 28px; }
+.site-header { text-align: center; margin: 8px 0 32px; }
+.site-header h1 { letter-spacing: -.045em; font-weight: 800; margin: 0 0 8px; }
+.subtitle { margin: 0; font-size: 15px; }
+.subtitle a { color: var(--muted); text-decoration: none; }
+.subtitle a:hover { text-decoration: underline; }
+.site-header .intro { margin: 14px 0 0; font-size: 15px; }
+form, .saved-search, #recommendations:not(:empty), .matrix-results { border-radius: 18px; box-shadow: 0 3px 16px #24334a06; }
+form { padding: 28px; margin-bottom: 20px; }
+input, select, textarea { background: var(--panel); color: var(--text); border-radius: 9px; }
+button { border-radius: 9px; transition: filter .15s; }
+button:hover { filter: brightness(.96); }
+.iv-entry { padding: 16px; background: var(--bg); border: 1px solid var(--line); border-radius: 12px; gap: 14px; }
+.iv-entry .entry-number { font-size: 14px; }
+.iv-entry label { font-size: 13px; font-weight: 600; }
+.iv-entry input { font-size: 16px; font-weight: 400; }
+.entry-level { flex: 1; min-width: 160px; font-size: 13px; }
+.toggles label { font-size: 14px; border-radius: 10px; }
+.toggles label:has(input:checked) { border-color: var(--accent); }
+summary { font-weight: 600; }
+.matrix-toolbar { padding: 20px; }
+.matrix-toolbar h2, #recommendations h2 { font-size: 20px; letter-spacing: -.02em; }
+.comparison-matrix { table-layout: fixed; min-width: 0; }
+.comparison-matrix th, .comparison-matrix td { width: 190px; max-width: 190px; padding: 14px; }
+.comparison-matrix .iv-column { width: 190px; min-width: 190px; max-width: 190px; }
+.comparison-matrix tbody td, .comparison-matrix tbody th { height: 178px; vertical-align: middle; }
+.comparison-matrix thead th { font-size: 14px; text-align: center; }
+.comparison-matrix thead .iv-column { text-align: left; }
+.choose-cell { height: 124px; display: flex; flex-direction: column; justify-content: center; gap: 3px; }
+.choose-cell strong { font-size: 17px; }
+.choose-cell span { font-size: 12px; }
+.comparison-matrix td > a { font-size: 12px; }
+.unavailable-cell { height: 148px; display: flex; flex-direction: column; justify-content: center; gap: 7px; color: var(--muted); }
+.unavailable-cell strong { font-size: 14px; font-weight: 600; }
+.unavailable-reason { max-height: 108px; overflow-y: auto; overflow-wrap: anywhere; font-size: 12px; line-height: 1.5; }
+.plan-list li { gap: 20px; padding: 14px 0; font-size: 14px; }
+@media (max-width: 600px) { main { padding: 24px 12px; } form { padding: 16px; } .iv-entry { padding: 12px; } .entry-number { width: 100%; } .entry-level { max-width: none; } .plan-list li { flex-wrap: wrap; gap: 8px; } }
+@media (prefers-color-scheme: dark) { :root { --bg: #131e2b; --panel: #1c2a3a; --text: #edf3fa; --muted: #adbed1; --line: #33465b; --accent: #83d8b9; } .level-warning { color: #ffaaaa; } }

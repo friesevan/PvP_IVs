@@ -260,8 +260,11 @@
         ordered = ordered.filter(candidate => winningKeys.has(candidate.key));
       }
       if (!ordered.length) { container.textContent = 'No eligible winning IV spreads for this selection.'; return; }
-      const table = document.createElement('table'); table.className = 'comparison-matrix';
+      const table = document.createElement('table'); table.className = 'comparison-matrix'; table.style.width = (columns.length + 1) * 190 + 'px';
       const caption = document.createElement('caption'); caption.textContent = display(candidates[0].mon) + ' · ' + candidates.length + ' unique IV spreads'; table.append(caption);
+      const widths = document.createElement('colgroup');
+      for (let i = 0; i <= columns.length; i++) { const col = document.createElement('col'); col.style.width = '190px'; widths.append(col); }
+      table.append(widths);
       const thead = table.createTHead();
       const familyHead = thead.insertRow(), leagueHead = thead.insertRow();
       const corner = document.createElement('th'); corner.rowSpan = 2; corner.scope = 'col'; corner.className = 'iv-column'; corner.textContent = 'Attack / Defense / Stamina'; familyHead.append(corner);
@@ -317,7 +320,12 @@
               render(); updateURL();
             });
             cell.append(choose, detailLink(column.evo, column.league, candidate.ivs));
-          } else cell.textContent = row.error || 'Exceeds CP limit at minimum level';
+          } else {
+            const unavailable = document.createElement('div'); unavailable.className = 'unavailable-cell';
+            const title = document.createElement('strong'); title.textContent = 'Unavailable';
+            const reason = document.createElement('span'); reason.className = 'unavailable-reason'; reason.textContent = row.error || 'Exceeds CP limit at minimum level';
+            unavailable.append(title, reason); cell.append(unavailable);
+          }
         }
       }
       container.append(table);

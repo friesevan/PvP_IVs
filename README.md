@@ -1,3 +1,24 @@
+# PvP IV Pro
+
+A modification of [PvP IVs](https://pvpivs.com/) for comparing a base Pokémon’s
+IV spreads across its family and leagues, and planning evolutions.
+
+## Download and run on your own computer
+
+1. [Download the app ZIP](https://github.com/friesevan/PvP_IVs/archive/refs/heads/not-minified.zip) and extract it.
+2. Install Python 3 if it is not already installed.
+3. Open a terminal in the extracted folder and run `python3 run_app.py` (macOS/Linux)
+   or `py -3 run_app.py` (Windows). Alternatively, launch `START.command` on macOS
+   or `START.bat` on Windows after installing Python.
+4. The app opens at `http://localhost:8000/familyRanks.html`. Keep the terminal
+   open while using it. Press Ctrl+C to stop.
+
+If port 8000 is already in use, run `python3 run_app.py --port 8001` (Windows:
+`py -3 run_app.py --port 8001`). The launcher serves only on your own computer.
+No account, build step, or Python packages are required. Share the ZIP link above
+with others; each person runs their own local copy. A localhost URL only works
+on the computer running the app.
+
 # PvP_IVs
 
 ## Family and league comparison
