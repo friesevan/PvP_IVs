@@ -79,16 +79,27 @@ test('winners are independent per evolution and league; duplicates tie; invalids
   ];
   assert.equal(core.markBest(rows).map(row => row.best).join(','), 'true,true,false,true,true,false');
 });
-test('league sorting compares unrounded ratings, groups evolution ranks, and puts invalids last', () => {
+test('duplicate IV spreads become one matrix row with references to original entries', () => {
+  const candidates = core.candidatesFromRows([[1,15,15],[2,15,15],[1,15,15]], 'Eevee').candidates;
+  const unique = core.uniqueCandidates(candidates);
+  assert.equal(unique.length, 2);
+  assert.equal(unique[0].entryKeys.join(','), '1,3');
+  assert.equal(unique[1].ivs.join('/'), '2/15/15');
+  assert.equal(candidates[0].entryKeys, undefined);
+});
+test('column sorting keeps complete IV rows together and places unavailable results last', () => {
+  const candidates = core.candidatesFromRows([[1,15,15],[2,15,15],[3,15,15]], 'Eevee').candidates;
   const rows = [
-    {evo:'Umbreon',candidate:{key:1},result:{rank:10,perfection:99}},
-    {evo:'Vaporeon',candidate:{key:2},result:{rank:2,perfection:99.999}},
-    {evo:'Umbreon',candidate:{key:3},result:{rank:1,perfection:99.998}},
-    {evo:'Eevee',candidate:{key:4},result:null}
+    {evo:'Umbreon',league:'1500',candidate:candidates[0],result:{rank:10}},
+    {evo:'Umbreon',league:'1500',candidate:candidates[1],result:{rank:2}},
+    {evo:'Umbreon',league:'1500',candidate:candidates[2],result:null},
+    {evo:'Vaporeon',league:'ML',candidate:candidates[0],result:{rank:1}},
+    {evo:'Vaporeon',league:'ML',candidate:candidates[1],result:{rank:5}}
   ];
-  assert.equal(core.sortResults(rows,'rating').map(row => row.candidate.key).join(','), '2,3,1,4');
-  assert.equal(core.sortResults(rows,'evolution').map(row => row.candidate.key).join(','), '3,1,2,4');
-  assert.equal(rows[0].candidate.key, 1);
+  assert.equal(core.sortCandidates(candidates,rows,JSON.stringify(['Umbreon','1500'])).map(row => row.key).join(','),'2,1,3');
+  assert.equal(core.sortCandidates(candidates,rows,JSON.stringify(['Vaporeon','ML'])).map(row => row.key).join(','),'1,2,3');
+  assert.equal(core.sortCandidates(candidates,rows,'').map(row => row.key).join(','),'1,2,3');
+  assert.equal(candidates[0].key,1);
 });
 test('batch worker ratings agree with the existing calculator, preserve keys and reuse cache', () => {
   const messages = [];

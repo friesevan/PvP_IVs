@@ -36,7 +36,7 @@
   $('addIVRow').addEventListener('click', () => {
     addIVRow(); invalidate(); $('ivRows').lastElementChild.querySelector('input').focus();
   });
-  const sorts = new Map(), winnersOnly = new Map();
+  let sortColumn = '', showBestOnly = false;
   function toggle(parent, value, label, checked) {
     const wrapper = document.createElement('label');
     const input = document.createElement('input');
@@ -76,59 +76,85 @@
     const link = document.createElement('a'); link.href = 'index.html?' + query;
     link.textContent = 'Full rankings'; return link;
   }
-  function renderLeague(league, container) {
-    container.replaceChildren();
-    let entries = FamilyRanks.sortResults(rows.filter(row => row.league === league), sorts.get(league) || 'evolution');
-    if (winnersOnly.get(league)) entries = entries.filter(row => row.best);
-    if (!entries.length) { container.textContent = 'No eligible candidates for this selection.'; return; }
-    const table = document.createElement('table');
-    const head = table.createTHead().insertRow();
-    for (const title of ['Evolution', 'Candidate', 'IVs', 'IV rank', 'Rating', 'Level / CP', 'Details']) {
-      const th = document.createElement('th'); th.scope = 'col'; th.textContent = title; head.append(th);
-    }
-    const body = table.createTBody();
-    for (const entry of entries) {
-      const tr = body.insertRow();
-      if (entry.best) tr.className = 'best-candidate';
-      const evo = document.createElement('th'); evo.scope = 'row'; evo.textContent = display(entry.evo); tr.append(evo);
-      const candidate = tr.insertCell();
-      const label = document.createElement('strong'); label.textContent = 'Entry ' + entry.candidate.key;
-      candidate.append(label);
-      if (entry.best) { const badge = document.createElement('span'); badge.className = 'winner-badge'; badge.textContent = '★ Best candidate'; candidate.append(badge); }
-      tr.insertCell().textContent = (entry.result ? entry.result.ivs : entry.candidate.ivs || []).join('/');
-      if (entry.result) {
-        tr.insertCell().textContent = '#' + entry.result.rank + ' / ' + entry.result.total;
-        tr.insertCell().textContent = entry.result.perfection.toFixed(2) + '%';
-        tr.insertCell().textContent = 'L' + entry.result.level + ' · ' + entry.result.cp + ' CP';
-        tr.insertCell().append(detailLink(entry.evo, league, entry.result.ivs));
-      } else {
-        const cell = tr.insertCell(); cell.colSpan = 4; cell.textContent = entry.error || 'Exceeds CP limit at minimum level';
-      }
-    }
-    container.append(table);
-  }
   function render() {
     rows = FamilyRanks.markBest(rows);
     $('results').replaceChildren();
-    for (const league of selectedLeagues) {
-      const section = document.createElement('section'); section.className = 'league-results';
-      const toolbar = document.createElement('div'); toolbar.className = 'league-toolbar';
-      const heading = document.createElement('h2'); heading.textContent = FamilyRanks.leagues.find(item => item[0] === league)[1] + ' League';
-      const label = document.createElement('label'); label.textContent = 'Sort ' + heading.textContent + ' ';
-      const sort = document.createElement('select');
-      for (const [value, text] of [['evolution', 'Evolution → best IV rank'], ['rating', 'Best rating first']]) {
-        const option = document.createElement('option'); option.value = value; option.textContent = text; sort.append(option);
-      }
-      sort.value = sorts.get(league) || 'evolution'; label.append(sort);
-      const filterLabel = document.createElement('label');
-      const filter = document.createElement('input'); filter.type = 'checkbox'; filter.checked = !!winnersOnly.get(league);
-      filterLabel.append(filter, document.createTextNode(' Show best only · ' + heading.textContent));
-      const tableContainer = document.createElement('div'); tableContainer.className = 'table-scroll';
-      sort.addEventListener('change', () => { sorts.set(league, sort.value); renderLeague(league, tableContainer); });
-      filter.addEventListener('change', () => { winnersOnly.set(league, filter.checked); renderLeague(league, tableContainer); });
-      toolbar.append(heading, label, filterLabel); section.append(toolbar, tableContainer); $('results').append(section);
-      renderLeague(league, tableContainer);
+    const columns = [...new Map(rows.map(row => [JSON.stringify([row.evo, row.league]), {evo: row.evo, league: row.league}])).entries()];
+    if (!columns.some(([key]) => key === sortColumn)) sortColumn = '';
+    const candidates = [...new Map(rows.map(row => [row.candidate.key, row.candidate])).values()];
+    const cells = new Map(rows.map(row => [JSON.stringify([row.candidate.key, row.evo, row.league]), row]));
+    const section = document.createElement('section'); section.className = 'matrix-results';
+    const toolbar = document.createElement('div'); toolbar.className = 'matrix-toolbar';
+    const heading = document.createElement('h2'); heading.textContent = 'IV comparison';
+    const label = document.createElement('label'); label.textContent = 'Sort rows by ';
+    const sort = document.createElement('select');
+    const original = document.createElement('option'); original.value = ''; original.textContent = 'Entry order'; sort.append(original);
+    for (const [key, column] of columns) {
+      const option = document.createElement('option'); option.value = key;
+      option.textContent = display(column.evo) + ' · ' + FamilyRanks.leagues.find(item => item[0] === column.league)[1]; sort.append(option);
     }
+    sort.value = sortColumn; label.append(sort);
+    const filterLabel = document.createElement('label');
+    const filter = document.createElement('input'); filter.type = 'checkbox'; filter.checked = showBestOnly;
+    filterLabel.append(filter, document.createTextNode(' Show spreads that win at least one column'));
+    const container = document.createElement('div'); container.className = 'table-scroll';
+    container.tabIndex = 0; container.setAttribute('aria-label', 'Scrollable IV comparison table');
+    toolbar.append(heading, label, filterLabel); section.append(toolbar, container); $('results').append(section);
+    function drawTable() {
+      container.replaceChildren();
+      let ordered = FamilyRanks.sortCandidates(candidates, rows, sortColumn);
+      if (showBestOnly) {
+        const winningKeys = new Set(rows.filter(row => row.best).map(row => row.candidate.key));
+        ordered = ordered.filter(candidate => winningKeys.has(candidate.key));
+      }
+      if (!ordered.length) { container.textContent = 'No eligible winning IV spreads for this selection.'; return; }
+      const table = document.createElement('table'); table.className = 'comparison-matrix';
+      const caption = document.createElement('caption'); caption.textContent = display(candidates[0].mon) + ' · ' + candidates.length + ' unique IV spreads'; table.append(caption);
+      const thead = table.createTHead();
+      const familyHead = thead.insertRow(), leagueHead = thead.insertRow();
+      const corner = document.createElement('th'); corner.rowSpan = 2; corner.scope = 'col'; corner.className = 'iv-column'; corner.textContent = 'Attack / Defense / Stamina'; familyHead.append(corner);
+      const families = [...new Set(columns.map(([, column]) => column.evo))];
+      for (const evo of families) {
+        const th = document.createElement('th'); th.scope = 'colgroup'; th.colSpan = columns.filter(([, column]) => column.evo === evo).length;
+        th.textContent = display(evo); familyHead.append(th);
+      }
+      for (const [key, column] of columns) {
+        const th = document.createElement('th'); th.scope = 'col';
+        const leagueName = FamilyRanks.leagues.find(item => item[0] === column.league)[1];
+        const button = document.createElement('button'); button.type = 'button'; button.className = 'column-sort';
+        button.textContent = leagueName + (key === sortColumn ? ' ↑' : ' ↕');
+        button.setAttribute('aria-label', 'Sort by ' + display(column.evo) + ' ' + leagueName + ' League ranking');
+        th.setAttribute('aria-sort', key === sortColumn ? 'ascending' : 'none');
+        button.addEventListener('click', () => { sortColumn = key; sort.value = key; drawTable(); });
+        th.append(button); leagueHead.append(th);
+      }
+      const body = table.createTBody();
+      for (const candidate of ordered) {
+        const tr = body.insertRow();
+        const ivs = document.createElement('th'); ivs.scope = 'row'; ivs.className = 'iv-column';
+        const spread = document.createElement('strong'); spread.textContent = candidate.ivs.join(' / ');
+        const entries = document.createElement('span'); entries.className = 'entry-reference';
+        entries.textContent = (candidate.entryKeys.length === 1 ? 'Entry ' : 'Entries ') + candidate.entryKeys.join(', ');
+        ivs.append(spread, entries); tr.append(ivs);
+        for (const [, column] of columns) {
+          const row = cells.get(JSON.stringify([candidate.key, column.evo, column.league]));
+          const cell = tr.insertCell();
+          if (row.best) cell.className = 'best-candidate';
+          if (row.result) {
+            const rank = document.createElement('strong'); rank.textContent = '#' + row.result.rank + ' / ' + row.result.total;
+            const rating = document.createElement('span'); rating.textContent = row.result.perfection.toFixed(2) + '% stat product';
+            const stats = document.createElement('span'); stats.textContent = 'L' + row.result.level + ' · ' + row.result.cp + ' CP';
+            cell.append(rank, rating, stats);
+            if (row.best) { const badge = document.createElement('span'); badge.className = 'winner-badge'; badge.textContent = '★ Best candidate'; cell.append(badge); }
+            cell.append(detailLink(column.evo, column.league, candidate.ivs));
+          } else cell.textContent = row.error || 'Exceeds CP limit at minimum level';
+        }
+      }
+      container.append(table);
+    }
+    sort.addEventListener('change', () => { sortColumn = sort.value; drawTable(); });
+    filter.addEventListener('change', () => { showBestOnly = filter.checked; drawTable(); });
+    drawTable();
   }
   function compare() {
     invalidate();
@@ -142,7 +168,7 @@
       parsed.errors.forEach(error => { const p = document.createElement('p'); p.textContent = error; $('inputErrors').append(p); });
       message('Fix the listed IV entries before comparing.'); return;
     }
-    const candidates = parsed.candidates;
+    const candidates = FamilyRanks.uniqueCandidates(parsed.candidates);
     settings = Object.fromEntries(['floor', 'min', 'max'].map(id => [id, Number($(id).value)]));
     if (settings.min > settings.max) { message('Minimum level must not exceed maximum level.'); return; }
     const evos = selection('evolutions'); selectedLeagues = selection('leagues');
@@ -150,7 +176,7 @@
     if (!worker) { message('The calculator is unavailable. Reload this page from a web server.'); return; }
     const query = new URLSearchParams({leagues: selectedLeagues.join(','), evos: evos.join(','), ...settings});
     query.set('mon', mon);
-    query.set('IVs', candidates.map(candidate => candidate.ivs.join('_')).join(','));
+    query.set('IVs', parsed.candidates.map(candidate => candidate.ivs.join('_')).join(','));
     history.replaceState(null, '', '?' + query);
     const id = ++generation, groups = new Map();
     for (const candidate of candidates) {
@@ -188,7 +214,7 @@
       else {
         render();
         const failed = rows.filter(row => row.error && row.error.startsWith('Calculation failed')).length;
-        message('Comparison complete: ' + rows.length + ' results.' + (failed ? ' ' + failed + ' calculation errors.' : ' Green rows mark your best candidate for each evolution and league.'));
+        message('Comparison complete: ' + rows.length + ' results.' + (failed ? ' ' + failed + ' calculation errors.' : ' Green cells mark your best IV spread for each evolution and league.'));
       }
     };
     worker.onerror = () => {

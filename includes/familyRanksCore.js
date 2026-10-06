@@ -49,16 +49,23 @@
     }
     return rows.map(row => ({...row, best: !!row.result && row.result.rank === best.get(JSON.stringify([row.evo, row.league]))}));
   }
-  function sortResults(rows, sort) {
-    return rows.slice().sort((a, b) => {
-      if (!!a.result !== !!b.result) return a.result ? -1 : 1;
-      if (sort === 'rating' && a.result && b.result) {
-        const diff = b.result.perfection - a.result.perfection || a.result.rank - b.result.rank;
-        if (diff) return diff;
-      }
-      const species = a.evo.localeCompare(b.evo);
-      return species || ((a.result && b.result) ? a.result.rank - b.result.rank : 0) || a.candidate.key - b.candidate.key;
+  function uniqueCandidates(candidates) {
+    const unique = new Map();
+    for (const candidate of candidates) {
+      const key = JSON.stringify([candidate.mon, candidate.ivs]);
+      if (unique.has(key)) unique.get(key).entryKeys.push(candidate.key);
+      else unique.set(key, {...candidate, entryKeys: [candidate.key]});
+    }
+    return [...unique.values()];
+  }
+  function sortCandidates(candidates, results, column) {
+    const ratings = new Map(results.filter(row => JSON.stringify([row.evo, row.league]) === column)
+      .map(row => [row.candidate.key, row.result]));
+    return candidates.slice().sort((a, b) => {
+      const first = ratings.get(a.key), second = ratings.get(b.key);
+      if (!!first !== !!second) return first ? -1 : 1;
+      return (first && second ? first.rank - second.rank : 0) || a.key - b.key;
     });
   }
-  root.FamilyRanks = {leagues, family, eligible, summarize, candidatesFromRows, markBest, sortResults};
+  root.FamilyRanks = {leagues, family, eligible, summarize, candidatesFromRows, markBest, uniqueCandidates, sortCandidates};
 })(typeof self !== 'undefined' ? self : globalThis);

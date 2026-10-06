@@ -15,17 +15,24 @@ minimum/maximum level apply to every result; the default ceiling is level 50,
 with level 51 available for Best Buddy. Selections and IV rows can be shared by
 copying the URL; previous single-entry `IVs=0_15_15` links still work.
 
-Each league displays all candidate/evolution results in its own table, with
-independent sorting by evolution and IV rank or by highest stat-product rating.
-Green **Best candidate** rows mark the lowest rank submitted for each
-evolution/league combination, including ties. **Show best only** reduces each
-league to those recommendations. Impossible evolutions, IVs below the selected
-floor, and CP-limit failures are shown explicitly and cannot win. Every IV row
-must contain three integers from 0 to 15. Batch requests calculate each
-evolution/league once for all candidates. Ratings across different species do
-not indicate relative battle strength, and a candidate can be best for more than
-one evolution; results do not allocate individual Pokémon to mutually exclusive
-evolutions.
+Results display a single matrix: each row is a unique IV spread, and each column
+is one evolution × league combination. Duplicate spreads share one row with
+references to their original entry numbers. For two distinct Eevee entries with
+all family members and leagues selected, the table contains two rows and 36
+ranking columns (Eevee plus its eight evolutions, across four leagues).
+
+Click a league heading under a family member, or use **Sort rows by**, to sort
+complete IV rows by their ranking in that column, best first. Invalid results
+sort last. Green **Best candidate** cells mark the lowest submitted rank for that
+column, including ties. **Show spreads that win at least one column** displays
+only spreads recommended for one or more evolution/league combinations.
+
+Impossible evolutions, IVs below the selected floor, and CP-limit failures are
+shown explicitly and cannot win. Every IV row must contain three integers from
+0 to 15. Batch requests calculate each evolution/league once for all candidates.
+Ratings across different species do not indicate relative battle strength, and
+a candidate can be best for more than one evolution; results do not allocate
+individual Pokémon to mutually exclusive evolutions.
 
 The feature reuses `includes/pokeListObj.js` for family relationships and stats,
 and `includes/calculate.js` for rankings. No separate evolution-tree file or API
