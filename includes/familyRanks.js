@@ -9,7 +9,33 @@
   const params = new URLSearchParams(location.search);
   let familySignature = '', generation = 0, pending = 0;
   let worker, rows = [], settings = {}, selectedLeagues = [];
-  const ivIds = ['attack', 'defense', 'stamina'];
+  function addIVRow(values = ['', '', '']) {
+    const row = document.createElement('div'); row.className = 'iv-entry inputs';
+    const number = document.createElement('strong'); number.className = 'entry-number'; row.append(number);
+    for (const [i, stat] of ['Attack', 'Defense', 'Stamina'].entries()) {
+      const label = document.createElement('label'); label.textContent = stat + ' IV';
+      const input = document.createElement('input');
+      input.type = 'number'; input.min = '0'; input.max = '15'; input.step = '1';
+      input.required = true; input.placeholder = '0–15'; input.value = values[i] ?? '';
+      input.dataset.stat = stat; label.append(input); row.append(label);
+    }
+    const remove = document.createElement('button'); remove.type = 'button';
+    remove.className = 'secondary remove-entry'; remove.textContent = 'Remove';
+    remove.addEventListener('click', () => { row.remove(); numberRows(); invalidate(); });
+    row.append(remove); $('ivRows').append(row); numberRows();
+  }
+  function numberRows() {
+    const entries = [...$('ivRows').children];
+    entries.forEach((row, i) => {
+      row.querySelector('.entry-number').textContent = 'Entry ' + (i + 1);
+      row.querySelectorAll('input').forEach(input => input.setAttribute('aria-label', input.dataset.stat + ' IV entry ' + (i + 1)));
+      const remove = row.querySelector('button'); remove.disabled = entries.length === 1;
+      remove.setAttribute('aria-label', 'Remove entry ' + (i + 1));
+    });
+  }
+  $('addIVRow').addEventListener('click', () => {
+    addIVRow(); invalidate(); $('ivRows').lastElementChild.querySelector('input').focus();
+  });
   const sorts = new Map(), winnersOnly = new Map();
   function toggle(parent, value, label, checked) {
     const wrapper = document.createElement('label');
@@ -30,16 +56,14 @@
   }
   function syncFamily() {
     const mon = resolve($('pokemon').value);
-    const bulk = $('bulkIVs').value.trim();
-    const sources = bulk ? [...new Set(FamilyRanks.parseCandidates(bulk, mon, pokeListObj).candidates.map(entry => entry.mon))] : mon ? [mon] : [];
-    const signature = JSON.stringify(sources.slice().sort());
+    const signature = mon || '';
     if (signature === familySignature) return;
     const old = new Map([...$('evolutions').querySelectorAll('input')].map(input => [input.value, input.checked]));
     familySignature = signature;
     $('evolutions').replaceChildren();
-    const evos = [...new Set(sources.flatMap(source => FamilyRanks.family(source, pokeListObj)))];
+    const evos = mon ? FamilyRanks.family(mon, pokeListObj) : [];
     for (const evo of evos) toggle($('evolutions'), evo, display(evo), old.has(evo) ? old.get(evo) : true);
-    if (!evos.length) $('evolutions').textContent = 'Choose a Pokémon or enter named bulk candidates to show their families.';
+    if (!evos.length) $('evolutions').textContent = 'Choose a base Pokémon to show its family.';
   }
   function message(text) { $('status').textContent = text; }
   function invalidate() {
@@ -68,9 +92,8 @@
       if (entry.best) tr.className = 'best-candidate';
       const evo = document.createElement('th'); evo.scope = 'row'; evo.textContent = display(entry.evo); tr.append(evo);
       const candidate = tr.insertCell();
-      const label = document.createElement('strong'); label.textContent = entry.candidate.label;
-      const source = document.createElement('span'); source.textContent = display(entry.candidate.mon) + ' · Entry ' + entry.candidate.key;
-      candidate.append(label, source);
+      const label = document.createElement('strong'); label.textContent = 'Entry ' + entry.candidate.key;
+      candidate.append(label);
       if (entry.best) { const badge = document.createElement('span'); badge.className = 'winner-badge'; badge.textContent = '★ Best candidate'; candidate.append(badge); }
       tr.insertCell().textContent = (entry.result ? entry.result.ivs : entry.candidate.ivs || []).join('/');
       if (entry.result) {
@@ -109,38 +132,25 @@
   }
   function compare() {
     invalidate();
-    const bulk = $('bulkIVs').value.trim();
-    // Single controls are ignored during bulk comparisons, including their validity.
-    ivIds.forEach(id => { $(id).disabled = !!bulk; });
-    if (!form.reportValidity()) { message('Check the highlighted input.'); return; }
+    if (!form.reportValidity()) { message('Check the highlighted field. Each IV entry needs three integers from 0 to 15.'); return; }
     syncFamily();
     const mon = resolve($('pokemon').value);
-    let candidates;
-    if (bulk) {
-      const parsed = FamilyRanks.parseCandidates(bulk, mon, pokeListObj);
-      if (parsed.errors.length) {
-        parsed.errors.forEach(error => { const p = document.createElement('p'); p.textContent = error; $('inputErrors').append(p); });
-        message('Fix the listed lines before comparing. No entries were skipped.'); return;
-      }
-      candidates = parsed.candidates;
-    } else {
-      if (!mon) { message('Choose a Pokémon or enter named bulk candidates.'); return; }
-      const rawIVs = ivIds.map(id => $(id).value);
-      if (rawIVs.some(value => value !== '') && rawIVs.some(value => value === '')) {
-        message('Enter all three IVs, or leave all three blank.'); return;
-      }
-      candidates = [{key: 1, mon, ivs: rawIVs.every(value => value === '') ? null : rawIVs.map(Number), label: 'Entry 1'}];
+    if (!mon) { message('Choose a base Pokémon from the suggestions.'); return; }
+    const parsed = FamilyRanks.candidatesFromRows(
+      [...$('ivRows').children].map(row => [...row.querySelectorAll('input')].map(input => input.value)), mon);
+    if (parsed.errors.length) {
+      parsed.errors.forEach(error => { const p = document.createElement('p'); p.textContent = error; $('inputErrors').append(p); });
+      message('Fix the listed IV entries before comparing.'); return;
     }
-    if (!candidates.length) { message('Enter at least one candidate.'); return; }
+    const candidates = parsed.candidates;
     settings = Object.fromEntries(['floor', 'min', 'max'].map(id => [id, Number($(id).value)]));
     if (settings.min > settings.max) { message('Minimum level must not exceed maximum level.'); return; }
     const evos = selection('evolutions'); selectedLeagues = selection('leagues');
     if (!evos.length || !selectedLeagues.length) { message('Select at least one family member and one league.'); return; }
     if (!worker) { message('The calculator is unavailable. Reload this page from a web server.'); return; }
     const query = new URLSearchParams({leagues: selectedLeagues.join(','), evos: evos.join(','), ...settings});
-    if (mon) query.set('mon', mon);
-    if (bulk) query.set('batch', bulk);
-    else if (candidates[0].ivs) query.set('IVs', candidates[0].ivs.join('_'));
+    query.set('mon', mon);
+    query.set('IVs', candidates.map(candidate => candidate.ivs.join('_')).join(','));
     history.replaceState(null, '', '?' + query);
     const id = ++generation, groups = new Map();
     for (const candidate of candidates) {
@@ -188,17 +198,17 @@
   } catch (error) { message('Open this page from a web server to enable calculations.'); }
   form.addEventListener('submit', event => { event.preventDefault(); compare(); });
   form.addEventListener('input', () => {
-    ivIds.forEach(id => { $(id).disabled = !!$('bulkIVs').value.trim(); });
     invalidate(); syncFamily();
   });
   for (const id of ['floor', 'min', 'max']) if (params.has(id)) $(id).value = params.get(id);
-  if (params.has('IVs')) params.get('IVs').split('_').slice(0, 3).forEach((value, i) => { $(ivIds[i]).value = value; });
   if (params.has('mon')) $('pokemon').value = display(params.get('mon'));
-  if (params.has('batch')) $('bulkIVs').value = params.get('batch');
+  const savedIVs = params.get('IVs');
+  if (savedIVs) savedIVs.split(',').forEach(spread => addIVRow(spread.split('_')));
+  else addIVRow();
   syncFamily();
   if (params.has('evos')) {
     const enabled = params.get('evos').split(',');
     $('evolutions').querySelectorAll('input').forEach(input => { input.checked = enabled.includes(input.value); });
   }
-  if (params.has('mon') || params.has('batch')) compare();
+  if (params.has('mon') && savedIVs) compare();
 })();

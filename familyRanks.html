@@ -13,18 +13,16 @@
 <main>
   <nav><a href="index.html">PvP IVs · Single Pokémon rankings</a></nav>
   <h1>Find your best evolutions.</h1>
-  <p class="intro">Compare your Pokémon together and find the best IV candidate for every evolution and league.</p>
+  <p class="intro">Choose a base Pokémon and compare all its IV entries across every evolution and league.</p>
   <form id="comparisonForm">
     <div class="inputs">
-      <label class="pokemon">Pokémon<input id="pokemon" list="pokemonNames" placeholder="e.g. Eevee" autocomplete="off"><datalist id="pokemonNames"></datalist></label>
-      <label>Attack IV<input id="attack" type="number" min="0" max="15" placeholder="0–15"></label>
-      <label>Defense IV<input id="defense" type="number" min="0" max="15" placeholder="0–15"></label>
-      <label>Stamina IV<input id="stamina" type="number" min="0" max="15" placeholder="0–15"></label>
+      <label class="pokemon">Base Pokémon<input id="pokemon" list="pokemonNames" placeholder="e.g. Eevee" autocomplete="off" required><datalist id="pokemonNames"></datalist></label>
     </div>
-    <p class="hint">Enter all three IVs to rate your Pokémon, or leave them blank to see the best IVs for each combination.</p>
-    <label class="bulk-label" for="bulkIVs">Bulk candidates · one per line</label>
-    <textarea id="bulkIVs" rows="6" spellcheck="false" placeholder="Eevee, 0, 15, 15, Eevee A&#10;Eevee, 2, 15, 15, Eevee B&#10;Bulbasaur, 1, 14, 15, Bulbasaur A"></textarea>
-    <p class="hint">Use Pokémon, Attack, Defense, Stamina, optional label. For one species, choose it above and paste IVs such as 0/15/15, one set per line. Bulk entries replace the single IV inputs. Labels help identify each Pokémon in your inventory.</p>
+    <fieldset id="ivEntries"><legend>IV entries</legend>
+      <div id="ivRows"></div>
+      <button type="button" id="addIVRow" class="secondary">+ Add IV entry</button>
+    </fieldset>
+    <p class="hint">Choose one base Pokémon, then enter each Pokémon’s Attack, Defense, and Stamina IVs in a separate row. All entries use the same evolution family.</p>
     <div id="inputErrors" role="alert"></div>
     <fieldset><legend>Leagues</legend><div id="leagues" class="toggles"></div></fieldset>
     <fieldset><legend>Evolution family</legend><div id="evolutions" class="toggles">Choose a Pokémon to show its family.</div></fieldset>

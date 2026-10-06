@@ -53,21 +53,20 @@ test('every IV combination is preserved, including entries sharing ranking keys'
   const last = entries.at(-1);
   assert.equal(core.summarize(list, [last.IVs.A, last.IVs.D, last.IVs.S]).rank, 4096);
 });
-test('bulk parser accepts named species, labels, and IV-only rows with a default', () => {
-  const parsed = core.parseCandidates('Eevee, 0, 15, 15, Eevee A\n2/15/15\nBulbasaur,1,14,15\nMeowth Galarian, 15, 15, 15, Trade', 'Eevee', data);
+test('IV entries all inherit the selected base Pokémon and keep row identifiers', () => {
+  const parsed = core.candidatesFromRows([['1','15','15'],['2','15','15']], 'Eevee');
   assert.equal(parsed.errors.length, 0);
-  assert.equal(parsed.candidates.length, 4);
-  assert.equal(parsed.candidates[0].label, 'Eevee A');
-  assert.equal(parsed.candidates[1].mon, 'Eevee');
-  assert.equal(parsed.candidates[1].ivs.join('/'), '2/15/15');
-  assert.equal(parsed.candidates[3].mon, 'Meowth_Galarian');
+  assert.equal(parsed.candidates.length, 2);
+  assert.equal(parsed.candidates.map(candidate => candidate.mon).join(','), 'Eevee,Eevee');
+  assert.equal(parsed.candidates[0].ivs.join('/'), '1/15/15');
+  assert.equal(parsed.candidates[1].key, 2);
 });
-test('bulk parser preserves duplicates and rejects malformed or out-of-range rows', () => {
-  const parsed = core.parseCandidates('0/15/15\n0/15/15\nEevee,16,2,3\nUnknown,1,2,3\n1/2\n-1/2/3\n1.5/2/3', 'Eevee', data);
+test('IV rows preserve duplicate Pokémon and reject missing, fractional or out-of-range IVs', () => {
+  const parsed = core.candidatesFromRows([[0,15,15],[0,15,15],['',15,15],[16,2,3],[-1,2,3],[1.5,2,3],[1,2]], 'Eevee');
   assert.equal(parsed.candidates.length, 2);
   assert.notEqual(parsed.candidates[0].key, parsed.candidates[1].key);
   assert.equal(parsed.errors.length, 5);
-  assert.equal(core.parseCandidates('1/2/3', null, data).errors.length, 1);
+  assert.equal(core.candidatesFromRows([], 'Eevee').errors.length, 1);
 });
 test('winners are independent per evolution and league; duplicates tie; invalids never win', () => {
   const rows = [
@@ -107,4 +106,17 @@ test('batch worker ratings agree with the existing calculator, preserve keys and
   assert.equal(messages[0].results[2].result.rank, expected.rank);
   assert.equal(messages[1].id,2);
   assert.equal(vm.runInContext('cache.size',worker),1);
+  const example = core.candidatesFromRows([[1,15,15],[2,15,15]], 'Eevee').candidates;
+  const start = messages.length;
+  for (const evo of core.family('Eevee', data)) for (const [league] of core.leagues) {
+    worker.onmessage({data:{...request,id:3,mon:evo,league,candidates:example}});
+  }
+  const comparisons = messages.slice(start);
+  assert.equal(comparisons.length, 36); // Eevee + eight evolutions, four leagues.
+  assert.equal(comparisons.flatMap(message => message.results).length, 72);
+  const allRows = comparisons.flatMap(message => message.results.map(item => ({
+    evo:message.mon,league:message.league,candidate:example[item.key - 1],result:item.result
+  })));
+  assert.ok(allRows.every(row => row.result && row.result.rank > 0));
+  assert.equal(new Set(core.markBest(allRows).filter(row => row.best).map(row => row.evo + ':' + row.league)).size, 36);
 });

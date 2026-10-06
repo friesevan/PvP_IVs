@@ -11,7 +11,10 @@ form { background: var(--panel); border: 1px solid var(--line); border-radius: 1
 .inputs > .pokemon { flex: 1; min-width: 200px; }
 input, textarea, select { font: inherit; padding: 9px; border: 1px solid var(--line); border-radius: 6px; min-width: 0; }
 textarea { display: block; width: 100%; resize: vertical; margin-top: 8px; font-family: ui-monospace, monospace; }
-.bulk-label { font-weight: 650; }
+.iv-entry { align-items: end; margin-bottom: 14px; }
+.entry-number { align-self: center; min-width: 80px; }
+button.secondary { background: var(--bg); color: var(--text); border: 1px solid var(--line); margin-top: 0; }
+button:disabled { opacity: .5; cursor: default; }
 #inputErrors { color: #b12727; }
 input:disabled { opacity: .5; }
 input:focus-visible, button:focus-visible, a:focus-visible { outline: 3px solid #d39a20; outline-offset: 3px; }

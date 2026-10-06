@@ -2,35 +2,30 @@
 
 ## Family and league comparison
 
-Open `familyRanks.html` (also linked from the single-Pokémon page). Search a base
-Pokémon such as Eevee, enter its Attack/Defense/Stamina IVs, and compare every
-selected family member across Little, Great, Ultra, and Master leagues. Each form
-and league has a checkbox. Blank IVs show the best spread for each combination.
-IV floor and minimum/maximum level apply to every result; the default ceiling is
-level 50, with level 51 available for Best Buddy. Selections and results can be
-shared by copying the URL.
+Open `familyRanks.html` (also linked from the single-Pokémon page). Select one
+base Pokémon such as Eevee, then enter each Pokémon's Attack/Defense/Stamina IVs
+in a separate row. Use **+ Add IV entry** or **Remove** to manage candidates.
+Every row shares the selected base Pokémon; entries are identified by row number
+and IV spread, without separate name fields. For example, select Eevee and enter
+`1 / 15 / 15` in Entry 1 and `2 / 15 / 15` in Entry 2.
 
-For bulk comparisons, paste one candidate per line into **Bulk candidates**:
+Compare every entry across all selected family members in Little, Great, Ultra,
+and Master leagues. Each form and league has a checkbox. IV floor and
+minimum/maximum level apply to every result; the default ceiling is level 50,
+with level 51 available for Best Buddy. Selections and IV rows can be shared by
+copying the URL; previous single-entry `IVs=0_15_15` links still work.
 
-```text
-Eevee, 0, 15, 15, Eevee A
-Eevee, 2, 15, 15, Eevee B
-Bulbasaur, 1, 14, 15, Bulbasaur A
-```
-
-For one species, select it above and paste lines such as `0/15/15`. Bulk input
-replaces the single IV inputs. Optional labels identify individual inventory
-Pokémon; unlabeled entries retain their input line numbers. Each league displays
-all candidate/evolution results in its own table, with independent sorting by
-evolution and IV rank or by highest stat-product rating. Green **Best candidate**
-rows mark the lowest rank submitted for each evolution/league combination,
-including ties. **Show best only** reduces each league to those recommendations.
-Impossible evolutions, IVs below the selected floor, and CP-limit failures are
-shown explicitly and cannot win. Invalid bulk lines must be fixed before the
-comparison runs. Batch requests calculate each evolution/league once for all
-candidates. Ratings across different species do not indicate relative battle
-strength, and a candidate can be best for more than one evolution; results do
-not allocate individual Pokémon to mutually exclusive evolutions.
+Each league displays all candidate/evolution results in its own table, with
+independent sorting by evolution and IV rank or by highest stat-product rating.
+Green **Best candidate** rows mark the lowest rank submitted for each
+evolution/league combination, including ties. **Show best only** reduces each
+league to those recommendations. Impossible evolutions, IVs below the selected
+floor, and CP-limit failures are shown explicitly and cannot win. Every IV row
+must contain three integers from 0 to 15. Batch requests calculate each
+evolution/league once for all candidates. Ratings across different species do
+not indicate relative battle strength, and a candidate can be best for more than
+one evolution; results do not allocate individual Pokémon to mutually exclusive
+evolutions.
 
 The feature reuses `includes/pokeListObj.js` for family relationships and stats,
 and `includes/calculate.js` for rankings. No separate evolution-tree file or API

@@ -29,20 +29,14 @@
     }
     return null;
   }
-  // A row may be IVs only, or Pokémon, Attack, Defense, Stamina, optional label.
-  function parseCandidates(text, defaultMon, data) {
-    const normalize = value => value.trim().replace(/_/g, ' ').toLowerCase();
-    const lookup = new Map(Object.keys(data).map(name => [normalize(name), name]));
+  function candidatesFromRows(rows, mon) {
     const candidates = [], errors = [];
-    text.split(/\r?\n/).forEach((line, index) => {
-      if (!line.trim()) return;
-      const match = line.trim().match(/^(?:(.+?)[,;\t:]\s*)?(\d+)\s*[,;/_\t -]\s*(\d+)\s*[,;/_\t -]\s*(\d+)(?:\s*[,;\t]\s*(.+))?$/);
-      if (!match) { errors.push('Line ' + (index + 1) + ': use Pokémon, Attack, Defense, Stamina, optional label.'); return; }
-      const mon = match[1] ? lookup.get(normalize(match[1])) : defaultMon;
-      const ivs = match.slice(2, 5).map(Number);
-      if (!mon) { errors.push('Line ' + (index + 1) + ': choose or enter a valid Pokémon.'); return; }
-      if (ivs.some(value => value > 15)) { errors.push('Line ' + (index + 1) + ': IVs must be integers from 0 to 15.'); return; }
-      candidates.push({key: index + 1, mon, ivs, label: match[5] || 'Entry ' + (index + 1)});
+    if (!rows.length) errors.push('Add at least one IV entry.');
+    rows.forEach((values, index) => {
+      if (values.length !== 3 || values.some(value => String(value).trim() === '' ||
+          !Number.isInteger(Number(value)) || Number(value) < 0 || Number(value) > 15)) {
+        errors.push('Entry ' + (index + 1) + ': enter three integer IVs from 0 to 15.');
+      } else candidates.push({key: index + 1, mon, ivs: values.map(Number)});
     });
     return {candidates, errors};
   }
@@ -66,5 +60,5 @@
       return species || ((a.result && b.result) ? a.result.rank - b.result.rank : 0) || a.candidate.key - b.candidate.key;
     });
   }
-  root.FamilyRanks = {leagues, family, eligible, summarize, parseCandidates, markBest, sortResults};
+  root.FamilyRanks = {leagues, family, eligible, summarize, candidatesFromRows, markBest, sortResults};
 })(typeof self !== 'undefined' ? self : globalThis);
