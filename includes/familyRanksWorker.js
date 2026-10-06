@@ -25,8 +25,10 @@ self.onmessage = function (event) {
       ratings.set(ivs.join('/'), {rank, total: ranks.numRanks, level: entry.L, cp: entry.CP,
         ivs, perfection: 100 * Number(key.split('.')[0]) / bestProduct});
     }
-    const results = candidates.map(candidate => ({key: candidate.key,
-      result: candidate.ivs ? ratings.get(candidate.ivs.join('/')) || null : FamilyRanks.summarize(ranks, null)}));
+    const results = candidates.map(candidate => {
+      const result = candidate.ivs ? ratings.get(candidate.ivs.join('/')) || null : FamilyRanks.summarize(ranks, null);
+      return {key: candidate.key, ...FamilyRanks.checkCurrentLevel(candidate, result, pokeListObj, cpm)};
+    });
     self.postMessage({id, mon, league, results});
   } catch (error) {
     self.postMessage({id, mon, league, error: error.message});

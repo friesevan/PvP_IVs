@@ -2,6 +2,17 @@
 
 ## Family and league comparison
 
+Each IV entry also accepts optional **Current CP**. Enter the selected base
+form’s CP without its Best Buddy boost. Its inferred level appears immediately
+beside the inputs; invalid CP shows a warning. CP rounding can imply several
+levels, in which case the full range is shown. Comparison results exclude any
+family/league option whose maximum level is below the Pokémon’s current level.
+Ambiguous fits and invalid CP are excluded from recommendations. Blank CP leaves
+current level unchecked. CP is included in exported searches and shareable URLs.
+Duplicate IV spreads still count as one Pokémon; conflicting CP for the same
+spread must be corrected before comparison.
+
+
 Open `familyRanks.html` (also linked from the single-Pokémon page). Select one
 base Pokémon such as Eevee, then enter each Pokémon's Attack/Defense/Stamina IVs
 in a separate row. Use **+ Add IV entry** or **Remove** to manage candidates.

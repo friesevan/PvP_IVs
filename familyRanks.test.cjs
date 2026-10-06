@@ -117,6 +117,17 @@ test('batch worker ratings agree with the existing calculator, preserve keys and
   assert.equal(messages[0].results[2].result.rank, expected.rank);
   assert.equal(messages[1].id,2);
   assert.equal(vm.runInContext('cache.size',worker),1);
+  const cp = core.cpAtLevel(data.Eevee.split(',').slice(1, 4).map(Number), [1,15,15], 30, context.cpm);
+  worker.onmessage({data:{...request, mon:'Vaporeon', candidates:[
+    {key:1,mon:'Eevee',ivs:[1,15,15],currentCp:cp},
+    {key:2,mon:'Eevee',ivs:[2,15,15],currentCp:1000000}
+  ]}});
+  assert.equal(messages.at(-1).results[0].result, null);
+  assert.match(messages.at(-1).results[0].error, /powering down/);
+  assert.equal(messages.at(-1).results[0].levels[0], 30);
+  assert.equal(messages.at(-1).results[1].result, null);
+  assert.match(messages.at(-1).results[1].error, /does not match/);
+
   const example = core.candidatesFromRows([[1,15,15],[2,15,15]], 'Eevee').candidates;
   const start = messages.length;
   for (const evo of core.family('Eevee', data)) for (const [league] of core.leagues) {
@@ -206,4 +217,48 @@ test('gradient score maps best, midpoint and worst ranks to a stable percentile'
   assert.equal(core.percentile({rank:4096,total:4096}),0);
   assert.equal(core.percentile({rank:51,total:101}),50);
   assert.equal(core.percentile({rank:1,total:1}),100);
+});
+
+test('current CP infers base level and rejects evolved cup fits requiring powering down', () => {
+  const ivs = [1, 15, 15];
+  const cp = core.cpAtLevel(data.Eevee.split(',').slice(1, 4).map(Number), ivs, 30, context.cpm);
+  const candidate = {key: 1, mon: 'Eevee', ivs, currentCp: cp};
+  assert.equal(core.inferLevels(candidate, data, context.cpm).levels.join(','), '30');
+  assert.ok(cp < 1500);
+  const great = core.summarize(ranks('Vaporeon', '1500'), ivs);
+  assert.ok(great.level < 30);
+  const blocked = core.checkCurrentLevel(candidate, great, data, context.cpm);
+  assert.equal(blocked.result, null);
+  assert.match(blocked.error, /powering down/);
+  const master = core.summarize(ranks('Vaporeon', 'ML'), ivs);
+  assert.equal(core.checkCurrentLevel(candidate, master, data, context.cpm).result, master);
+  assert.ok(core.checkCurrentLevel(candidate, {...master, level: 30}, data, context.cpm).result);
+  assert.equal(core.checkCurrentLevel({...candidate, currentCp: 1000000}, master, data, context.cpm).result, null);
+  assert.equal(core.checkCurrentLevel({...candidate, currentCp: null}, great, data, context.cpm).result, great);
+});
+test('rounded CP exposes all possible levels and uncertain fits are excluded', () => {
+  const candidate = {mon: 'Tiny', ivs: [0, 0, 0], currentCp: 10};
+  const tiny = {Tiny: '1,1,1,1'};
+  const info = core.inferLevels(candidate, tiny, context.cpm);
+  assert.equal(info.levels.length, 99);
+  assert.equal(info.levels[0], 1);
+  assert.equal(info.levels.at(-1), 50);
+  const result = {rank: 1, level: 2};
+  assert.match(core.checkCurrentLevel(candidate, result, tiny, context.cpm).error, /uncertain/);
+  assert.ok(core.checkCurrentLevel(candidate, {...result, level: 50}, tiny, context.cpm).result);
+});
+test('CP inputs validate, preserve known CP through deduplication and reject conflicts', () => {
+  const parsed = core.candidatesFromRows([[1, 15, 15, ''], [1, 15, 15, 500]], 'Eevee');
+  assert.equal(parsed.errors.length, 0);
+  assert.equal(core.uniqueCandidates(parsed.candidates)[0].currentCp, 500);
+  for (const cp of [0, 9, 10.5, 'bad']) assert.ok(core.candidatesFromRows([[1, 15, 15, cp]], 'Eevee').errors.length);
+  assert.match(core.candidatesFromRows([[1, 15, 15, 500], [1, 15, 15, 600]], 'Eevee').errors[0], /conflicting CP/);
+});
+test('saved CP values round-trip and legacy saved searches remain supported', () => {
+  const state = {mon: 'Eevee', ivs: [[1, 15, 15], [2, 15, 15]], cps: [500, null], columns: [['Vaporeon', '1500']], floor: 0, min: 1, max: 50, choices: []};
+  const restored = core.importSearch(core.exportSearch(state), data);
+  assert.equal(JSON.stringify(restored.cps), '[500,null]');
+  for (const cps of [[500], [500, 0], [500, 12.5]]) assert.throws(() => core.importSearch(core.exportSearch({...state, cps}), data), /CP/);
+  const {cps, ...legacy} = state;
+  assert.equal(core.importSearch(core.exportSearch(legacy), data).cps, undefined);
 });

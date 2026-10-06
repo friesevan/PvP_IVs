@@ -6,6 +6,7 @@
   <title>Family & League IV Rankings | PvP IVs</title>
   <link rel="stylesheet" href="includes/familyRanks.css">
   <script defer src="includes/pokeListObj.js"></script>
+  <script defer src="includes/calculate.js"></script>
   <script defer src="includes/familyRanksCore.js"></script>
   <script defer src="includes/familyRanks.js"></script>
 </head>
@@ -22,7 +23,7 @@
       <div id="ivRows"></div>
       <button type="button" id="addIVRow" class="secondary">+ Add IV entry</button>
     </fieldset>
-    <p class="hint">Choose one base Pokémon, then enter each Pokémon’s Attack, Defense, and Stamina IVs in a separate row. All entries use the same evolution family.</p>
+    <p class="hint">Choose one base Pokémon, then enter each Pokémon’s Attack, Defense, and Stamina IVs in a separate row. All entries use the same evolution family. Optional current CP shows the inferred level immediately. Enter the selected base form’s CP without a Best Buddy boost. Blank CP leaves current level unchecked. Impossible or uncertain cup fits are excluded.</p>
     <div id="inputErrors" role="alert"></div>
     <fieldset><legend>Leagues</legend><div id="leagues" class="toggles"></div></fieldset>
     <fieldset><legend>Evolution family</legend><div id="evolutions" class="toggles">Choose a Pokémon to show its family.</div></fieldset>
@@ -44,7 +45,7 @@
       <textarea id="searchString" rows="3" spellcheck="false" placeholder="Export a search here, or paste a previously saved PVPIVS1: string."></textarea>
       <div class="save-actions"><button id="exportSearch" type="button">Export current search</button><button id="copySearch" type="button" class="secondary">Copy string</button><button id="loadSearch" type="button" class="secondary">Load &amp; compare</button></div>
       <p id="saveStatus" role="status" aria-live="polite"></p>
-      <p class="hint">The string includes the base Pokémon, IV entries, visible columns, calculation settings and your locked choices. Save it in any text note.</p>
+      <p class="hint">The string includes the base Pokémon, IV entries and current CP, visible columns, calculation settings and your locked choices. Save it in any text note.</p>
     </details>
   </section>
   <div id="recommendations" aria-live="polite"></div>

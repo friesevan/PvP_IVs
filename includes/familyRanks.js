@@ -16,23 +16,40 @@
   function addIVRow(values = ['', '', '']) {
     const row = document.createElement('div'); row.className = 'iv-entry inputs';
     const number = document.createElement('strong'); number.className = 'entry-number'; row.append(number);
-    for (const [i, stat] of ['Attack', 'Defense', 'Stamina'].entries()) {
-      const label = document.createElement('label'); label.textContent = stat + ' IV';
+    for (const [i, stat] of ['Attack', 'Defense', 'Stamina', 'Current CP'].entries()) {
+      const label = document.createElement('label'); label.textContent = i === 3 ? stat : stat + ' IV';
       const input = document.createElement('input');
-      input.type = 'number'; input.min = '0'; input.max = '15'; input.step = '1';
-      input.required = true; input.placeholder = '0–15'; input.value = values[i] ?? '';
+      input.type = 'number'; input.min = i === 3 ? '10' : '0'; if (i < 3) input.max = '15'; input.step = '1';
+      input.required = i < 3; input.placeholder = i === 3 ? 'Optional' : '0–15'; input.value = values[i] ?? '';
       input.dataset.stat = stat; label.append(input); row.append(label);
     }
     const remove = document.createElement('button'); remove.type = 'button';
     remove.className = 'secondary remove-entry'; remove.textContent = 'Remove';
     remove.addEventListener('click', () => { row.remove(); numberRows(); invalidate(); });
-    row.append(remove); $('ivRows').append(row); numberRows();
+    const level = document.createElement('span'); level.className = 'entry-level'; level.setAttribute('aria-live', 'polite'); row.append(level, remove); $('ivRows').append(row); numberRows(); refreshLevels();
+  }
+  function refreshLevels() {
+    const mon = resolve($('pokemon').value);
+    for (const row of $('ivRows').children) {
+      const values = [...row.querySelectorAll('input')].map(input => input.value);
+      const output = row.querySelector('.entry-level'); output.classList.remove('level-warning');
+      if (!values[3].trim()) { output.textContent = 'Current level not checked'; continue; }
+      if (!mon) { output.textContent = 'Select a base Pokémon to infer level'; continue; }
+      const parsed = FamilyRanks.candidatesFromRows([values], mon);
+      if (parsed.errors.length) { output.textContent = '⚠ ' + parsed.errors[0].replace('Entry 1: ', ''); output.classList.add('level-warning'); continue; }
+      const info = FamilyRanks.inferLevels(parsed.candidates[0], pokeListObj, cpm);
+      output.textContent = info.error ? '⚠ ' + info.error : levelLabel(info.levels);
+      output.classList.toggle('level-warning', !!info.error);
+    }
+  }
+  function levelLabel(levels) {
+    return levels.length === 1 ? 'Current level: ' + levels[0] : 'Possible levels: ' + levels[0] + '–' + levels[levels.length - 1];
   }
   function numberRows() {
     const entries = [...$('ivRows').children];
     entries.forEach((row, i) => {
       row.querySelector('.entry-number').textContent = 'Entry ' + (i + 1);
-      row.querySelectorAll('input').forEach(input => input.setAttribute('aria-label', input.dataset.stat + ' IV entry ' + (i + 1)));
+      row.querySelectorAll('input').forEach(input => input.setAttribute('aria-label', input.dataset.stat + (input.dataset.stat === 'Current CP' ? ' entry ' : ' IV entry ') + (i + 1)));
       const remove = row.querySelector('button'); remove.disabled = entries.length === 1;
       remove.setAttribute('aria-label', 'Remove entry ' + (i + 1));
     });
@@ -116,7 +133,7 @@
     const parsed = FamilyRanks.candidatesFromRows(ivs, mon);
     if (parsed.errors.length) throw new Error(parsed.errors.join(' '));
     const state = {mon, ivs: parsed.candidates.map(item => item.ivs), columns: visibleColumns().map(item => [item.evo, item.league]),
-      floor: Number($('floor').value), min: Number($('min').value), max: Number($('max').value), choices};
+      cps: parsed.candidates.map(item => item.currentCp), floor: Number($('floor').value), min: Number($('min').value), max: Number($('max').value), choices};
     return FamilyRanks.importSearch(FamilyRanks.exportSearch(state), pokeListObj);
   }
   function updateURL() {
@@ -125,13 +142,14 @@
       const query = new URLSearchParams({mon: state.mon, IVs: state.ivs.map(ivs => ivs.join('_')).join(','),
         leagues: selection('leagues').join(','), evos: selection('evolutions').join(','),
         floor: state.floor, min: state.min, max: state.max, cols: JSON.stringify(state.columns)});
+      if (state.cps.some(cp => cp !== null)) query.set('cps', JSON.stringify(state.cps));
       if (choices.length) query.set('choices', JSON.stringify(choices));
       history.replaceState(null, '', '?' + query);
     } catch (_) { /* Empty/unfinished forms have no searchable URL yet. */ }
   }
   function applySearch(state) {
     $('pokemon').value = display(state.mon); syncFamily();
-    $('ivRows').replaceChildren(); state.ivs.forEach(ivs => addIVRow(ivs));
+    $('ivRows').replaceChildren(); state.ivs.forEach((ivs, i) => addIVRow([...ivs, state.cps?.[i] ?? '']));
     for (const id of ['floor', 'min', 'max']) $(id).value = state[id];
     // Restore the exact column selection; broad toggles can still select whole families/leagues.
     $('evolutions').querySelectorAll('input').forEach(input => { input.checked = true; });
@@ -272,7 +290,8 @@
         const spread = document.createElement('strong'); spread.textContent = candidate.ivs.join(' / ');
         const entries = document.createElement('span'); entries.className = 'entry-reference';
         entries.textContent = (candidate.entryKeys.length === 1 ? 'Entry ' : 'Entries ') + candidate.entryKeys.join(', ');
-        ivs.append(spread, entries); tr.append(ivs);
+        const level = document.createElement('span'); level.className = 'entry-reference'; level.textContent = candidate.currentCp == null ? 'Current CP not provided' : candidate.currentCp + ' CP · ' + (candidate.currentLevels?.length ? levelLabel(candidate.currentLevels) : 'Level unavailable');
+        ivs.append(spread, entries, level); tr.append(ivs);
         for (const [, column] of columns) {
           const row = cells.get(JSON.stringify([candidate.key, column.evo, column.league]));
           const cell = tr.insertCell();
@@ -355,10 +374,11 @@
     worker.onmessage = event => {
       const {id, mon, league, results, error} = event.data;
       if (id !== generation) return;
-      const ratings = new Map((results || []).map(item => [item.key, item.result]));
+      const ratings = new Map((results || []).map(item => [item.key, item]));
       for (const row of rows) {
         if (row.evo !== mon || row.league !== league || row.error) continue;
-        row.result = ratings.get(row.candidate.key) || null;
+        const rating = ratings.get(row.candidate.key);
+        row.result = rating?.result || null; row.error = rating?.error; row.candidate.currentLevels = rating?.levels || [];
         if (error) row.error = 'Calculation failed: ' + error;
       }
       pending--;
@@ -380,11 +400,19 @@
     const filters = event.target.closest('#leagues') || event.target.closest('#evolutions');
     if (filters && rows.length && !pending) { syncColumnPicker(); compare(); }
     else { invalidate(!filters); syncFamily(); syncColumnPicker(); }
+    refreshLevels();
   });
   for (const id of ['floor', 'min', 'max']) if (params.has(id)) $(id).value = params.get(id);
   if (params.has('mon')) $('pokemon').value = display(params.get('mon'));
   const savedIVs = params.get('IVs');
-  if (savedIVs) savedIVs.split(',').forEach(spread => addIVRow(spread.split('_')));
+  let savedCPs = [], cpRestoreError = false;
+  try {
+    if (params.has('cps')) {
+      savedCPs = JSON.parse(params.get('cps'));
+      if (!Array.isArray(savedCPs) || savedCPs.length !== (savedIVs || '').split(',').length || savedCPs.some(cp => cp !== null && (!Number.isInteger(cp) || cp < 10))) throw new Error('Invalid CP');
+    }
+  } catch (_) { savedCPs = []; cpRestoreError = true; }
+  if (savedIVs) savedIVs.split(',').forEach((spread, i) => addIVRow([...spread.split('_'), savedCPs[i] ?? '']));
   else addIVRow();
   syncFamily();
   if (params.has('evos')) {
@@ -400,5 +428,7 @@
     if (params.has('choices')) choices = FamilyRanks.importSearch(FamilyRanks.exportSearch({...currentSearch(), choices: JSON.parse(params.get('choices'))}), pokeListObj).choices;
   } catch (_) { choices = []; message('Some saved column or choice settings could not be restored.'); }
   syncColumnPicker(true);
-  if (params.has('mon') && savedIVs) compare();
+  refreshLevels();
+  if (cpRestoreError) message('Saved CP values could not be restored. Re-enter current CP before comparing.');
+  else if (params.has('mon') && savedIVs) compare();
 })();
