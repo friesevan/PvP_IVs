@@ -50,6 +50,23 @@ function filterRoster(request){
   const counts=Object.fromEntries(ids.map(id=>[id,pools(new Pokemon(id,0,battle)).length]));
   self.postMessage({type:'filtered',ids,counts});
 }
+function searchIndex(request){
+  const {data,cp,published,meta}=request;
+  const {gm}=setup(data,cp,published,[]),battle=new Battle();battle.setCP(cp);battle.setCup('all');
+  const metaIds=new Set(meta.map(row=>row.speciesId.replace('_shadow','')));
+  const records=published.map(row=>{
+    const pokemon=createPokemon(row.speciesId,0,battle,row.moveset);
+    pokemon.resetMoves(); // Refresh move-dependent traits after selecting the recommended moveset.
+    const traits=pokemon.generateTraits();
+    const moves=[...pokemon.fastMovePool.map(move=>({...move,kind:'fast'})),...pokemon.chargedMovePool.map(move=>({...move,kind:'charged'})),...pokemon.extraChargedMovePool.map(move=>({...move,kind:'charged'}))];
+    return {id:pokemon.speciesId,name:pokemon.speciesName.toLowerCase(),dex:pokemon.dex,familyId:pokemon.family?.id,
+      nicknames:pokemon.nicknames.map(value=>value.toLowerCase()),types:pokemon.types,tags:pokemon.tags,
+      cost:pokemon.thirdMoveCost,distance:pokemon.buddyDistance,xl:pokemon.needsXLCandy(),hundo:Object.values(pokemon.ivs).every(value=>value===15),
+      meta:metaIds.has(row.speciesId.replace('_shadow','')),traits:[...traits.pros,...traits.cons].map(item=>item.trait.toLowerCase()),
+      moves:moves.map(move=>({id:move.moveId,name:move.name.toLowerCase(),type:move.type,kind:move.kind,legacy:!!move.legacy,elite:!!move.elite}))};
+  });
+  self.postMessage({type:'searchIndex',records});
+}
 function generate(request){
   const {data,cp,published,roster}=request,policy=request.policy||'all',topN=request.topN??10;
   PvPPro.validateRoster(roster,new Set(published.map(row=>row.speciesId)));
@@ -156,4 +173,4 @@ function rankRecords(candidates,baselines,targets,data,battle,cache,phase){
   return {rows,categories,simulations,fallbacks};
 
 }
-self.onmessage=function(event){try{if(event.data.mode==='filter')filterRoster(event.data);else if(event.data.mode==='variants')variants(event.data);else generate(event.data);}catch(error){self.postMessage({type:'error',error:error.message});}};
+self.onmessage=function(event){try{if(event.data.mode==='searchIndex')searchIndex(event.data);else if(event.data.mode==='filter')filterRoster(event.data);else if(event.data.mode==='variants')variants(event.data);else generate(event.data);}catch(error){self.postMessage({type:'error',error:error.message});}};

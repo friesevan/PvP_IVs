@@ -4,6 +4,7 @@
   let data, leagueData, overrides=[], weights=new Map(), custom=null, selected='', variants=[], variantContext='', worker, loading=0, loadedCp=0, page=0, sortKey='score',descending=true;
   let filters=[],filterWorker,filterTimer,filterPending=false,combinationCounts={},selectedKey='';
   let savedRankings=[],activeSaved='',saveBusy=false,sourceRequest=0,generatedSnapshot=null;
+  let searchWorker,searchIndex=null,searchError='';const searchCache=new Map();
   const isCustom=()=>$('proSource').value!=='published';
   const types='bug dark dragon electric fairy fighting fire flying ghost grass ground ice normal poison psychic rock steel water'.split(' ');
   const filterTypes=[['type','Type'],['tag','Tag'],['id','Species'],['dex','Pokédex Number'],['move','Move'],['moveType','Move Type'],['cost','Charged Move Cost'],['distance','Buddy Walk Distance'],['evolution','Evolution']];
@@ -93,13 +94,27 @@
   async function json(path){if(cache.has(path))return cache.get(path);const r=await fetch('includes/pro/data/'+path);if(!r.ok)throw new Error('Unable to load bundled PvPoke data: '+path);const result=await r.json();cache.set(path,result);return result;}
   function stop(){if(worker){worker.terminate();worker=null;} $('proCancel').hidden=true;$('proGenerate').disabled=filterPending||loadedCp!==cp();$('proEvaluate').disabled=filterPending||!selected || loadedCp!==cp();}
   function invalidate(){generatedSnapshot=null;activeSaved='';updateSavedControls();stop();custom=null;variants=[];$('proSource').value='published';$('proSource').querySelector('option[value=custom]').disabled=true;$('proSource').querySelector('option[value=custom]').hidden=true;variantContext='';$('proRunSummary').textContent='';renderVariants();updateSavedControls();if(leagueData)render();status('Roster changed. Generate rankings to apply your selection and weights.');}
+  function prepareSearch(league,request){
+    if(searchWorker){searchWorker.terminate();searchWorker=null;}
+    searchError='';searchIndex=searchCache.get(league)||null;$('proSearchStatus').textContent=searchIndex?'PvPoke search syntax supported.':'Preparing PvPoke search…';
+    if(searchIndex)return;
+    const current=new Worker('includes/pro/worker.js');searchWorker=current;
+    current.onmessage=event=>{if(current!==searchWorker||loading!==request)return;const result=event.data;current.terminate();searchWorker=null;
+      if(result.type==='error'){searchError='Search unavailable: '+result.error;$('proSearchStatus').textContent=searchError;render();return;}
+      searchIndex=new Map(result.records.map(record=>[record.id,record]));searchCache.set(league,searchIndex);$('proSearchStatus').textContent='PvPoke search syntax supported.';render();
+    };
+    current.onerror=event=>{current.terminate();searchWorker=null;searchError='Search unavailable: '+event.message;$('proSearchStatus').textContent=searchError;render();};
+    current.postMessage({mode:'searchIndex',data,cp:league,published:leagueData.overall,meta:leagueMeta});
+  }
+  let leagueMeta=[];
   async function load(){
+    if(searchWorker){searchWorker.terminate();searchWorker=null;}searchIndex=null;
     generatedSnapshot=null;activeSaved='';updateSavedControls();
     clearTimeout(filterTimer);if(filterWorker){filterWorker.terminate();filterWorker=null;}filterPending=false;selectedKey='';loadedCp=0;selected='';variants=[];leagueData=null;weights.clear();stop();$('proRankings').textContent='Loading league…';$('proDetail').textContent='Loading Pokémon details…';renderVariants();const league=cp(),request=++loading;status('Loading published PvPoke rankings…');$('proGenerate').disabled=true;
     try{
-      const result=await Promise.all([data?Promise.resolve(data):json('gamemaster.json'),json('league-'+league+'.json'),json('overrides-'+league+'.json')]);
+      const result=await Promise.all([data?Promise.resolve(data):json('gamemaster.json'),json('league-'+league+'.json'),json('overrides-'+league+'.json'),json('meta-'+league+'.json')]);
       if(loading!==request)return;
-      [data,leagueData,overrides]=result;loadedCp=league;custom=null;variants=[];page=0;selected='';$('proSource').value='published';$('proSource').querySelector('option[value=custom]').disabled=true;$('proSource').querySelector('option[value=custom]').hidden=true;
+      [data,leagueData,overrides,leagueMeta]=result;loadedCp=league;custom=null;variants=[];page=0;selected='';$('proSource').value='published';$('proSource').querySelector('option[value=custom]').disabled=true;$('proSource').querySelector('option[value=custom]').hidden=true;
       weights=new Map(leagueData.overall.map((row,i)=>[row.speciesId,{accepted:i<30,weight:1}]));
       $('proCategory').replaceChildren(...Object.keys(leagueData).map(category=>{const option=el('option',category[0].toUpperCase()+category.slice(1));option.value=category;return option;}));
       filters=[];
@@ -108,7 +123,8 @@
       $('proLabPokemon').replaceChildren(...leagueData.overall.map(row=>{const option=el('option',row.speciesName);option.value=row.speciesId;return option;}));
       $('proSpeciesIds').replaceChildren(...leagueData.overall.map(row=>{const option=el('option',row.speciesName);option.value=row.speciesId;return option;}));
       $('proMoveIds').replaceChildren(...data.moves.map(row=>{const option=el('option',row.name);option.value=row.moveId;return option;}));
-      renderFilters();renderRoster();render();scheduleFilter();status(leagueName()+' rankings loaded.');
+      $('proSearchTraits').textContent=[...data.pokemonTraits.pros,...data.pokemonTraits.cons].join(' · ');
+      prepareSearch(league,request);renderFilters();renderRoster();render();scheduleFilter();status(leagueName()+' rankings loaded.');
       $('proGenerate').disabled=filterPending;
     }catch(error){if(loading===request)status(error.message);}
   }
@@ -183,7 +199,8 @@
     if(!selected || !list.some(row=>row.speciesId===selected))selected=list[0].speciesId;
     if(!list.some(row=>rowKey(row)===selectedKey))selectedKey=rowKey(list.find(row=>row.speciesId===selected)||list[0]);
     const rankMap=new Map(rows().map((row,i)=>[rowKey(row),i+1]));
-    const filtered=list.filter(row=>[row.speciesName,...(data.pokemon.find(p=>p.speciesId===row.speciesId)?.types || []),...(row.moveset || []).map(move)].join(' ').toLowerCase().includes(query));
+    const matches=PvPProSearch.compile(query,data);
+    const filtered=query?(searchIndex?list.filter(row=>matches(row,searchIndex)):[]):list;
     filtered.sort((a,b)=>(sortKey==='score'?a.score-b.score:a.speciesName.localeCompare(b.speciesName))*(descending?-1:1));
     const pages=Math.max(1,Math.ceil(filtered.length/25));page=Math.max(0,Math.min(page,pages-1));
     const table=el('table',null,'pro-ranking-table');table.append(el('caption',(activeSaved?(savedRankings.find(item=>item.id===activeSaved)?.name||'Saved'):(isCustom()?'Generated':leagueName()))+' · '+$('proCategory').selectedOptions[0].textContent+(isCustom()?' · '+$('proLeague').selectedOptions[0].textContent:'')));
@@ -196,7 +213,7 @@
       tr.insertCell().append(button);const score=tr.insertCell();score.textContent=row.score.toFixed(1);score.className='rated-cell';score.style.setProperty('--rating-hue',Math.max(0,Math.min(130,row.score*1.3)));
       const moves=tr.insertCell();moves.append(el('span',(row.moveset||[]).map(move).join(' · ')));if(row.cycleProjection!=null)moves.append(el('p','Cycle '+row.cycleProjection.toFixed(2)+' damage / turn'+(row.scoutScore!=null?' · Scout '+row.scoutScore.toFixed(1)+'/100':''),'hint'));
     }
-    if(!filtered.length){const cell=body.insertRow().insertCell();cell.colSpan=4;cell.textContent='No Pokémon match this search.';}
+    if(!filtered.length){const cell=body.insertRow().insertCell();cell.colSpan=4;cell.textContent=query&&!searchIndex?(searchError||'Preparing search data…'):'No Pokémon match this search.';}
     $('proRankings').replaceChildren(table);$('proPagination').textContent=filtered.length+' Pokémon · Page '+(page+1)+' / '+pages;$('proPrev').disabled=page===0;$('proNext').disabled=page===pages-1;
     if(!selected || !list.some(row=>row.speciesId===selected))selected=list[0].speciesId;
     renderDetail(list.find(row=>rowKey(row)===selectedKey));
