@@ -55,7 +55,7 @@
         for(let i=0;i<Math.max(removed.length,added.length);i++) changes.push((removed[i] ? name(removed[i]) : '(added)')+' → '+(added[i] ? name(added[i]) : '(removed)'));
       }
       const shadow = id.includes('shadow') || (pokemon.tags || []).includes('shadow');
-      const level = base.defaultIVs?.['cp'+cap]?.[0] ?? null;
+      const level = pokemon.defaultIVs?.['cp'+cap]?.[0] ?? base.defaultIVs?.['cp'+cap]?.[0] ?? null;
       const xl = cap === '10000' || level == null ? null : level <= 40 ? 0 : xlTable[shadow?'shadow':'non_shadow']?.[String(level)] ?? null;
       const stats = pokemon.baseStats || {};
       const oldScore = Number.isFinite(before?.score) ? before.score : null, score = Number.isFinite(after?.score) ? after.score : null;

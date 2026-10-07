@@ -71,3 +71,9 @@ test('historical cooldown schema normalizes to turns without false nerfs',()=>{
  const charged=[{moveId:'CHARGE',power:50,energy:35,cooldown:500}];
  assert.equal(moveUpdates(charged,[{...charged[0],turns:1}]).size,0);
 });
+
+test('shadow level uses its own recommended IVs rather than normal form defaults',()=>{
+ const base=pokemon('test');const shadow={...pokemon('test_shadow'),defaultIVs:{cp1500:[40,15,15,15]}};
+ const data=snapshot([rank('test_shadow',90)],[base,shadow]);const report=buildReport(data,data,'1500',xl);
+ assert.equal(report.rows[0].Level,40);assert.equal(report.rows[0].XL,0);
+});
