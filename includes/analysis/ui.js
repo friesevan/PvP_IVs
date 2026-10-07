@@ -9,20 +9,22 @@
   const typeColumns=['Type','Compared','New','Removed','Old Score','Score','Difference','Update'];
   const visible = new Set(pokemonColumns.filter(key=>!['Attack','Defense','Stamina','Bulk','Stat Product','Shadow'].includes(key)));
   function element(tag,text,className) {const node=document.createElement(tag); if(text!=null)node.textContent=text;if(className)node.className=className;return node;}
+  const appTabs=['iv','analysis','pro'];
   function appTab(which,replace=false) {
-    const analysis=which==='analysis'; $('ivPanel').hidden=analysis; $('analysisPanel').hidden=!analysis;
-    $('ivTab').setAttribute('aria-selected',String(!analysis));$('analysisTab').setAttribute('aria-selected',String(analysis));
-    $('ivTab').tabIndex=analysis?-1:0;$('analysisTab').tabIndex=analysis?0:-1;
-    $('appTitle').textContent=analysis?'PvPoke Analysis':'PvP IV Pro'; document.title=analysis?'PvPoke Analysis | PvP IV Pro':'PvP IV Pro';
-    $('appSubtitle').textContent=analysis?'Based on PvPokeAnalysis · Data from PvPoke':'Modification of PvP IVs';
-    $('appSubtitle').href=analysis?'https://github.com/friesevan/PvPokeAnalysis':'https://pvpivs.com/';
-    $('appIntro').textContent=analysis?'Explore ranking changes across updates, branches and cups.':'Compare your Pokémon. Plan your best evolutions.';
-    if(analysis && !optionsLoaded) loadOptions();
-    if(replace){const url=new URL(location.href);if(analysis)url.searchParams.set('app','analysis');else url.searchParams.delete('app');history.replaceState(null,'',url);}
+    if(!appTabs.includes(which))which='iv';
+    for(const name of appTabs){$(name+'Panel').hidden=name!==which;$(name+'Tab').setAttribute('aria-selected',String(name===which));$(name+'Tab').tabIndex=name===which?0:-1;}
+    const titles={iv:'PvP IV Pro',analysis:'PvPoke Analysis',pro:'PvPoke Pro'};
+    $('appTitle').textContent=titles[which];document.title=titles[which];
+    $('appSubtitle').textContent=which==='iv'?'Modification of PvP IVs':which==='analysis'?'Based on PvPokeAnalysis · Data from PvPoke':'Powered by PvPoke';
+    $('appSubtitle').href=which==='iv'?'https://pvpivs.com/':which==='analysis'?'https://github.com/friesevan/PvPokeAnalysis':'https://pvpoke.com/';
+    $('appIntro').textContent=which==='iv'?'Compare your Pokémon. Plan your best evolutions.':which==='analysis'?'Explore ranking changes across updates, branches and cups.':'Explore the meta. Build your roster. Test every moveset.';
+    if(which==='analysis' && !optionsLoaded)loadOptions();
+    if(replace){const url=new URL(location.href);if(which==='iv')url.searchParams.delete('app');else url.searchParams.set('app',which);history.replaceState(null,'',url);}
+    document.dispatchEvent(new CustomEvent('pvp-tab-change',{detail:which}));
   }
-  $('ivTab').addEventListener('click',()=>appTab('iv',true));$('analysisTab').addEventListener('click',()=>appTab('analysis',true));
-  $('appTabs').addEventListener('keydown',event=>{if(!['ArrowLeft','ArrowRight','Home','End'].includes(event.key))return;event.preventDefault();const next=event.key==='Home'?'iv':event.key==='End'?'analysis':$('analysisPanel').hidden?'analysis':'iv';appTab(next,true);$(next==='iv'?'ivTab':'analysisTab').focus();});
-  appTab(new URLSearchParams(location.search).get('app')==='analysis'?'analysis':'iv');
+  for(const name of appTabs)$(name+'Tab').addEventListener('click',()=>appTab(name,true));
+  $('appTabs').addEventListener('keydown',event=>{if(!['ArrowLeft','ArrowRight','Home','End'].includes(event.key))return;event.preventDefault();const active=appTabs.findIndex(name=>!$(name+'Panel').hidden);const index=event.key==='Home'?0:event.key==='End'?2:(active+(event.key==='ArrowRight'?1:2))%3;appTab(appTabs[index],true);$(appTabs[index]+'Tab').focus();});
+  appTab(new URLSearchParams(location.search).get('app') || 'iv');
   const earlier=new Date();earlier.setUTCDate(earlier.getUTCDate()-90);$('previousDate').value=earlier.toISOString().slice(0,10);
   function snapshot(prefix){return {branch:$(prefix+'Branch').value.trim(),cup:$(prefix+'Cup').value.trim(),date:$(prefix+'Date').value};}
   function validation(value) {

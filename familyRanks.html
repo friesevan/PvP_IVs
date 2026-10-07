@@ -12,6 +12,8 @@
   <script defer src="includes/analysis/core.js"></script>
   <script defer src="includes/analysis/data.js"></script>
   <script defer src="includes/analysis/ui.js"></script>
+  <script defer src="includes/pro/core.js"></script>
+  <script defer src="includes/pro/ui.js"></script>
 </head>
 <body>
 <main>
@@ -23,6 +25,7 @@
   <nav id="appTabs" class="app-tabs" role="tablist" aria-label="Tools">
     <button id="ivTab" type="button" role="tab" aria-selected="true" aria-controls="ivPanel">PvPIV Pro</button>
     <button id="analysisTab" type="button" role="tab" aria-selected="false" aria-controls="analysisPanel" tabindex="-1">PvPoke Analysis</button>
+    <button id="proTab" type="button" role="tab" aria-selected="false" aria-controls="proPanel" tabindex="-1">PvPoke Pro</button>
   </nav>
   <section id="ivPanel" role="tabpanel" aria-labelledby="ivTab">
   <form id="comparisonForm">
@@ -102,6 +105,33 @@
         <div class="analysis-pagination"><span id="analysisCount" role="status"></span><button type="button" id="analysisPreviousPage" class="secondary">Previous</button><button type="button" id="analysisNextPage" class="secondary">Next</button></div>
       </div>
     </section>
+  </section>
+  <section id="proPanel" role="tabpanel" aria-labelledby="proTab" hidden>
+    <div class="pro-toolbar">
+      <label>League<select id="proLeague"><option value="500">Little · 500 CP</option><option value="1500" selected>Great · 1,500 CP</option><option value="2500">Ultra · 2,500 CP</option><option value="10000">Master · Unlimited</option></select></label>
+      <label>Rankings<select id="proSource"><option value="published">Published PvPoke</option><option value="custom" disabled>Generated custom roster</option></select></label>
+      <label>Category<select id="proCategory"><option value="overall">Overall</option></select></label>
+      <label class="pro-search">Search Pokémon<input id="proSearch" type="search" placeholder="Name, type or move…"></label>
+    </div>
+    <p class="hint">Published rankings are the exact open-league data bundled from <a href="https://github.com/pvpoke/pvpoke/tree/f627e89e53c0c7b903fff097df7a0ad0ac95decc" target="_blank" rel="noopener">PvPoke · f627e89</a>, including editor adjustments. This is a pinned snapshot, not a live feed. Select a Pokémon to explore its moves, key wins and counters.</p>
+    <details class="pro-roster-card"><summary>Custom ranking roster &amp; matchup weights</summary>
+      <p class="hint">The top 30 are selected initially. Higher weights increase an opponent’s influence. Generate runs PvPoke’s original category and overall rankers locally, with published movesets held fixed and five battle scenarios. Custom overall scores omit editor adjustments and will differ from the published list. Larger rosters take longer; you can cancel at any time.</p>
+      <div class="pro-toolbar"><label>Find Pokémon<input id="proRosterSearch" type="search" placeholder="Filter roster…"></label><label>Top count<input id="proTopCount" type="number" min="2" value="30"></label></div>
+      <div class="save-actions"><button id="proTop" type="button" class="secondary">Accept top N</button><button id="proAll" type="button" class="secondary">Accept all</button><button id="proNone" type="button" class="secondary">Clear roster</button><button id="proUniform" type="button" class="secondary">Equal weights</button><button id="proPublishedWeights" type="button" class="secondary">Published weights</button></div>
+      <p id="proRosterCount" class="hint"></p><div id="proRoster" class="pro-roster" aria-label="Accepted Pokémon and weights"></div>
+    </details>
+    <div class="save-actions"><button id="proGenerate" type="button" disabled>Generate custom rankings</button><button id="proCancel" type="button" class="secondary" hidden>Cancel calculation</button></div>
+    <p id="proStatus" role="status" aria-live="polite">Open this tab to load rankings.</p><p id="proGeneratedContext" class="hint" hidden></p>
+    <div class="pro-layout">
+      <section class="pro-rank-card" aria-label="League rankings"><div id="proRankings" class="table-scroll" tabindex="0"></div><div class="analysis-pagination"><span id="proPagination"></span><button id="proPrev" type="button" class="secondary">Previous</button><button id="proNext" type="button" class="secondary">Next</button></div></section>
+      <aside class="pro-detail-card"><div id="proDetail"><h3>Pokémon details</h3><p>Select a Pokémon in the rankings.</p></div></aside>
+    </div>
+    <section class="pro-lab">
+      <h2>Moveset lab</h2><p class="hint">Evaluate every legal move combination for the selected Pokémon against your accepted weighted roster. Opponents use published movesets and PvPoke’s default IVs. This uses equal shields, zero starting energy and weighted mean Battle Rating (0–1000); it is a separate comparison from the five-scenario overall ranking. Elite TM and legacy moves are included.</p>
+      <div class="pro-toolbar"><label>Shields per side<select id="proShields"><option value="0">0</option><option value="1" selected>1</option><option value="2">2</option></select></label><label>Maximum combinations<input id="proLimit" type="number" min="1" max="10000" value="500"></label><label>Within % of best<input id="proThreshold" type="number" min="0" max="100" value="10" step="0.5"></label><label class="pro-check"><input id="proBestOnly" type="checkbox" checked> Best moveset only (include ties)</label></div>
+      <button id="proEvaluate" type="button" disabled>Evaluate selected Pokémon’s movesets</button><p id="proVariantContext" class="hint"></p><div id="proVariants" class="table-scroll" tabindex="0">Select a Pokémon to begin.</div>
+    </section>
+    <p class="hint">Powered by <a href="https://pvpoke.com/rankings/" target="_blank" rel="noopener">PvPoke</a> · <a href="includes/pro/vendor/LICENSE">MIT license</a>. Simulations estimate performance under fixed assumptions; actual play varies.</p>
   </section>
 </main>
 </body>

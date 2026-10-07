@@ -1,4 +1,4 @@
-# PvP IV Pro + PvPoke Analysis
+# PvP IV Pro + PvPoke Analysis + PvPoke Pro
 
 A modification of [PvP IVs](https://pvpivs.com/) for comparing a base Pokémon’s
 IV spreads across its family and leagues, and planning evolutions.
@@ -249,3 +249,22 @@ League has no XL estimate in the original report. Move formatting preserves the
 spreadsheet's colors and new recommendation markers, while also recognizing
 fast-move turn changes and flagging buff/debuff mechanic changes as reworks.
 Tests: `node --test familyRanks.test.cjs analysis.test.cjs`.
+
+
+## PvPoke Pro tab
+
+Open `familyRanks.html?app=pro` (or the hosted site's `?app=pro`). No server-side compute or API key is needed. The new tab provides Little, Great, Ultra and Master open-league rankings, category selection, sorting/search, and Pokémon details with typing, recommended moves, stats, key wins, counters, and move pools.
+
+Published rankings and gamemaster are bundled verbatim in meaning from PvPoke commit `f627e89e53c0c7b903fff097df7a0ad0ac95decc`. They reproduce that snapshot's published numbers, including editor adjustments; they do not automatically track changes on pvpoke.com. Category files and overrides use the same commit. Upstream sources are MIT licensed; see `includes/pro/vendor/LICENSE` and `SOURCE.md`.
+
+Custom generation:
+
+1. Expand **Custom ranking roster & matchup weights**. Accept top N, all, or individual Pokémon and set positive matchup weights (up to 1000). The top 30 are initially accepted, using published overrides' weights where provided.
+2. **Generate custom rankings** executes the original battle engine, five category ranking scenarios, iterative weighted category scoring and overall/consistency calculation in a Web Worker. Published movesets are held fixed. Custom overall scoring omits editor adjustments, so custom scores should not be expected to match the published full-roster list.
+3. Switch between published and generated results or select a category. Changing league or roster invalidates generated results. Cancel terminates the worker immediately.
+
+The **Moveset lab** evaluates all fast + unordered charged-move pairs for the selected Pokémon (and extra charged moves for forms supported by the engine), including available Elite TM and legacy moves. Opponents use published movesets, default IVs, zero starting energy and the selected equal shields. Its score is weighted mean Battle Rating, not PvPoke overall score. Self matchups are excluded. Toggle best-only (including ties) or all variants within a relative percent of the best rating; use 100% to show every evaluated combination. The limit prevents an unexpectedly large run rather than silently truncating results. This version evaluates alternatives for one selected species; it does not globally re-rank every species/moveset simultaneously.
+
+Adapter code: `includes/pro/worker.js`; testable combination/threshold/validation functions: `includes/pro/core.js`; interface: `includes/pro/ui.js`. Vendor files are copied unchanged from upstream. Future data refreshes must update gamemaster, all category/overall bundles, overrides, vendor sources and the pinned commit together.
+
+Validation: `node --test familyRanks.test.cjs analysis.test.cjs pro.test.cjs` runs existing regression checks plus actual engine generation, weight sensitivity, legal combination enumeration, filtering and four-league data coverage.
