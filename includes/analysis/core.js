@@ -11,7 +11,9 @@
       if (!before) { result.set(move.moveId, {kind:'new', details:'New to the game data'}); continue; }
       let buff = false, nerf = false; const details = [];
       for (const [field, direction] of [['power',1],['energyGain',1],['energy',-1],['turns',-1]]) {
-        const from = before[field] ?? 0, to = move[field] ?? 0;
+        const from = field === 'turns' ? before.turns ?? (before.cooldown != null ? before.cooldown / 500 : null) : before[field] ?? 0;
+        const to = field === 'turns' ? move.turns ?? (move.cooldown != null ? move.cooldown / 500 : null) : move[field] ?? 0;
+        if (from == null || to == null) continue;
         if (from === to) continue;
         details.push(field + ': ' + from + ' → ' + to);
         if ((to-from)*direction > 0) buff = true; else nerf = true;

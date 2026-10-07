@@ -62,3 +62,12 @@ test('API rate limits and empty commit histories report actionable errors',async
  const limited=dataContext(async()=>({status:403,ok:false,headers:{get:key=>key==='x-ratelimit-remaining'?'0':null}}));await assert.rejects(limited.resolveSnapshot({branch:'master'}),/rate limit/);
  const empty=dataContext(async()=>({ok:true,json:async()=>[]}));await assert.rejects(empty.resolveSnapshot({branch:'master',date:'1900-01-01'}),/No commits/);
 });
+
+test('historical cooldown schema normalizes to turns without false nerfs',()=>{
+ const historical=[{moveId:'FAST',power:4,energyGain:9,cooldown:1000}];
+ const current=[{...historical[0],turns:2}];
+ assert.equal(moveUpdates(historical,current).size,0);
+ assert.equal(moveUpdates(historical,[{...current[0],turns:1}]).get('FAST').kind,'buff');
+ const charged=[{moveId:'CHARGE',power:50,energy:35,cooldown:500}];
+ assert.equal(moveUpdates(charged,[{...charged[0],turns:1}]).size,0);
+});
