@@ -268,3 +268,5 @@ The **Moveset lab** evaluates all fast + unordered charged-move pairs for the se
 Adapter code: `includes/pro/worker.js`; testable combination/threshold/validation functions: `includes/pro/core.js`; interface: `includes/pro/ui.js`. Vendor files are copied unchanged from upstream. Future data refreshes must update gamemaster, all category/overall bundles, overrides, vendor sources and the pinned commit together.
 
 Validation: `node --test familyRanks.test.cjs analysis.test.cjs pro.test.cjs` runs existing regression checks plus actual engine generation, weight sensitivity, legal combination enumeration, filtering and four-league data coverage.
+
+The third tab’s info icon opens its [ranking logic README](includes/pro/README.md), with an HTML reader at `includes/pro/README.html`. Rebuild the reader after editing Markdown with `python3 scripts/build-pro-readme.py`.
