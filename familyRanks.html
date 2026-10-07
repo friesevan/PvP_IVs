@@ -13,6 +13,7 @@
   <script defer src="includes/analysis/data.js"></script>
   <script defer src="includes/analysis/ui.js"></script>
   <script defer src="includes/pro/core.js"></script>
+  <script defer src="includes/pro/saved.js"></script>
   <script defer src="includes/pro/ui.js"></script>
 </head>
 <body>
@@ -133,6 +134,11 @@
     <p id="proStatus" role="status" aria-live="polite">Open this tab to load rankings.</p>
     <section id="proRankPanel" role="tabpanel" aria-labelledby="proRankTab">
     <div class="save-actions"><button id="proGenerate" type="button" disabled>Generate custom rankings</button></div>
+<div class="pro-saved-controls">
+      <label>Ranking name<input id="proSavedName" type="text" maxlength="120" placeholder="Name your custom rankings" autocomplete="off"></label>
+      <div class="save-actions"><button id="proSaveRanking" type="button" disabled>Save rankings</button><button id="proRenameRanking" type="button" class="secondary" hidden>Rename</button><button id="proDeleteRanking" type="button" class="secondary" hidden>Delete saved ranking</button></div>
+      <p id="proSavedStatus" class="hint" role="status">Saved in this browser on this device.</p>
+    </div>
 <p id="proGeneratedContext" class="hint" hidden></p>
     <label class="pro-best-filter"><input id="proRankBestOnly" type="checkbox"> Show best moveset per Pokémon only</label><div id="proRunSummary" class="hint"></div>
     <div class="pro-layout">

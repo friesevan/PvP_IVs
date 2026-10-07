@@ -285,3 +285,12 @@ Exhaustive evaluation used 291,200 battles. The N=5 selector used 118,480 includ
 [Detailed benchmark data](benchmark-report.json) contains every case's cheap-proxy rank, per-league screening outcomes, misses and battle counts. Reproduce a full comparison with `node scripts/benchmark-pro.cjs` from the repository; it writes `work/pro-benchmark.json` by default and may take several minutes. It evaluates N=1, 3, 5 and 10 in both bands.
 
 This is evidence of useful screening reliability, not proof of universal optimality. A different roster, skewed weights, unusual forms, IVs, buffs or future move updates can change performance. The benchmark's best is defined by this app's exhaustive simulation/scoring model, not a universal real-play best. Use N=10 as the tested cautious default; use All when a guaranteed exhaustive comparison matters.
+
+
+## 17. Saved custom rankings
+
+After generating custom rankings, enter a ranking name and select **Save rankings**. Saved entries appear in the **Rankings** dropdown with their league. Selecting an entry restores its calculated categories, movesets, scores, Pokémon details, matchups, and run summary without simulating again. Selecting a ranking from another league switches the league automatically.
+
+To rename a saved entry, select it, edit **Ranking name**, then select **Rename**. **Save a copy** creates a separate snapshot. **Delete saved ranking** removes the stored copy while leaving the displayed results available to save again. Editing the roster starts a new calculation; it does not change stored snapshots.
+
+Snapshots are stored in IndexedDB in the current browser on the current device and site origin. They survive reloads but do not sync to other devices or visitors. Clearing site data removes them. Storage failures are reported next to the save controls.

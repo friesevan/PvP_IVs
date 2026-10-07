@@ -227,3 +227,8 @@ summary { font-weight: 600; }
 #proSubTabs [aria-selected=false] { background:var(--panel);color:var(--muted);border:1px solid var(--line); }
 #proLabPanel>label { display:flex;flex-direction:column;gap:6px;max-width:400px; }
 @media(prefers-color-scheme:dark){#proSubTabs [aria-selected=true]{color:#131e2b;}}
+
+.pro-saved-controls { margin: 1rem 0; padding: 1rem; border: 1px solid var(--border, #dbe3ed); border-radius: 12px; background: var(--surface, #fff); }
+.pro-saved-controls > label { display: grid; gap: .4rem; max-width: 36rem; font-weight: 600; }
+.pro-saved-controls input { width: 100%; box-sizing: border-box; }
+.pro-saved-controls .save-actions { margin-top: .75rem; flex-wrap: wrap; }
