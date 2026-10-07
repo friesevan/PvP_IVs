@@ -207,3 +207,23 @@ summary { font-weight: 600; }
 .pro-docs pre code { white-space:pre;overflow-wrap:normal; }
 .pro-docs table { width:100%;font-size:14px; }
 .pro-docs td,.pro-docs th { white-space:normal;padding:12px;vertical-align:top; }
+.pro-rule-heading { display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:16px; }
+.pro-rule-heading h3 { margin:0; }
+.pro-rule-heading button { margin:0; }
+.pro-filter-row { background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:14px;margin:12px 0; }
+.pro-filter-controls { display:flex;gap:12px;align-items:center;justify-content:space-between;margin-bottom:12px; }
+.pro-filter-controls select { flex:1; }
+.pro-filter-controls button { margin:0; }
+.pro-filter-values { display:flex;flex-wrap:wrap;gap:8px 16px; }
+.pro-filter-values label { display:flex;gap:6px;align-items:center;font-size:14px; }
+.pro-filter-values input[type=text] { width:100%; }
+.pro-filter-row p { margin:6px 0; }
+.pro-roster-labels { font-size:13px;font-weight:600;color:var(--muted);margin:8px 0; }
+.pro-roster-row>span { flex:1;min-width:0;font-size:14px; }
+.pro-roster-row input[type=number] { width:70px; }
+.pro-best-filter { display:flex;align-items:center;gap:8px;margin:16px 0; }
+#proSubTabs button { margin-top:0; }
+#proSubTabs [aria-selected=true] { background:var(--accent);color:var(--panel); }
+#proSubTabs [aria-selected=false] { background:var(--panel);color:var(--muted);border:1px solid var(--line); }
+#proLabPanel>label { display:flex;flex-direction:column;gap:6px;max-width:400px; }
+@media(prefers-color-scheme:dark){#proSubTabs [aria-selected=true]{color:#131e2b;}}

@@ -1,0 +1,1356 @@
+{
+  "upstreamCommit": "f627e89e53c0c7b903fff097df7a0ad0ac95decc",
+  "method": "120 Pokemon-league cases: four leagues, two disjoint published rank bands (1-15 and 16-30), each band is its own 15-species equal-weight meta. Exhaustive five-scenario rectangular rankings are ground truth. Any highest truncated-score tie counts. Retained candidates are evaluated in the exhaustive report to avoid normalization effects. Second band is a held-out check. Recommendation is explicitly protected, not inferred. Not a universal reliability guarantee.",
+  "cheapCycleDPT": {
+    "1": {
+      "best": 32,
+      "published": 36,
+      "total": 120
+    },
+    "3": {
+      "best": 70,
+      "published": 72,
+      "total": 120
+    },
+    "5": {
+      "best": 85,
+      "published": 86,
+      "total": 120
+    },
+    "10": {
+      "best": 109,
+      "published": 105,
+      "total": 120
+    }
+  },
+  "seededScout": {
+    "5": {
+      "cases": 120,
+      "bestRetained": 117,
+      "withinOnePoint": 119,
+      "publishedRetained": 120,
+      "simulations": 118480,
+      "exhaustiveSimulations": 291200,
+      "misses": [
+        {
+          "group": 0,
+          "cp": 500,
+          "speciesId": "dewpider",
+          "regret": 0.8
+        },
+        {
+          "group": 0,
+          "cp": 10000,
+          "speciesId": "xerneas",
+          "regret": 1
+        },
+        {
+          "group": 1,
+          "cp": 1500,
+          "speciesId": "araquanid",
+          "regret": 2.4
+        }
+      ]
+    },
+    "10": {
+      "cases": 120,
+      "bestRetained": 120,
+      "withinOnePoint": 120,
+      "publishedRetained": 120,
+      "simulations": 146415,
+      "exhaustiveSimulations": 291200,
+      "misses": []
+    }
+  },
+  "cases": [
+    {
+      "group": 0,
+      "cp": 500,
+      "speciesId": "skrelp",
+      "movesets": 12,
+      "bestScore": 85,
+      "cycleRankOfBest": 3,
+      "cycleRankOfPublished": 3
+    },
+    {
+      "group": 0,
+      "cp": 500,
+      "speciesId": "ducklett",
+      "movesets": 12,
+      "bestScore": 92.3,
+      "cycleRankOfBest": 10,
+      "cycleRankOfPublished": 1
+    },
+    {
+      "group": 0,
+      "cp": 500,
+      "speciesId": "carvanha_shadow",
+      "movesets": 12,
+      "bestScore": 72.2,
+      "cycleRankOfBest": 1,
+      "cycleRankOfPublished": 7
+    },
+    {
+      "group": 0,
+      "cp": 500,
+      "speciesId": "fomantis",
+      "movesets": 30,
+      "bestScore": 79.2,
+      "cycleRankOfBest": 4,
+      "cycleRankOfPublished": 4
+    },
+    {
+      "group": 0,
+      "cp": 500,
+      "speciesId": "pumpkaboo_super",
+      "movesets": 6,
+      "bestScore": 77.9,
+      "cycleRankOfBest": 3,
+      "cycleRankOfPublished": 2
+    },
+    {
+      "group": 0,
+      "cp": 500,
+      "speciesId": "foongus",
+      "movesets": 6,
+      "bestScore": 82.5,
+      "cycleRankOfBest": 1,
+      "cycleRankOfPublished": 1
+    },
+    {
+      "group": 0,
+      "cp": 500,
+      "speciesId": "frillish",
+      "movesets": 6,
+      "bestScore": 59.4,
+      "cycleRankOfBest": 1,
+      "cycleRankOfPublished": 1
+    },
+    {
+      "group": 0,
+      "cp": 500,
+      "speciesId": "dewpider",
+      "movesets": 12,
+      "bestScore": 81.8,
+      "cycleRankOfBest": 11,
+      "cycleRankOfPublished": 4
+    },
+    {
+      "group": 0,
+      "cp": 500,
+      "speciesId": "pumpkaboo_average",
+      "movesets": 6,
+      "bestScore": 75.5,
+      "cycleRankOfBest": 3,
+      "cycleRankOfPublished": 2
+    },
+    {
+      "group": 0,
+      "cp": 500,
+      "speciesId": "foongus_shadow",
+      "movesets": 12,
+      "bestScore": 83.2,
+      "cycleRankOfBest": 1,
+      "cycleRankOfPublished": 1
+    },
+    {
+      "group": 0,
+      "cp": 500,
+      "speciesId": "pumpkaboo_large",
+      "movesets": 6,
+      "bestScore": 76.1,
+      "cycleRankOfBest": 3,
+      "cycleRankOfPublished": 2
+    },
+    {
+      "group": 0,
+      "cp": 500,
+      "speciesId": "pumpkaboo_small",
+      "movesets": 6,
+      "bestScore": 69.8,
+      "cycleRankOfBest": 3,
+      "cycleRankOfPublished": 2
+    },
+    {
+      "group": 0,
+      "cp": 500,
+      "speciesId": "ducklett_shadow",
+      "movesets": 12,
+      "bestScore": 81.1,
+      "cycleRankOfBest": 1,
+      "cycleRankOfPublished": 1
+    },
+    {
+      "group": 0,
+      "cp": 500,
+      "speciesId": "lileep_shadow",
+      "movesets": 18,
+      "bestScore": 63.8,
+      "cycleRankOfBest": 7,
+      "cycleRankOfPublished": 5
+    },
+    {
+      "group": 0,
+      "cp": 500,
+      "speciesId": "binacle",
+      "movesets": 6,
+      "bestScore": 78.2,
+      "cycleRankOfBest": 1,
+      "cycleRankOfPublished": 3
+    },
+    {
+      "group": 0,
+      "cp": 1500,
+      "speciesId": "melmetal",
+      "movesets": 21,
+      "bestScore": 89.1,
+      "cycleRankOfBest": 3,
+      "cycleRankOfPublished": 2
+    },
+    {
+      "group": 0,
+      "cp": 1500,
+      "speciesId": "altaria",
+      "movesets": 30,
+      "bestScore": 78.5,
+      "cycleRankOfBest": 3,
+      "cycleRankOfPublished": 3
+    },
+    {
+      "group": 0,
+      "cp": 1500,
+      "speciesId": "ninetales_shadow",
+      "movesets": 135,
+      "bestScore": 90.1,
+      "cycleRankOfBest": 10,
+      "cycleRankOfPublished": 10
+    },
+    {
+      "group": 0,
+      "cp": 1500,
+      "speciesId": "cramorant",
+      "movesets": 12,
+      "bestScore": 95.2,
+      "cycleRankOfBest": 8,
+      "cycleRankOfPublished": 8
+    },
+    {
+      "group": 0,
+      "cp": 1500,
+      "speciesId": "tinkaton",
+      "movesets": 20,
+      "bestScore": 84.6,
+      "cycleRankOfBest": 8,
+      "cycleRankOfPublished": 1
+    },
+    {
+      "group": 0,
+      "cp": 1500,
+      "speciesId": "mimikyu",
+      "movesets": 6,
+      "bestScore": 92.5,
+      "cycleRankOfBest": 5,
+      "cycleRankOfPublished": 5
+    },
+    {
+      "group": 0,
+      "cp": 1500,
+      "speciesId": "corviknight",
+      "movesets": 30,
+      "bestScore": 77.9,
+      "cycleRankOfBest": 5,
+      "cycleRankOfPublished": 2
+    },
+    {
+      "group": 0,
+      "cp": 1500,
+      "speciesId": "corsola_galarian",
+      "movesets": 6,
+      "bestScore": 92.2,
+      "cycleRankOfBest": 2,
+      "cycleRankOfPublished": 1
+    },
+    {
+      "group": 0,
+      "cp": 1500,
+      "speciesId": "altaria_shadow",
+      "movesets": 30,
+      "bestScore": 79.2,
+      "cycleRankOfBest": 2,
+      "cycleRankOfPublished": 3
+    },
+    {
+      "group": 0,
+      "cp": 1500,
+      "speciesId": "corviknight_shadow",
+      "movesets": 30,
+      "bestScore": 74.6,
+      "cycleRankOfBest": 2,
+      "cycleRankOfPublished": 2
+    },
+    {
+      "group": 0,
+      "cp": 1500,
+      "speciesId": "florges",
+      "movesets": 60,
+      "bestScore": 79.7,
+      "cycleRankOfBest": 13,
+      "cycleRankOfPublished": 5
+    },
+    {
+      "group": 0,
+      "cp": 1500,
+      "speciesId": "quagsire_shadow",
+      "movesets": 56,
+      "bestScore": 82.5,
+      "cycleRankOfBest": 6,
+      "cycleRankOfPublished": 6
+    },
+    {
+      "group": 0,
+      "cp": 1500,
+      "speciesId": "ninetales",
+      "movesets": 135,
+      "bestScore": 86.7,
+      "cycleRankOfBest": 10,
+      "cycleRankOfPublished": 10
+    },
+    {
+      "group": 0,
+      "cp": 1500,
+      "speciesId": "quagsire",
+      "movesets": 56,
+      "bestScore": 84.1,
+      "cycleRankOfBest": 7,
+      "cycleRankOfPublished": 7
+    },
+    {
+      "group": 0,
+      "cp": 1500,
+      "speciesId": "thievul",
+      "movesets": 9,
+      "bestScore": 81.8,
+      "cycleRankOfBest": 1,
+      "cycleRankOfPublished": 1
+    },
+    {
+      "group": 0,
+      "cp": 2500,
+      "speciesId": "tinkaton",
+      "movesets": 20,
+      "bestScore": 76.6,
+      "cycleRankOfBest": 1,
+      "cycleRankOfPublished": 1
+    },
+    {
+      "group": 0,
+      "cp": 2500,
+      "speciesId": "corviknight",
+      "movesets": 30,
+      "bestScore": 96.5,
+      "cycleRankOfBest": 4,
+      "cycleRankOfPublished": 2
+    },
+    {
+      "group": 0,
+      "cp": 2500,
+      "speciesId": "snorlax_shadow",
+      "movesets": 112,
+      "bestScore": 80.9,
+      "cycleRankOfBest": 6,
+      "cycleRankOfPublished": 11
+    },
+    {
+      "group": 0,
+      "cp": 2500,
+      "speciesId": "corviknight_shadow",
+      "movesets": 30,
+      "bestScore": 90.7,
+      "cycleRankOfBest": 2,
+      "cycleRankOfPublished": 4
+    },
+    {
+      "group": 0,
+      "cp": 2500,
+      "speciesId": "melmetal",
+      "movesets": 21,
+      "bestScore": 97.6,
+      "cycleRankOfBest": 1,
+      "cycleRankOfPublished": 1
+    },
+    {
+      "group": 0,
+      "cp": 2500,
+      "speciesId": "virizion",
+      "movesets": 18,
+      "bestScore": 81.5,
+      "cycleRankOfBest": 3,
+      "cycleRankOfPublished": 4
+    },
+    {
+      "group": 0,
+      "cp": 2500,
+      "speciesId": "empoleon",
+      "movesets": 60,
+      "bestScore": 85.1,
+      "cycleRankOfBest": 4,
+      "cycleRankOfPublished": 2
+    },
+    {
+      "group": 0,
+      "cp": 2500,
+      "speciesId": "zygarde_complete",
+      "movesets": 30,
+      "bestScore": 84.5,
+      "cycleRankOfBest": 8,
+      "cycleRankOfPublished": 14
+    },
+    {
+      "group": 0,
+      "cp": 2500,
+      "speciesId": "empoleon_shadow",
+      "movesets": 60,
+      "bestScore": 83.8,
+      "cycleRankOfBest": 2,
+      "cycleRankOfPublished": 2
+    },
+    {
+      "group": 0,
+      "cp": 2500,
+      "speciesId": "mimikyu",
+      "movesets": 6,
+      "bestScore": 85.5,
+      "cycleRankOfBest": 3,
+      "cycleRankOfPublished": 6
+    },
+    {
+      "group": 0,
+      "cp": 2500,
+      "speciesId": "snorlax",
+      "movesets": 112,
+      "bestScore": 78.1,
+      "cycleRankOfBest": 6,
+      "cycleRankOfPublished": 12
+    },
+    {
+      "group": 0,
+      "cp": 2500,
+      "speciesId": "florges",
+      "movesets": 60,
+      "bestScore": 73,
+      "cycleRankOfBest": 16,
+      "cycleRankOfPublished": 8
+    },
+    {
+      "group": 0,
+      "cp": 2500,
+      "speciesId": "moltres_galarian",
+      "movesets": 12,
+      "bestScore": 92.9,
+      "cycleRankOfBest": 7,
+      "cycleRankOfPublished": 4
+    },
+    {
+      "group": 0,
+      "cp": 2500,
+      "speciesId": "feraligatr_shadow",
+      "movesets": 50,
+      "bestScore": 85.4,
+      "cycleRankOfBest": 1,
+      "cycleRankOfPublished": 1
+    },
+    {
+      "group": 0,
+      "cp": 2500,
+      "speciesId": "feraligatr",
+      "movesets": 50,
+      "bestScore": 89.7,
+      "cycleRankOfBest": 1,
+      "cycleRankOfPublished": 1
+    },
+    {
+      "group": 0,
+      "cp": 10000,
+      "speciesId": "palkia_origin",
+      "movesets": 20,
+      "bestScore": 85.5,
+      "cycleRankOfBest": 3,
+      "cycleRankOfPublished": 11
+    },
+    {
+      "group": 0,
+      "cp": 10000,
+      "speciesId": "zacian_crowned_sword",
+      "movesets": 12,
+      "bestScore": 91,
+      "cycleRankOfBest": 2,
+      "cycleRankOfPublished": 1
+    },
+    {
+      "group": 0,
+      "cp": 10000,
+      "speciesId": "zygarde_complete",
+      "movesets": 30,
+      "bestScore": 76.2,
+      "cycleRankOfBest": 15,
+      "cycleRankOfPublished": 15
+    },
+    {
+      "group": 0,
+      "cp": 10000,
+      "speciesId": "metagross",
+      "movesets": 40,
+      "bestScore": 82.2,
+      "cycleRankOfBest": 1,
+      "cycleRankOfPublished": 1
+    },
+    {
+      "group": 0,
+      "cp": 10000,
+      "speciesId": "kyurem_white",
+      "movesets": 45,
+      "bestScore": 85.5,
+      "cycleRankOfBest": 10,
+      "cycleRankOfPublished": 3
+    },
+    {
+      "group": 0,
+      "cp": 10000,
+      "speciesId": "reshiram",
+      "movesets": 30,
+      "bestScore": 82.3,
+      "cycleRankOfBest": 2,
+      "cycleRankOfPublished": 2
+    },
+    {
+      "group": 0,
+      "cp": 10000,
+      "speciesId": "xerneas",
+      "movesets": 30,
+      "bestScore": 94.3,
+      "cycleRankOfBest": 5,
+      "cycleRankOfPublished": 1
+    },
+    {
+      "group": 0,
+      "cp": 10000,
+      "speciesId": "kyogre",
+      "movesets": 21,
+      "bestScore": 85,
+      "cycleRankOfBest": 1,
+      "cycleRankOfPublished": 1
+    },
+    {
+      "group": 0,
+      "cp": 10000,
+      "speciesId": "dialga_origin",
+      "movesets": 12,
+      "bestScore": 81.6,
+      "cycleRankOfBest": 2,
+      "cycleRankOfPublished": 2
+    },
+    {
+      "group": 0,
+      "cp": 10000,
+      "speciesId": "eternatus",
+      "movesets": 12,
+      "bestScore": 84.5,
+      "cycleRankOfBest": 2,
+      "cycleRankOfPublished": 1
+    },
+    {
+      "group": 0,
+      "cp": 10000,
+      "speciesId": "ursaluna",
+      "movesets": 144,
+      "bestScore": 89.1,
+      "cycleRankOfBest": 5,
+      "cycleRankOfPublished": 1
+    },
+    {
+      "group": 0,
+      "cp": 10000,
+      "speciesId": "kyurem_black",
+      "movesets": 30,
+      "bestScore": 79.7,
+      "cycleRankOfBest": 13,
+      "cycleRankOfPublished": 2
+    },
+    {
+      "group": 0,
+      "cp": 10000,
+      "speciesId": "reshiram_shadow",
+      "movesets": 30,
+      "bestScore": 88.8,
+      "cycleRankOfBest": 11,
+      "cycleRankOfPublished": 2
+    },
+    {
+      "group": 0,
+      "cp": 10000,
+      "speciesId": "lugia",
+      "movesets": 42,
+      "bestScore": 82.2,
+      "cycleRankOfBest": 4,
+      "cycleRankOfPublished": 1
+    },
+    {
+      "group": 0,
+      "cp": 10000,
+      "speciesId": "lunala",
+      "movesets": 18,
+      "bestScore": 82,
+      "cycleRankOfBest": 1,
+      "cycleRankOfPublished": 1
+    },
+    {
+      "group": 1,
+      "cp": 500,
+      "speciesId": "litwick",
+      "movesets": 12,
+      "bestScore": 81.3,
+      "cycleRankOfBest": 6,
+      "cycleRankOfPublished": 8
+    },
+    {
+      "group": 1,
+      "cp": 500,
+      "speciesId": "carvanha",
+      "movesets": 6,
+      "bestScore": 65.4,
+      "cycleRankOfBest": 1,
+      "cycleRankOfPublished": 2
+    },
+    {
+      "group": 1,
+      "cp": 500,
+      "speciesId": "lileep",
+      "movesets": 9,
+      "bestScore": 83.3,
+      "cycleRankOfBest": 3,
+      "cycleRankOfPublished": 6
+    },
+    {
+      "group": 1,
+      "cp": 500,
+      "speciesId": "litwick_shadow",
+      "movesets": 20,
+      "bestScore": 83.8,
+      "cycleRankOfBest": 8,
+      "cycleRankOfPublished": 11
+    },
+    {
+      "group": 1,
+      "cp": 500,
+      "speciesId": "tentacool",
+      "movesets": 6,
+      "bestScore": 87.2,
+      "cycleRankOfBest": 1,
+      "cycleRankOfPublished": 1
+    },
+    {
+      "group": 1,
+      "cp": 500,
+      "speciesId": "barboach_shadow",
+      "movesets": 20,
+      "bestScore": 76.7,
+      "cycleRankOfBest": 3,
+      "cycleRankOfPublished": 3
+    },
+    {
+      "group": 1,
+      "cp": 500,
+      "speciesId": "shellos",
+      "movesets": 51,
+      "bestScore": 84.1,
+      "cycleRankOfBest": 1,
+      "cycleRankOfPublished": 3
+    },
+    {
+      "group": 1,
+      "cp": 500,
+      "speciesId": "wooper",
+      "movesets": 12,
+      "bestScore": 89.5,
+      "cycleRankOfBest": 1,
+      "cycleRankOfPublished": 2
+    },
+    {
+      "group": 1,
+      "cp": 500,
+      "speciesId": "ferroseed",
+      "movesets": 6,
+      "bestScore": 77.8,
+      "cycleRankOfBest": 1,
+      "cycleRankOfPublished": 1
+    },
+    {
+      "group": 1,
+      "cp": 500,
+      "speciesId": "tentacool_shadow",
+      "movesets": 12,
+      "bestScore": 80.5,
+      "cycleRankOfBest": 1,
+      "cycleRankOfPublished": 1
+    },
+    {
+      "group": 1,
+      "cp": 500,
+      "speciesId": "budew",
+      "movesets": 17,
+      "bestScore": 82.9,
+      "cycleRankOfBest": 1,
+      "cycleRankOfPublished": 1
+    },
+    {
+      "group": 1,
+      "cp": 500,
+      "speciesId": "seel",
+      "movesets": 18,
+      "bestScore": 91.4,
+      "cycleRankOfBest": 2,
+      "cycleRankOfPublished": 8
+    },
+    {
+      "group": 1,
+      "cp": 500,
+      "speciesId": "wooper_shadow",
+      "movesets": 12,
+      "bestScore": 79.1,
+      "cycleRankOfBest": 1,
+      "cycleRankOfPublished": 1
+    },
+    {
+      "group": 1,
+      "cp": 500,
+      "speciesId": "turtwig_shadow",
+      "movesets": 12,
+      "bestScore": 79.4,
+      "cycleRankOfBest": 2,
+      "cycleRankOfPublished": 4
+    },
+    {
+      "group": 1,
+      "cp": 500,
+      "speciesId": "chikorita_shadow",
+      "movesets": 18,
+      "bestScore": 85.7,
+      "cycleRankOfBest": 2,
+      "cycleRankOfPublished": 7
+    },
+    {
+      "group": 1,
+      "cp": 1500,
+      "speciesId": "araquanid",
+      "movesets": 20,
+      "bestScore": 83.2,
+      "cycleRankOfBest": 10,
+      "cycleRankOfPublished": 14
+    },
+    {
+      "group": 1,
+      "cp": 1500,
+      "speciesId": "clodsire",
+      "movesets": 30,
+      "bestScore": 80.6,
+      "cycleRankOfBest": 1,
+      "cycleRankOfPublished": 1
+    },
+    {
+      "group": 1,
+      "cp": 1500,
+      "speciesId": "hydreigon_shadow",
+      "movesets": 30,
+      "bestScore": 87.6,
+      "cycleRankOfBest": 4,
+      "cycleRankOfPublished": 6
+    },
+    {
+      "group": 1,
+      "cp": 1500,
+      "speciesId": "sableye_shadow",
+      "movesets": 30,
+      "bestScore": 84.3,
+      "cycleRankOfBest": 3,
+      "cycleRankOfPublished": 3
+    },
+    {
+      "group": 1,
+      "cp": 1500,
+      "speciesId": "marowak",
+      "movesets": 20,
+      "bestScore": 80.4,
+      "cycleRankOfBest": 6,
+      "cycleRankOfPublished": 6
+    },
+    {
+      "group": 1,
+      "cp": 1500,
+      "speciesId": "stunfisk",
+      "movesets": 6,
+      "bestScore": 82.7,
+      "cycleRankOfBest": 1,
+      "cycleRankOfPublished": 1
+    },
+    {
+      "group": 1,
+      "cp": 1500,
+      "speciesId": "vigoroth",
+      "movesets": 20,
+      "bestScore": 89.1,
+      "cycleRankOfBest": 3,
+      "cycleRankOfPublished": 4
+    },
+    {
+      "group": 1,
+      "cp": 1500,
+      "speciesId": "jellicent",
+      "movesets": 12,
+      "bestScore": 77.5,
+      "cycleRankOfBest": 1,
+      "cycleRankOfPublished": 1
+    },
+    {
+      "group": 1,
+      "cp": 1500,
+      "speciesId": "empoleon",
+      "movesets": 40,
+      "bestScore": 78.3,
+      "cycleRankOfBest": 2,
+      "cycleRankOfPublished": 1
+    },
+    {
+      "group": 1,
+      "cp": 1500,
+      "speciesId": "empoleon_shadow",
+      "movesets": 60,
+      "bestScore": 82,
+      "cycleRankOfBest": 2,
+      "cycleRankOfPublished": 2
+    },
+    {
+      "group": 1,
+      "cp": 1500,
+      "speciesId": "fearow",
+      "movesets": 30,
+      "bestScore": 87.2,
+      "cycleRankOfBest": 1,
+      "cycleRankOfPublished": 1
+    },
+    {
+      "group": 1,
+      "cp": 1500,
+      "speciesId": "mantine",
+      "movesets": 30,
+      "bestScore": 82.1,
+      "cycleRankOfBest": 1,
+      "cycleRankOfPublished": 2
+    },
+    {
+      "group": 1,
+      "cp": 1500,
+      "speciesId": "snorlax",
+      "movesets": 84,
+      "bestScore": 87.3,
+      "cycleRankOfBest": 10,
+      "cycleRankOfPublished": 10
+    },
+    {
+      "group": 1,
+      "cp": 1500,
+      "speciesId": "umbreon",
+      "movesets": 12,
+      "bestScore": 95.7,
+      "cycleRankOfBest": 5,
+      "cycleRankOfPublished": 1
+    },
+    {
+      "group": 1,
+      "cp": 1500,
+      "speciesId": "araquanid_shadow",
+      "movesets": 20,
+      "bestScore": 83.9,
+      "cycleRankOfBest": 8,
+      "cycleRankOfPublished": 12
+    },
+    {
+      "group": 1,
+      "cp": 2500,
+      "speciesId": "jellicent",
+      "movesets": 12,
+      "bestScore": 91.8,
+      "cycleRankOfBest": 1,
+      "cycleRankOfPublished": 3
+    },
+    {
+      "group": 1,
+      "cp": 2500,
+      "speciesId": "giratina_altered",
+      "movesets": 20,
+      "bestScore": 87,
+      "cycleRankOfBest": 2,
+      "cycleRankOfPublished": 4
+    },
+    {
+      "group": 1,
+      "cp": 2500,
+      "speciesId": "cramorant",
+      "movesets": 12,
+      "bestScore": 90.3,
+      "cycleRankOfBest": 7,
+      "cycleRankOfPublished": 3
+    },
+    {
+      "group": 1,
+      "cp": 2500,
+      "speciesId": "guzzlord",
+      "movesets": 12,
+      "bestScore": 93.8,
+      "cycleRankOfBest": 1,
+      "cycleRankOfPublished": 1
+    },
+    {
+      "group": 1,
+      "cp": 2500,
+      "speciesId": "rillaboom",
+      "movesets": 20,
+      "bestScore": 83.7,
+      "cycleRankOfBest": 6,
+      "cycleRankOfPublished": 6
+    },
+    {
+      "group": 1,
+      "cp": 2500,
+      "speciesId": "skeledirge",
+      "movesets": 45,
+      "bestScore": 68,
+      "cycleRankOfBest": 14,
+      "cycleRankOfPublished": 18
+    },
+    {
+      "group": 1,
+      "cp": 2500,
+      "speciesId": "lapras",
+      "movesets": 112,
+      "bestScore": 87.9,
+      "cycleRankOfBest": 2,
+      "cycleRankOfPublished": 8
+    },
+    {
+      "group": 1,
+      "cp": 2500,
+      "speciesId": "lapras_shadow",
+      "movesets": 112,
+      "bestScore": 81.5,
+      "cycleRankOfBest": 2,
+      "cycleRankOfPublished": 7
+    },
+    {
+      "group": 1,
+      "cp": 2500,
+      "speciesId": "ninetales_alolan",
+      "movesets": 63,
+      "bestScore": 74.1,
+      "cycleRankOfBest": 5,
+      "cycleRankOfPublished": 36
+    },
+    {
+      "group": 1,
+      "cp": 2500,
+      "speciesId": "dusknoir",
+      "movesets": 56,
+      "bestScore": 78.1,
+      "cycleRankOfBest": 23,
+      "cycleRankOfPublished": 23
+    },
+    {
+      "group": 1,
+      "cp": 2500,
+      "speciesId": "dondozo",
+      "movesets": 12,
+      "bestScore": 76.9,
+      "cycleRankOfBest": 2,
+      "cycleRankOfPublished": 2
+    },
+    {
+      "group": 1,
+      "cp": 2500,
+      "speciesId": "dusknoir_shadow",
+      "movesets": 56,
+      "bestScore": 82.7,
+      "cycleRankOfBest": 23,
+      "cycleRankOfPublished": 22
+    },
+    {
+      "group": 1,
+      "cp": 2500,
+      "speciesId": "registeel",
+      "movesets": 30,
+      "bestScore": 97.6,
+      "cycleRankOfBest": 1,
+      "cycleRankOfPublished": 3
+    },
+    {
+      "group": 1,
+      "cp": 2500,
+      "speciesId": "blastoise",
+      "movesets": 45,
+      "bestScore": 84.8,
+      "cycleRankOfBest": 18,
+      "cycleRankOfPublished": 12
+    },
+    {
+      "group": 1,
+      "cp": 2500,
+      "speciesId": "ninetales_alolan_shadow",
+      "movesets": 63,
+      "bestScore": 75.6,
+      "cycleRankOfBest": 5,
+      "cycleRankOfPublished": 34
+    },
+    {
+      "group": 1,
+      "cp": 10000,
+      "speciesId": "zamazenta_crowned_shield",
+      "movesets": 12,
+      "bestScore": 80.4,
+      "cycleRankOfBest": 2,
+      "cycleRankOfPublished": 2
+    },
+    {
+      "group": 1,
+      "cp": 10000,
+      "speciesId": "ursaluna_shadow",
+      "movesets": 144,
+      "bestScore": 84.5,
+      "cycleRankOfBest": 4,
+      "cycleRankOfPublished": 1
+    },
+    {
+      "group": 1,
+      "cp": 10000,
+      "speciesId": "necrozma_dawn_wings",
+      "movesets": 30,
+      "bestScore": 95.5,
+      "cycleRankOfBest": 4,
+      "cycleRankOfPublished": 4
+    },
+    {
+      "group": 1,
+      "cp": 10000,
+      "speciesId": "marshadow",
+      "movesets": 40,
+      "bestScore": 91.6,
+      "cycleRankOfBest": 3,
+      "cycleRankOfPublished": 2
+    },
+    {
+      "group": 1,
+      "cp": 10000,
+      "speciesId": "zekrom",
+      "movesets": 30,
+      "bestScore": 91.1,
+      "cycleRankOfBest": 2,
+      "cycleRankOfPublished": 2
+    },
+    {
+      "group": 1,
+      "cp": 10000,
+      "speciesId": "zekrom_shadow",
+      "movesets": 30,
+      "bestScore": 93.6,
+      "cycleRankOfBest": 6,
+      "cycleRankOfPublished": 2
+    },
+    {
+      "group": 1,
+      "cp": 10000,
+      "speciesId": "necrozma_dusk_mane",
+      "movesets": 30,
+      "bestScore": 80.7,
+      "cycleRankOfBest": 2,
+      "cycleRankOfPublished": 10
+    },
+    {
+      "group": 1,
+      "cp": 10000,
+      "speciesId": "lugia_shadow",
+      "movesets": 42,
+      "bestScore": 82.1,
+      "cycleRankOfBest": 4,
+      "cycleRankOfPublished": 1
+    },
+    {
+      "group": 1,
+      "cp": 10000,
+      "speciesId": "palkia_shadow",
+      "movesets": 20,
+      "bestScore": 90.5,
+      "cycleRankOfBest": 10,
+      "cycleRankOfPublished": 3
+    },
+    {
+      "group": 1,
+      "cp": 10000,
+      "speciesId": "ho_oh",
+      "movesets": 285,
+      "bestScore": 90.9,
+      "cycleRankOfBest": 3,
+      "cycleRankOfPublished": 2
+    },
+    {
+      "group": 1,
+      "cp": 10000,
+      "speciesId": "garchomp_shadow",
+      "movesets": 56,
+      "bestScore": 77,
+      "cycleRankOfBest": 21,
+      "cycleRankOfPublished": 21
+    },
+    {
+      "group": 1,
+      "cp": 10000,
+      "speciesId": "metagross_shadow",
+      "movesets": 40,
+      "bestScore": 68.8,
+      "cycleRankOfBest": 2,
+      "cycleRankOfPublished": 1
+    },
+    {
+      "group": 1,
+      "cp": 10000,
+      "speciesId": "groudon",
+      "movesets": 30,
+      "bestScore": 73.6,
+      "cycleRankOfBest": 9,
+      "cycleRankOfPublished": 5
+    },
+    {
+      "group": 1,
+      "cp": 10000,
+      "speciesId": "melmetal",
+      "movesets": 21,
+      "bestScore": 64.8,
+      "cycleRankOfBest": 1,
+      "cycleRankOfPublished": 1
+    },
+    {
+      "group": 1,
+      "cp": 10000,
+      "speciesId": "keldeo_resolute",
+      "movesets": 20,
+      "bestScore": 73.9,
+      "cycleRankOfBest": 1,
+      "cycleRankOfPublished": 4
+    }
+  ],
+  "runs": [
+    {
+      "n": 5,
+      "cp": 500,
+      "hit": 14,
+      "near": 15,
+      "published": 15,
+      "loss": 0.7999999999999972,
+      "battles": 8390,
+      "allBattles": 11340,
+      "misses": [
+        [
+          "dewpider",
+          0.7999999999999972
+        ]
+      ],
+      "group": 0
+    },
+    {
+      "n": 5,
+      "cp": 1500,
+      "hit": 15,
+      "near": 15,
+      "published": 15,
+      "loss": 0,
+      "battles": 15800,
+      "allBattles": 44520,
+      "misses": [],
+      "group": 0
+    },
+    {
+      "n": 5,
+      "cp": 2500,
+      "hit": 15,
+      "near": 15,
+      "published": 15,
+      "loss": 0,
+      "battles": 17190,
+      "allBattles": 46970,
+      "misses": [],
+      "group": 0
+    },
+    {
+      "n": 5,
+      "cp": 10000,
+      "hit": 14,
+      "near": 15,
+      "published": 15,
+      "loss": 1,
+      "battles": 16430,
+      "allBattles": 36120,
+      "misses": [
+        [
+          "xerneas",
+          1
+        ]
+      ],
+      "group": 0
+    },
+    {
+      "n": 10,
+      "cp": 500,
+      "hit": 15,
+      "near": 15,
+      "published": 15,
+      "loss": 0,
+      "battles": 9960,
+      "allBattles": 11340,
+      "misses": [],
+      "group": 0
+    },
+    {
+      "n": 10,
+      "cp": 1500,
+      "hit": 15,
+      "near": 15,
+      "published": 15,
+      "loss": 0,
+      "battles": 19475,
+      "allBattles": 44520,
+      "misses": [],
+      "group": 0
+    },
+    {
+      "n": 10,
+      "cp": 2500,
+      "hit": 15,
+      "near": 15,
+      "published": 15,
+      "loss": 0,
+      "battles": 21660,
+      "allBattles": 46970,
+      "misses": [],
+      "group": 0
+    },
+    {
+      "n": 10,
+      "cp": 10000,
+      "hit": 15,
+      "near": 15,
+      "published": 15,
+      "loss": 0,
+      "battles": 20040,
+      "allBattles": 36120,
+      "misses": [],
+      "group": 0
+    },
+    {
+      "n": 5,
+      "cp": 500,
+      "hit": 15,
+      "near": 15,
+      "published": 15,
+      "loss": 0,
+      "battles": 10375,
+      "allBattles": 16170,
+      "misses": [],
+      "group": 1
+    },
+    {
+      "n": 5,
+      "cp": 1500,
+      "hit": 14,
+      "near": 14,
+      "published": 15,
+      "loss": 2.4000000000000057,
+      "battles": 15700,
+      "allBattles": 31080,
+      "misses": [
+        [
+          "araquanid",
+          2.4000000000000057
+        ]
+      ],
+      "group": 1
+    },
+    {
+      "n": 5,
+      "cp": 2500,
+      "hit": 15,
+      "near": 15,
+      "published": 15,
+      "loss": 0,
+      "battles": 16635,
+      "allBattles": 46900,
+      "misses": [],
+      "group": 1
+    },
+    {
+      "n": 5,
+      "cp": 10000,
+      "hit": 15,
+      "near": 15,
+      "published": 15,
+      "loss": 0,
+      "battles": 17960,
+      "allBattles": 58100,
+      "misses": [],
+      "group": 1
+    },
+    {
+      "n": 10,
+      "cp": 500,
+      "hit": 15,
+      "near": 15,
+      "published": 15,
+      "loss": 0,
+      "battles": 12650,
+      "allBattles": 16170,
+      "misses": [],
+      "group": 1
+    },
+    {
+      "n": 10,
+      "cp": 1500,
+      "hit": 15,
+      "near": 15,
+      "published": 15,
+      "loss": 0,
+      "battles": 18930,
+      "allBattles": 31080,
+      "misses": [],
+      "group": 1
+    },
+    {
+      "n": 10,
+      "cp": 2500,
+      "hit": 15,
+      "near": 15,
+      "published": 15,
+      "loss": 0,
+      "battles": 21490,
+      "allBattles": 46900,
+      "misses": [],
+      "group": 1
+    },
+    {
+      "n": 10,
+      "cp": 10000,
+      "hit": 15,
+      "near": 15,
+      "published": 15,
+      "loss": 0,
+      "battles": 22210,
+      "allBattles": 58100,
+      "misses": [],
+      "group": 1
+    }
+  ]
+}

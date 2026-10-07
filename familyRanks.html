@@ -108,27 +108,40 @@
   </section>
   <section id="proPanel" role="tabpanel" aria-labelledby="proTab" hidden>
     <div class="pro-info-bar"><a class="pro-info-link" href="includes/pro/README.html" target="_blank" rel="noopener" title="Read the ranking logic guide in a new tab" aria-label="PvPoke Pro ranking logic README"><span class="pro-info-icon" aria-hidden="true">i</span> How rankings work</a></div>
+    <nav id="proSubTabs" class="analysis-switches" role="tablist" aria-label="PvPoke Pro views"><button id="proRankTab" role="tab" type="button" aria-controls="proRankPanel" aria-selected="true">Rankings</button><button id="proLabTab" role="tab" type="button" aria-controls="proLabPanel" aria-selected="false" tabindex="-1">Moveset Lab</button></nav>
     <div class="pro-toolbar">
       <label>League<select id="proLeague"><option value="500">Little · 500 CP</option><option value="1500" selected>Great · 1,500 CP</option><option value="2500">Ultra · 2,500 CP</option><option value="10000">Master · Unlimited</option></select></label>
-      <label>Rankings<select id="proSource"><option value="published">Published PvPoke</option><option value="custom" disabled>Generated custom roster</option></select></label>
-      <label>Category<select id="proCategory"><option value="overall">Overall</option></select></label>
-      <label class="pro-search">Search Pokémon<input id="proSearch" type="search" placeholder="Name, type or move…"></label>
+      <label class="pro-rank-control">Rankings<select id="proSource"><option value="published">Published PvPoke</option><option value="custom" disabled>Generated custom roster</option></select></label>
+      <label class="pro-rank-control">Category<select id="proCategory"><option value="overall">Overall</option></select></label>
+      <label class="pro-search pro-rank-control">Search Pokémon<input id="proSearch" type="search" placeholder="Name, type or move…"></label>
     </div>
     <p class="hint">Published rankings are the exact open-league data bundled from <a href="https://github.com/pvpoke/pvpoke/tree/f627e89e53c0c7b903fff097df7a0ad0ac95decc" target="_blank" rel="noopener">PvPoke · f627e89</a>, including editor adjustments. This is a pinned snapshot, not a live feed. Select a Pokémon to explore its moves, key wins and counters.</p>
     <details class="pro-roster-card"><summary>Custom ranking roster &amp; matchup weights</summary>
-      <p class="hint">The top 30 are selected initially. Higher weights increase an opponent’s influence. Generate runs PvPoke’s original category and overall rankers locally, with published movesets held fixed and five battle scenarios. Custom overall scores omit editor adjustments and will differ from the published list. Larger rosters take longer; you can cancel at any time.</p>
-      <div class="pro-toolbar"><label>Find Pokémon<input id="proRosterSearch" type="search" placeholder="Filter roster…"></label><label>Top count<input id="proTopCount" type="number" min="2" value="30"></label></div>
-      <div class="save-actions"><button id="proTop" type="button" class="secondary">Accept top N</button><button id="proAll" type="button" class="secondary">Accept all</button><button id="proNone" type="button" class="secondary">Clear roster</button><button id="proUniform" type="button" class="secondary">Equal weights</button><button id="proPublishedWeights" type="button" class="secondary">Published weights</button></div>
-      <p id="proRosterCount" class="hint"></p><div id="proRoster" class="pro-roster" aria-label="Accepted Pokémon and weights"></div>
+      <p class="hint">Build the roster once for both views. All Include rules must match; values within a rule are alternatives. A Species rule explicitly includes its IDs regardless of the other rules, matching PvPoke. Only Pokémon in the published league population are available. Opponents always use their recommended movesets.</p>
+      <div class="pro-toolbar"><label>Roster preset<select id="proRosterPreset"><option value="top">Top N published Pokémon</option><option value="all">All eligible Pokémon</option><option value="none">Empty roster</option></select></label><label>Top count<input id="proTopCount" type="number" min="2" value="30"></label><button id="proPresetApply" type="button" class="secondary">Apply preset</button></div>
+      <div class="pro-rule-heading"><h3>Include</h3><button id="proAddFilter" type="button" class="secondary">+ Add Include filter</button></div><div id="proFilters"></div>
+      <datalist id="proSpeciesIds"></datalist><datalist id="proMoveIds"></datalist>
+      <div class="pro-toolbar"><label>Movesets per Pokémon<select id="proMovesPolicy"><option value="all">All combinations</option><option value="top">Scouted top N</option></select></label><label>Default top N<input id="proMovesTopN" type="number" min="1" max="10000" value="10"></label></div>
+      <p class="hint">Top N first shortlists by type-aware damage and energy cycles, then scouts five battle scenarios against up to eight opponents chosen for weight and type coverage. The published recommended moveset always reserves one of the N slots. Scouting models energy, damage, shields and timing, but cannot guarantee the full-roster best moveset. Each Pokémon below can override the default limit. Blank uses the policy above. Move / Move Type filters test what a Pokémon can learn; they do not restrict its ranked movesets. <a href="includes/pro/README.html#16-selector-benchmark" target="_blank" rel="noopener">Screening benchmark &amp; method</a></p>
+      <p id="proRosterCount" class="hint" role="status"></p><p id="proFilterStatus" role="status"></p>
+      <details><summary>Accepted Pokémon, weights &amp; individual moveset limits</summary>
+        <div class="pro-toolbar"><label>Find accepted Pokémon<input id="proRosterSearch" type="search" placeholder="Filter roster preview…"></label><button id="proUniform" type="button" class="secondary">Equal weights</button><button id="proPublishedWeights" type="button" class="secondary">Published weights</button></div>
+        <div class="pro-roster-labels" aria-hidden="true">Pokémon · Opponent weight · Top N override</div><div id="proRoster" class="pro-roster" aria-label="Accepted Pokémon, weights and moveset limits"></div>
+      </details>
     </details>
-    <div class="save-actions"><button id="proGenerate" type="button" disabled>Generate custom rankings</button><button id="proCancel" type="button" class="secondary" hidden>Cancel calculation</button></div>
-    <p id="proStatus" role="status" aria-live="polite">Open this tab to load rankings.</p><p id="proGeneratedContext" class="hint" hidden></p>
+    <button id="proCancel" type="button" class="secondary" hidden>Cancel calculation</button>
+    <p id="proStatus" role="status" aria-live="polite">Open this tab to load rankings.</p>
+    <section id="proRankPanel" role="tabpanel" aria-labelledby="proRankTab">
+    <div class="save-actions"><button id="proGenerate" type="button" disabled>Generate custom rankings</button></div>
+<p id="proGeneratedContext" class="hint" hidden></p>
+    <label class="pro-best-filter"><input id="proRankBestOnly" type="checkbox"> Show best moveset per Pokémon only</label><div id="proRunSummary" class="hint"></div>
     <div class="pro-layout">
       <section class="pro-rank-card" aria-label="League rankings"><div id="proRankings" class="table-scroll" tabindex="0"></div><div class="analysis-pagination"><span id="proPagination"></span><button id="proPrev" type="button" class="secondary">Previous</button><button id="proNext" type="button" class="secondary">Next</button></div></section>
       <aside class="pro-detail-card"><div id="proDetail"><h3>Pokémon details</h3><p>Select a Pokémon in the rankings.</p></div></aside>
     </div>
-    <section class="pro-lab">
-      <h2>Moveset lab</h2><p class="hint">Evaluate every legal move combination for the selected Pokémon against your accepted weighted roster. Opponents use published movesets and PvPoke’s default IVs. This uses equal shields, zero starting energy and weighted mean Battle Rating (0–1000); it is a separate comparison from the five-scenario overall ranking. Elite TM and legacy moves are included.</p>
+    </section>
+    <section id="proLabPanel" role="tabpanel" aria-labelledby="proLabTab" class="pro-lab" hidden>
+      <h2>Moveset lab</h2><label>Pokémon to evaluate<select id="proLabPokemon"></select></label><p class="hint">Evaluate every legal move combination for the selected Pokémon against your accepted weighted roster. Opponents use published movesets and PvPoke’s default IVs. This uses equal shields, zero starting energy and weighted mean Battle Rating (0–1000); it is a separate comparison from the five-scenario overall ranking. Elite TM and legacy moves are included.</p>
       <div class="pro-toolbar"><label>Shields per side<select id="proShields"><option value="0">0</option><option value="1" selected>1</option><option value="2">2</option></select></label><label>Maximum combinations<input id="proLimit" type="number" min="1" max="10000" value="500"></label><label>Within % of best<input id="proThreshold" type="number" min="0" max="100" value="10" step="0.5"></label><label class="pro-check"><input id="proBestOnly" type="checkbox" checked> Best moveset only (include ties)</label></div>
       <button id="proEvaluate" type="button" disabled>Evaluate selected Pokémon’s movesets</button><p id="proVariantContext" class="hint"></p><div id="proVariants" class="table-scroll" tabindex="0">Select a Pokémon to begin.</div>
     </section>

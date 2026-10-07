@@ -4,13 +4,13 @@ This guide describes the third tab of PvP IV Pro. It documents the code currentl
 
 ## 1. Three different kinds of result
 
-| Result | Where it comes from | Meaning |
-| --- | --- | --- |
-| Published PvPoke | Bundled upstream ranking JSON | Exact published scores at the pinned source snapshot, including any editor adjustments already in those files. |
-| Generated custom roster | Upstream battle engine, category ranker, and overall ranker executed in a browser worker | Relative performance against the accepted Pokémon and their weights, with published movesets fixed. No editor adjustments. |
-| Moveset lab | Every enumerated moveset for one selected Pokémon, simulated against the accepted roster | Weighted mean raw Battle Rating, on a 0–1000 scale. This is not the overall ranking formula. |
+| Result | Inputs and scoring |
+| --- | --- |
+| Published PvPoke | Exact bundled upstream rankings, with stored editor adjustments. No battles run. |
+| Generated custom roster | Every selected Pokémon × selected moveset, versus one recommended moveset per accepted opponent species, across five scenarios. Relative category scores, consistency and overall formula; no editor blend. |
+| Moveset Lab subtab | One selected Pokémon's combinations versus the same accepted species roster, in one equal-shield scenario. Weighted mean raw Battle Rating, not Overall. |
 
-An overall score of 94 is not a 94% win rate, and a score from one roster is not directly comparable with a score from another. Category normalization and opponent weighting make the results relative to the current population. The IV Pro tab's stat-product rankings are separate from this entire pipeline.
+Rankings and Moveset Lab are separate subtabs inside PvPoke Pro. League and Include roster controls are shared; the lab has its own Pokémon selector. Selecting a ranking row shows details for that exact variant and can open that species in the lab. Published and generated results remain separate. An overall score of 94 is not a 94% win rate. The first tab's IV stat-product ranks are unrelated to these battle-performance scores.
 
 ## 2. Source, data, and reproducibility
 
@@ -27,37 +27,56 @@ All vendor code and bundled data use PvPoke commit `f627e89e53c0c7b903fff097df7a
 
 The Master league uses `10000` as the engine's unlimited-league identifier. Current UI choices are the four open leagues; themed cup rules and custom IV entry are not exposed on this tab.
 
-## 3. Published mode
+## 3. Published mode and result identity
 
-Selecting a league loads its bundled arrays. Published mode performs no battles and does not recompute scores. It displays the upstream order/ranks, scores, moves, stats, category scores, editor notes where present, key wins, and counters. Thus this mode reproduces the saved upstream rankings even when a full regeneration would depend on upstream curation or settings not selected in this app.
+Selecting a league loads its bundled arrays. Published mode performs no battles and preserves upstream ranking positions and stored values. Search matches name, type or moves; sorting changes display order; 25 rows are displayed per page. Published scores match the snapshot even when regeneration would depend on curation/settings not used here.
 
-Search matches the Pokémon name, types, or recommended move names. Score/name sorting changes display order. The Rank column preserves the position in the source array. Pagination displays 25 rows per page. Search and sort do not alter the simulation roster.
+Generated results have unique `variantId = speciesId + "|" + moveset.join("|")`. Distinct combinations for one species occupy separate rows and retain their own score, projection, matchups, and category scores. The table can show every evaluated combination or only the highest-scoring row per species in the selected category. That checkbox is a display filter and never changes simulations. Rank remains the position in the complete selected category array. Ties use variant ID order for deterministic display; best-per-species shows one of tied rows, while the lab's best-only filter includes ties.
 
-## 4. Accepted Pokémon and weights
+## 4. Consolidated Include filters and weights
 
-The selectable population is the league's published overall list. Initially, its first 30 Pokémon are accepted. Each weight starts at its bundled override's `weight`, or 1 if unspecified. Accept top N, accept all, clear, and individual checkboxes modify membership. Equal weights sets every entry to 1; Published weights restores bundled values. Roster search only changes which controls are visible.
+A shared roster editor exposes all nine Include filter types from PvPoke Custom Rankings: Type (including Mono-type), Tag, Species, Pokédex Number, Move, Move Type, Charged Move Cost, Buddy Walk Distance, and Evolution stage. Types/tags/costs/distances/stages use selectable options; Species and Move use comma-separated IDs with suggestions; Pokédex accepts inclusive ranges such as `1-151, 252-386` or single numbers.
 
-Generation requires at least two unique accepted species IDs. Each must be in the published population, with a finite weight greater than 0 and at most 1000. An unchecked Pokémon is excluded; zero is not an accepted weight. Base, Shadow, and other forms with different species IDs are separate entries.
+The app sends these filters to the unchanged `GameMaster.generateFilteredPokemonList` in a worker, rather than reimplementing tag/move/evolution semantics. Values within a filter are alternatives. Include filters combine as upstream criteria, with explicit Species IDs overriding other Include criteria. Move and Move Type filters test learnable move pools, not the movesets that will be ranked. Hidden Power does not satisfy the upstream Move Type filter. No Include rules means all eligible Pokémon in the bundled published league population. An empty Species filter means no accepted Pokémon. Presets provide top N published species, all eligible species, or an empty roster. The top N preset is a Species rule; adding a new filter replaces an untouched preset rule so it can narrow the roster naturally. Manually entered Species rules retain the upstream override behavior.
 
-For generation, the adapter constructs a `custom` cup with an explicit ID inclusion list, no exclusions, `includeLowStatProduct: true`, and `excludeLowPokemon: false`. It does not discard accepted Pokémon merely because their published score is below 70. It passes each Pokémon's requested weight as an upstream moveset override, along with its published fast and charged moves. Higher weight increases that Pokémon's influence as an opponent, not a direct bonus to its own score.
+The app intersects upstream eligibility with the published population so every opponent has a recommended moveset. It does not expose an Exclude builder or import Pokebox groups. The `custom` cup uses `includeLowStatProduct: true` and `excludeLowPokemon: false`; release flags, low-CP bans, duplicate-form rules and Little Cup Shadow level restrictions remain upstream. The catalog's ordinary minimum stat-product thresholds (0 / 1370 / 2800 / 4900 by league) are bypassed. Species that exist in gamemaster but not the published population cannot be added as opponents in this version.
 
-[GameMaster.generateFilteredPokemonList](vendor/GameMaster.js) still applies upstream initialization and eligibility rules: release flags, low-CP bans, duplicate-form restrictions, Little Cup Shadow level restrictions, and inclusion filtering. The custom cup bypasses the normal minimum stat-product threshold. If upstream filtering removes a requested Pokémon, the adapter reports the excluded IDs and stops instead of silently ranking a smaller roster.
+Every accepted species has one positive finite opponent weight, at most 1000, defaulting to its bundled override's weight or 1. Equal weights and Published weights are available in the accepted roster preview. A weight changes its importance as an opponent, not a direct bonus to its own variant score. At least two accepted species are required. Filters are applied asynchronously and generation stays disabled while they are pending or invalid. Invalid IDs/ranges show an error.
 
-The upstream function's ordinary stat-product thresholds are 0 / 1370 / 2800 / 4900 for 500 / 1500 / 2500 / 10000 CP, using Attack × Defense × HP / 1000. These thresholds are bypassed in our custom cup. Upstream open-league target filtering and curated overrides can therefore differ from this app's custom-roster rules.
+## 5. Pokémon initialization, combinations and projection
 
-## 5. Pokémon initialization and fixed movesets
+The unchanged `Pokemon.initialize` uses gamemaster default IVs/levels for the league; Master normally uses 15/15/15 at the applicable cap. The normal level cap is 50 with upstream form-specific exceptions. These defaults do not come from the IV entries in the first tab. Effective Attack and Defense are CPM × (base stat + IV); HP is floored with a minimum of 10, plus the upstream Shedinja exception. Shadows, buffs, forms and special move mechanics remain in the engine.
 
-[Pokemon.initialize](vendor/Pokemon.js) uses the league's gamemaster default IV and level combination. The normal battle level cap is 50, with upstream species/form-specific exceptions. Master normally uses 15/15/15 at the applicable cap. CP-limited defaults come from `defaultIVs.cp500`, `cp1500`, or `cp2500`; absent combinations follow the upstream fallback. These are not the user's IV entries from the first tab, and they are not an exhaustive IV optimization performed for each ranking run.
+Each accepted species' actual engine pools are enumerated: every fast move × each unordered pair of distinct ordinary charged moves, with supported extra charged choices. For F fast and C ordinary charged moves, this is `F × C × (C - 1) / 2` when C ≥ 2. One charged move uses a second `none`; extra choices multiply the pairs where supported. Available Elite TM, legacy, Return/Frustration and form-specific pools are inherited. Charged order permutations are not tested separately. A species with no usable combination produces an explicit error.
 
-Effective base battle stats are CPM × (base stat + IV). HP is floored with a minimum of 10; Shedinja has its explicit upstream HP rule. Shadow modifiers, stat stages, form transitions, and move-specific properties remain in the engine.
+All combinations is the default. Scouted top N limits each species before full-roster battles; the accepted roster preview can supply an individual override, even when the default policy is All. Limits are integers from 1 to 10,000. Blank uses the shared policy. Top N is applied independently per species. The selection pipeline is:
 
-The category ranker runs in `force` moveset mode. GameMaster first initializes move choices from existing ranking move-use data, then our overrides force the published `moveset`: one fast move, up to two ordinary charged moves, and the supported extra charged move where present. All five scenarios use those fixed choices. The custom generator does not search all movesets or adapt the moveset separately to each opponent. The upstream auto-selection path exists in the vendor source but is not enabled by this interface.
+- Compute the cheap type-aware damage/energy cycle proxy below for every legal combination.
+- For each limited species, retain up to `min(10000, max(32, 4 × N))` proxy leaders as a shortlist, and ensure its published recommended combination is also present. Species with no limit retain all combinations.
+- If any species still needs pruning, choose up to eight recommended opponent species greedily by `enteredWeight × (1 + numberOfNewDefensiveTypes)`. Ties follow roster order. This balances user weights with type coverage. Use all opponents when there are at most eight.
+- Run the real upstream combat engine on the shortlisted candidates against that scout sample in all five ranking scenarios. This directly models fast energy generation, fast/charged damage, charged costs, shields, timing, bait heuristics and supported effects. It is not an arbitrary linear blend of damage and energy.
+- Compute scout category/consistency/overall scores with the same rectangular scoring formula as the final run, but using the scout target population and its recommended baselines. Rank candidates by this scout score.
+- Retain N combinations per limited species, reserving one slot for its published recommendation. If that recommendation is below the cutoff, it replaces the last selected row; N remains the total limit. At N = 1, only the recommendation is retained and unnecessary scouting is skipped. Recommended charged pairs use canonical unordered comparison; upstream special recommendations are preserved as baseline records.
+- Run the retained candidates against the entire recommended opponent roster, reusing every matching scout battle from the cache. Scout scores select candidates; final scores determine the displayed ranks.
 
-## 6. Five ranking scenarios
+The protected recommendation is a safeguard, not evidence that the heuristic predicted it correctly. Top N can still miss the full-roster best moveset. All mode is the exhaustive option. Equal projection/scout scores are broken by stable variant ID. The benchmark below measures exact-best retention and near-best losses explicitly.
 
-[Ranker.rankLoop / rank](vendor/Ranker.js) simulates each accepted Pokémon against the accepted opponent population in each of these scenarios. Both start at full HP. Energy values below are turns of advantage, not raw energy units.
+The cheap first-stage proxy for a fast/charged move against opponent j is:
 
-| Category | Pokémon shields | Opponent shields | Pokémon energy advantage | Opponent energy advantage |
+```
+k = ceil(chargedEnergy / fastEnergyGain)
+cycleDPT = (k × fastDamage + chargedDamage) / (k × fastTurns)
+```
+
+Fast/charged damage uses upstream DamageCalculator with initialized default stats, STAB, typing, Shadow and form modifiers. A combination uses the best of its charged-cycle values and fast-only DPT per opponent. A zero-energy-gain fast move uses fast-only DPT. Its projection is the entered-weight average across accepted recommended opponents, excluding its own species. Thus energy generation and charged cost already affect the proxy, but it ignores shielding/bait timing and can overvalue slow, expensive attacks. It is used for a generous shortlist only, rather than the final N. The Scout stage resolves that weakness with real battles.
+
+The table labels the cheap value as Cycle damage/turn and, when scouting ran, shows Scout score out of 100 separately from the final score. The scout score is an estimate from a smaller meta, not a calibrated win probability or a guarantee.
+
+Opponents always use the bundled overall recommended moveset. One species with 100 candidate variants still contributes exactly one opponent and one weight. A recommended baseline is computed even when an individual combination was not originally enumerated; baseline records and matches are reused where possible. Candidate count never inflates opponent meta relevance.
+
+## 6. Five ranking scenarios and rectangular battles
+
+| Category | Subject shields | Opponent shields | Subject energy advantage | Opponent energy advantage |
 | --- | --- | --- | --- | --- |
 | Leads | 1 | 1 | 0 turns | 0 turns |
 | Closers | 0 | 0 | 0 turns | 0 turns |
@@ -65,9 +84,9 @@ The category ranker runs in `force` moveset mode. GameMaster first initializes m
 | Chargers | 1 | 1 | 6 turns | 0 turns |
 | Attackers | 0 | 1 | 0 turns | 0 turns |
 
-For a nonzero advantage `t`, the subject starts with the energy from `max(1, floor(t × 500 / fastMove.cooldown))` fast moves, capped at 100 energy. A turn is 500 milliseconds. For example, a two-turn fast move gives two fast moves' energy in the Switches scenario. No prior damage is applied for those imaginary fast moves.
+The scenarios come from the pinned gamemaster. Each variant starts at full HP against each other accepted species' recommended moveset. A nonzero t turns of advantage gives `min(100, fastEnergyGain × max(1, floor(t × 500 / fastCooldown)))` starting energy. A turn is 500 ms; no prior damage is assigned for those imaginary fast moves. Opponent starting energy is zero in all shipped scenarios.
 
-For symmetric shield/energy scenarios, the ranker reuses an already computed reverse matchup where available, swapping subject/opponent ratings and move usage. Asymmetric scenarios are simulated in each direction. Mirror matchups are simulated but get zero weight in the later score calculation.
+This is a rectangular candidate × recommended-opponent matrix, not variant × variant. Self-species cells are assigned a neutral raw/adjusted 500 without a battle; their final scoring weight is zero. They remain 500 in the initial baseline average. Recommended baseline records are shared with selected candidates where possible. Each other record/opponent/scenario pair is simulated once. The UI reports actual simulated battle count and selected versus available combinations. There is no blanket reverse-match reuse, since a candidate can differ from the recommended moveset on the other side.
 
 ## 7. What happens inside a battle
 
@@ -109,63 +128,51 @@ adjustedBR = BR + winnerFlag × 100 × (opponentShieldsSpent + ownShieldsRemaini
 
 The initial category score S[i,0] is the floored arithmetic average of adjusted ratings across the target count, including the mirror at this initial stage. Later passes assign the mirror zero weight.
 
-## 9. Iterative category weighting — the exact custom path
+## 9. Category scoring against a fixed opponent population
 
-Our cup name is `custom`, which makes the upstream category ranker run seven weighting passes. Its non-custom path uses one pass. Each pass uses the previous pass's scores, and progressively downweights lower-performing opponents.
+The variant adapter in `worker.js` and pure `core.js` extends the PvPoke scoring design to a rectangular population. It does not call the original square-population Ranker directly. The unchanged vendor Ranker remains available as a reference. This distinction prevents variants from inflating opponent weights or breaking upstream index assumptions.
 
-For pass n = 0 through 6, let B be the largest S[j,n] and c = 0.1 + 0.06n. In our equal subject/target population:
+For each scenario, simulate the N recommended baseline records and selected candidate records against the same N recommended targets. The initial baseline S[j,0] is its floored arithmetic mean adjusted BR, including a neutral 500 self cell. Across seven passes n = 0..6, set B to the highest previous recommended-baseline score and c = 0.1 + 0.06n:
 
 ```
-metaWeight[j] = max(S[j,n] / B - c, 0) ^ 1.65
-weight[i,j] = metaWeight[j] × userWeight[j]
-weight[i,i] = 0
+metaWeight[j] = max(S[j,n] / B - c, 0)^1.65
+weight[i,j] = metaWeight[j] × enteredOpponentWeight[j]
+weight[i,j] = 0 when subject and target species IDs match
 ```
 
-The cutoff c grows from 0.10 to 0.46. The weight is not simply the entered number: it is that number multiplied by the opponent's current meta relevance. As scores change, later passes change the importance of opponents. Scaling all user weights by the same positive factor normally cancels in weighted averages; changing their ratios changes the result.
+Each pass scores both the candidates and the recommended baselines using those same previous-baseline meta weights. The new baseline scores feed the next pass. Candidate variants never enter the opponent population or influence these baseline meta weights. Adding duplicate candidate records therefore cannot inflate a species' importance. Category normalization still depends on the best selected candidate.
 
-Before summing, the ranker modifies the stored adjusted matchup rating a:
+The adjusted matchup value a is curved each pass, following the existing custom path's repeated in-place curvature:
 
 ```
 if a > 700: a = 700 + sqrt(a - 700)
-if a < 300: a = 300 ^ ((300 + a) / 600)
+if a < 300: a = 300^((300 + a) / 600)
+if category is Switches and a < 500:
+    weight *= 1 + (500 - a)^2 / 20000
+nextScore = floor(sum(a × weight) / sum(weight))
 ```
 
-This compresses extreme wins and makes hard losses more costly. For Switches, a loss also increases its opponent's weight:
+Candidate and baseline curves use separate copies so sharing a recommended record does not apply a curve twice in one pass. If a subject has zero total non-mirror meta weight, that row/pass falls back to the entered non-mirror opponent weights; the UI reports the number of such fallback rows/passes. This explicitly prevents zero-denominator scores in small/degenerate metas. The fallback does not reapply the Switch loss multiplier. Otherwise weights retain the normal Switch penalty.
+
+After the seventh pass, Chargers also applies the upstream fast-pressure/carryover factor:
 
 ```
-if a < 500: weight *= 1 + (500 - a)^2 / 20000
-```
-
-The intention is to reward safer switches instead of Pokémon with strongly polarized matchups. The next score is the floored weighted average:
-
-```
-S[i,n+1] = floor(sum(a[i,j] × weight[i,j]) / sum(weight[i,j]))
-```
-
-Important implementation details: the score curves modify `matches[j].adjRating` in place, so the seven-pass custom path can reapply them to an already curved value. The source also computes a contribution and an opponent-strength ordering value before a final cutoff assignment to the denominator weight. In the normal equal-population path, opponents below that cutoff already have zero meta weight. These details are retained because the vendor source is unchanged; a clean reimplementation that curves each raw rating only once would not be numerically identical.
-
-The final pass supplies the category's unnormalized score. For Chargers only, it is multiplied by a fast-pressure / energy-carryover factor:
-
-```
-fastDPT = fastMove.power × fastMove.stab × shadowAttackMultiplier
-          × (Attack / 100) / (fastMove.cooldown / 500)
-carryover = 100 - minimum(activeChargedMove.energy)
+fastDPT = fastPower × STAB × ShadowAttackMultiplier × (Attack / 100) / fastTurns
+carryover = 100 - minimum(activeChargedEnergy)
 chargerFactor = ((carryover / 100)^(1/2) × (fastDPT / 5)^(1/6))^(1/6)
 ```
 
-Finally, each category is sorted descending and normalized to its own leader:
+Each category is normalized across its selected candidate rows:
 
 ```
-categoryScore = floor(1000 × unnormalizedScore / highestUnnormalizedScore) / 10
+categoryScore = floor(1000 × finalCandidateScore / highestCandidateScore) / 10
 ```
 
-The best category score is 100. Other scores are truncated to one decimal place, not rounded to the nearest tenth. Category scores are relative to the current accepted population.
+Each category's best candidate has 100. A non-positive/non-finite category leader produces an explicit error. Changing roster, weights or selected movesets can change normalized scores; compare within one generated report. Generated scoring is a documented extension of PvPoke, not a claim of identical regeneration of its published square-population results.
 
 ## 10. Key wins and counters
 
-The category ranker stores up to five wins and up to five losses. Counters are selected after ordering by `adjustedOpponentRating × 4^weight`, then displayed in ascending raw BR. The win-selection code attempts to order by weighted contribution and displays selected wins descending by raw BR. Overall results inherit the Lead category's matchup lists; changing the category shows that category's lists.
-
-A source-level subtlety: the counter-selection loop deletes intermediate `score` fields from visited matchup records before the subsequent win sort. Consequently, the shipped implementation's key wins are not guaranteed to be a fresh global top-five weighted-contribution selection. The app displays the upstream lists without correcting or recomputing them. They are illustrative key matchups, not an exhaustive matchup matrix.
+Generated variants store the five highest raw-BR wins and five lowest raw-BR losses against recommended opponents, excluding self-species cells. This deterministic selection replaces the original ranker's intermediate-score mutation/order quirk. Overall details inherit Lead-scenario matchups. Other categories show their own scenario lists. Each table row keeps its own lists even when multiple rows share a species ID. Published mode continues to show the stored upstream key lists unchanged.
 
 ## 11. Consistency score
 
@@ -185,7 +192,7 @@ The full bait-condition expression and energy corrections are in the linked `cal
 
 ## 12. Overall score
 
-[RankerOverall.js](vendor/RankerOverall.js) combines the five normalized category scores and consistency C. It aligns category entries by species name. Let L, K, S, G, A mean Lead, Closer, Switch, Charger, and Attacker scores respectively. Form four values and sort descending:
+[core.js](core.js) applies the combination formula from [RankerOverall.js](vendor/RankerOverall.js) to the five normalized category scores and consistency C. Generated categories align by variant ID; the original ranker aligned by species name. Let L, K, S, G, A mean Lead, Closer, Switch, Charger, and Attacker scores respectively. Form four values and sort descending:
 
 ```
 q = descendingSort([L, K, max(S, G), A])
@@ -206,7 +213,7 @@ Upstream can then blend an editor score E, if a matching cup/league override exi
 overall = 0.25 × overall + 0.75 × E
 ```
 
-Our custom worker supplies no overall editor override. Therefore this blend is not applied to generated results. Published mode displays the stored upstream values, including any blend already used. The adapter uses bundled overrides only to seed roster weights; it does not feed their editor scores into custom overall scoring.
+Our custom scoring never applies an overall editor override. Therefore this blend is not applied to generated results. Published mode displays the stored upstream values, including any blend already used. The adapter uses bundled overrides only to seed roster weights; it does not feed their editor scores into custom overall scoring.
 
 Finally, `floor(overall × 10) / 10` truncates the overall score to one decimal and results are sorted descending. Overall scores are not rescaled to force a leader of 100. The six detail scores are Lead, Closer, Switch, Charger, Attacker, and Consistency.
 
@@ -226,15 +233,17 @@ This uses raw BR. It does not use category shield bonuses, seven-pass meta rewei
 
 Movesets are sorted by labRating. Best-only keeps all ties within `1e-8` of the best. Otherwise, a threshold p shows `rating >= best × (1 - p / 100)`. A 10% threshold means at least 90% of the best weighted BR, not 10 points below the overall score. Set 100% to show every evaluated moveset. Below-best percentage is `(1 - rating / best) × 100`, with a zero-best guard.
 
-The combination limit defaults to 500 and can be set from 1 to 10,000. If the complete set exceeds the limit, the run stops with an explicit error; it does not silently sample combinations. A species with no selectable combination reports an error. This version compares one species' alternatives at a time; it does not produce a joint ranking of every species × moveset or let all opponents optimize in response.
+The combination limit defaults to 500 and can be set from 1 to 10,000. If the complete set exceeds the limit, the run stops with an explicit error; it does not silently sample combinations. A species with no selectable combination reports an error. The Lab remains a one-species raw-BR tool. The Rankings subtab now jointly ranks selected combinations across all accepted species using the five-category pipeline above; opponents remain recommended-only in both tools.
 
-## 14. Browser execution, state, and limits
+## 14. Browser execution, state and compute
 
-Generation and lab runs execute in a fresh Web Worker, using bundled data. A small adapter supplies the upstream GameMaster and intercepts the ranker's output; no upstream PHP endpoint is called and no results are uploaded. The overall ranker's JSON POST is captured as a local message. Cancel terminates the worker. Changing roster or weights invalidates generated results and lab results; changing league reloads its data. Selecting another Pokémon clears its predecessor's lab output. Results remain in page memory and are lost on reload.
+Filters, custom rankings and lab battles run in cancellable Web Workers against bundled data. No server-side simulations or upstream PHP writes occur, and no roster/results are uploaded. The unchanged Battle, Pokemon, DamageCalculator and supporting action classes supply the combat model. The adapter handles rectangular generation; the original category/overall rankers remain as readable reference sources. The overall combination formula is implemented in testable `core.js`, with upstream `Pokemon.calculateConsistency` supplying C.
 
-Rank generation is approximately quadratic in roster size across five scenarios, with symmetric reuse where possible and seven score passes. Lab cost is proportional to moveset count × opponent count. Battle durations and special mechanics affect actual runtime. A large accepted roster can be expensive even if the interface remains responsive. The roster counter is an estimate of pair/scenario work, not a runtime prediction.
+Rank cost includes a cheap cycle shortlist, five-scenario scout battles against at most eight opponents when pruning is needed, and final retained-candidate battles against the remaining full roster. Matching scout/final cells are cached, including recommended baselines. The cheap cycle stage uses arithmetic and performs no Battle.simulate calls; the scout stage deliberately does. The UI reports actual total battle count including screening. Work estimates include scouting and baseline overhead before cache savings. The default All policy can still be expensive for a large roster. Top N and individual limits reduce actual simulation count. All mode has no hidden candidate cap. Top N deliberately uses the documented bounded preliminary shortlist. The UI estimates work, reports progress and provides Cancel; a fresh worker prevents data leaking between runs. Moveset Lab has its own explicit maximum-combination guard.
 
-The original engine and rankers retain their rounding, indexing assumptions, heuristics, and unusual edge cases. Very small or pathological rosters can be less informative, and a degenerate zero denominator or non-finite upstream score is not mathematically repaired by this adapter. Scores should be interpreted within their selected roster and assumptions. They do not predict every player decision, team composition, lag condition, or IV-dependent breakpoint.
+Changing Include rules/league, weights or candidate-selection settings invalidates generated results and lab output; changing display filters does not. Pending/invalid Include filters disable generation. Individual limits are validated before running. Results are kept in page memory; reload clears them. Published results remain accessible. Selecting a different ranking species clears the previous lab output; the lab selector can choose any published species regardless of whether it is an accepted opponent.
+
+The engine remains heuristic: defaults, move timing, shield baiting, form mechanics and rounding matter. Projections can miss shield- or buff-dependent movesets. Generated scores include the described rectangular scoring changes and omit editor adjustments. They are not calibrated win probabilities or exhaustive optimal-play proofs.
 
 ## 15. Developer and AI reading map
 
@@ -242,18 +251,37 @@ Read these files in order to inspect or modify the algorithm. All links resolve 
 
 | File | Responsibility |
 | --- | --- |
-| [worker.js](worker.js) | Input setup, fixed moveset overrides, category/overall orchestration, output capture, lab battles. |
-| [core.js](core.js) | Roster validation, combination enumeration, threshold/tie filtering. |
+| [worker.js](worker.js) | Upstream Include filtering, moveset projection/pruning, rectangular battles, variant scores and lab. |
+| [core.js](core.js) | Validation, enumeration, cycle DPT, top N, rectangular category scoring, overall formula, lab thresholds. |
 | [ui.js](ui.js) | Initial population, weights, user actions, results and state. |
 | [GameMaster.js](vendor/GameMaster.js) | Data lookup, filtering, override application. |
 | [Pokemon.js](vendor/Pokemon.js) | IV/level/stats, move pools, forms, reset behavior, consistency. |
 | [Battle.js](vendor/Battle.js) | Turn simulation, action resolution, shields, buffs, end conditions. |
 | [ActionLogic.js](vendor/ActionLogic.js) | Tactical move/energy/bait decisions. |
 | [DamageCalculator.js](vendor/DamageCalculator.js) | Exact damage and type multipliers, special damage methods. |
-| [Ranker.js](vendor/Ranker.js) | Scenarios, BR, shield adjustments, iterative weighting, normalization, key matchups. |
-| [RankerOverall.js](vendor/RankerOverall.js) | Category combination, consistency, editor blend, final truncation. |
+| [Ranker.js](vendor/Ranker.js) | Upstream reference for category scoring; not the active rectangular ranker. |
+| [RankerOverall.js](vendor/RankerOverall.js) | Upstream reference for overall/consistency/editor formulas; generated combination lives in core.js. |
 | [TimelineAction.js](vendor/TimelineAction.js), [TimelineEvent.js](vendor/TimelineEvent.js), [DecisionOption.js](vendor/DecisionOption.js) | Supporting action/event/decision structures. |
 
-Run the repository's checks with `node --test familyRanks.test.cjs analysis.test.cjs pro.test.cjs`. They cover the existing tools, actual custom engine generation, weight sensitivity, combination enumeration, threshold ties, combination limits, and four-league bundle coverage. Bundled published arrays were also compared with the pinned upstream files. Tests establish these behaviors, not perfect parity with every future upstream release or exhaustive tactical optimality.
+Run `node --test familyRanks.test.cjs analysis.test.cjs pro.test.cjs`. Tests cover the existing tools, complete multi-species variant generation, unique IDs, weight sensitivity, rectangular opponent count, recommended-seeded scout top N and individual limits, all nine upstream filter types, AND/Species override semantics, cycle DPT, candidate-population independence, lab limits and league coverage.
 
-To refresh the snapshot, update all vendor sources, gamemaster, the four complete league bundles, override bundles, and the pinned commit references together. To globally rank alternative movesets in the future, first choose how opponents' movesets are fixed or optimized, whether weights attach to species or variants, and whether each variant gets the same five-scenario and consistency/editor treatment. The current lab's BR should not be silently substituted for Overall.
+To refresh the snapshot, update all vendor sources, gamemaster, league bundles, overrides and pinned references together. To change scoring, edit the documented adapter/core functions and tests; keep vendor sources unchanged for provenance. Future opponent optimization would require an explicit new policy rather than treating variants as extra independently weighted species.
+
+## 16. Selector benchmark
+
+The original cycle-DPT-only selector was not reliable enough by itself. We compared it with the improved shortlist → real-battle scout → protected recommendation selector using 120 Pokémon–league cases across Little, Great, Ultra and Master.
+
+For each league, published ranks 1–15 form one 15-species equal-weight opponent meta, and ranks 16–30 form a separate held-out meta. Exhaustive All-mode five-scenario results are the reference. A case succeeds if at least one combination tied for that species' highest truncated Overall score is retained. Near-best means a retained combination is within one point of the exhaustive best. Regret is evaluated using the exhaustive report's scores, avoiding normalization changes caused by pruning. These are 120 species/league/meta cases, not necessarily 120 distinct species.
+
+| Selector | Best retained at N=5 | Best retained at N=10 | Published recommendation at N=5 / N=10 |
+| --- | --- | --- | --- |
+| Cheap cycle DPT only | 85/120 · 70.8% | 109/120 · 90.8% | 86/120 · 71.7% / 105/120 · 87.5% |
+| Improved seeded scout | 117/120 · 97.5% | 120/120 · 100% | 120/120 at both limits, protected by design |
+
+Top 5 was within one point in 119/120 cases. Its misses were Little Dewpider (0.8 points), Master Xerneas (1.0), and Great Araquanid in the held-out group (2.4). The initial 60 cases achieved 58/60 exact best at N=5; the separate 60-case check achieved 59/60. N=10 retained a best moveset in both groups.
+
+Exhaustive evaluation used 291,200 battles. The N=5 selector used 118,480 including its scout stage (59.3% fewer); N=10 used 146,415 (49.7% fewer). Cheap damage-cycle arithmetic is additional CPU work but performs no battles. Small rosters can save less or no work; these savings are measured results for the described benchmark, not a universal speedup.
+
+[Detailed benchmark data](benchmark-report.json) contains every case's cheap-proxy rank, per-league screening outcomes, misses and battle counts. Reproduce a full comparison with `node scripts/benchmark-pro.cjs` from the repository; it writes `work/pro-benchmark.json` by default and may take several minutes. It evaluates N=1, 3, 5 and 10 in both bands.
+
+This is evidence of useful screening reliability, not proof of universal optimality. A different roster, skewed weights, unusual forms, IVs, buffs or future move updates can change performance. The benchmark's best is defined by this app's exhaustive simulation/scoring model, not a universal real-play best. Use N=10 as the tested cautious default; use All when a guaranteed exhaustive comparison matters.
