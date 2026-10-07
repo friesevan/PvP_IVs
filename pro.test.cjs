@@ -99,3 +99,16 @@ test('upstream Include filters support all nine types, AND, and Species override
  for(const filter of [{filterType:'tag',values:['shadow']},{filterType:'dex',values:[1,151]},{filterType:'move',values:['COUNTER']},{filterType:'moveType',values:['water']},{filterType:'cost',values:[10000]},{filterType:'distance',values:[1]},{filterType:'evolution',values:[3]}])assert.ok(check([filter]).length>0,filter.filterType);
  const narrowed=check([{filterType:'type',values:['water']},{filterType:'dex',values:[1,151]}]);assert.ok(narrowed.length>0&&narrowed.length<water.length);assert.ok(narrowed.every(id=>data.pokemon.find(p=>p.speciesId===id).dex<=151));
 });
+
+test('published zero weights cannot make an explicitly included custom roster invalid',()=>{
+ for(const cp of [500,1500,2500,10000]){
+  const published=JSON.parse(fs.readFileSync(path.join(base,'data/league-'+cp+'.json'))).overall;
+  const overrides=JSON.parse(fs.readFileSync(path.join(base,'data/overrides-'+cp+'.json')));
+  const weights=new Map(overrides.map(row=>[row.speciesId,row.weight]));
+  const roster=published.map(row=>({speciesId:row.speciesId,weight:PvPPro.customWeight(weights.get(row.speciesId))}));
+  assert.equal(validateRoster(roster,new Set(published.map(row=>row.speciesId))).length,published.length);
+ }
+ for(const value of [0,-1,NaN,undefined,Infinity,1001])assert.equal(PvPPro.customWeight(value),1);
+ assert.equal(PvPPro.customWeight(.5),.5);assert.equal(PvPPro.customWeight(1000),1000);
+ assert.throws(()=>validateRoster([{speciesId:'a',weight:1},{speciesId:'b',weight:0}],new Set(['a','b'])),/b: enter a matchup weight/);
+});

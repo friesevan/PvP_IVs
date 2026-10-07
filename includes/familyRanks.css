@@ -232,3 +232,9 @@ summary { font-weight: 600; }
 .pro-saved-controls > label { display: grid; gap: .4rem; max-width: 36rem; font-weight: 600; }
 .pro-saved-controls input { width: 100%; box-sizing: border-box; }
 .pro-saved-controls .save-actions { margin-top: .75rem; flex-wrap: wrap; }
+.pro-builder-actions {display:flex;justify-content:flex-end;margin:16px 0;}
+.pro-builder-heading {display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:20px;}
+.pro-builder-heading h2 {margin:0;font-size:1.25rem;}
+.pro-builder-heading p {margin-bottom:0;}
+#proBuilder {border-top:3px solid var(--accent,#2563eb);}
+#proCustomRules {padding:16px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);margin:16px 0;}

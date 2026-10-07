@@ -1,10 +1,12 @@
 (function(root){
   'use strict';
   const source='f627e89e53c0c7b903fff097df7a0ad0ac95decc';
+  const customWeight=value=>Number.isFinite(value)&&value>0&&value<=1000?value:1;
   function validateRoster(roster,allowed){
     if(roster.length<2)throw new Error('Select at least two Pokémon.');
     if(new Set(roster.map(item=>item.speciesId)).size!==roster.length)throw new Error('Each Pokémon must appear only once.');
-    if(roster.some(item=>!allowed.has(item.speciesId)||!Number.isFinite(item.weight)||item.weight<=0||item.weight>1000))throw new Error('Select eligible Pokémon with weights greater than 0 and at most 1000.');
+    const invalid=roster.find(item=>!allowed.has(item.speciesId)||!Number.isFinite(item.weight)||item.weight<=0||item.weight>1000);
+    if(invalid)throw new Error(!allowed.has(invalid.speciesId)?invalid.speciesId+' is not eligible for this league.':invalid.speciesId+': enter a matchup weight greater than 0 and at most 1000.');
     return roster;
   }
   function enumerate(fast,charged,extra=[]){
@@ -74,5 +76,5 @@
     if(scores[4]<=75&&consistency<=75)score=(score**14*scores[4]*consistency)**(1/16);
     return Math.floor(score*10)/10;
   }
-  root.PvPPro={source,validateRoster,enumerate,filterVariants,key,cycleDpt,selectCandidates,categoryScores,overallScore,seededCandidates};
+  root.PvPPro={source,customWeight,validateRoster,enumerate,filterVariants,key,cycleDpt,selectCandidates,categoryScores,overallScore,seededCandidates};
 })(typeof self!=='undefined'?self:globalThis);
