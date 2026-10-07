@@ -2,6 +2,17 @@
   'use strict';
   const source='f627e89e53c0c7b903fff097df7a0ad0ac95decc';
   const customWeight=value=>Number.isFinite(value)&&value>0&&value<=1000?value:1;
+  function sameMoveset(a,b){
+    if(!Array.isArray(a)||!Array.isArray(b)||!a.length||!b.length)return false;
+    const signature=m=>JSON.stringify([m[0],m.slice(1,3).filter(id=>id&&id!=='none').sort(),m[3]||'none']);
+    return signature(a)===signature(b);
+  }
+  function compareMoveset(row,recommended,baselineScore,score=row.score){
+    if(!recommended?.moveset)return null;
+    if(sameMoveset(row.moveset,recommended.moveset))return {kind:'recommended',delta:0,baselineScore};
+    const comparable=Number.isFinite(baselineScore)&&Number.isFinite(score),delta=comparable?score-baselineScore:null;
+    return {kind:comparable&&delta>1e-8?'better':'alternate',delta,baselineScore:comparable?baselineScore:null};
+  }
   function validateRoster(roster,allowed){
     if(roster.length<2)throw new Error('Select at least two Pokémon.');
     if(new Set(roster.map(item=>item.speciesId)).size!==roster.length)throw new Error('Each Pokémon must appear only once.');
@@ -76,5 +87,5 @@
     if(scores[4]<=75&&consistency<=75)score=(score**14*scores[4]*consistency)**(1/16);
     return Math.floor(score*10)/10;
   }
-  root.PvPPro={source,customWeight,validateRoster,enumerate,filterVariants,key,cycleDpt,selectCandidates,categoryScores,overallScore,seededCandidates};
+  root.PvPPro={source,customWeight,sameMoveset,compareMoveset,validateRoster,enumerate,filterVariants,key,cycleDpt,selectCandidates,categoryScores,overallScore,seededCandidates};
 })(typeof self!=='undefined'?self:globalThis);

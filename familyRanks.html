@@ -153,6 +153,7 @@
     </div>
 <p id="proGeneratedContext" class="hint" hidden></p>
     <label id="proBestFilter" class="pro-best-filter" hidden><input id="proRankBestOnly" type="checkbox"> Show best moveset per Pokémon only</label><div id="proRunSummary" class="hint"></div>
+    <p id="proMovesetLegend" class="pro-moveset-legend" hidden><span class="pro-alternate-key">Alternate moveset</span><span class="pro-better-key">Beats recommended</span><span class="hint">Compared with the same Pokémon’s recommended moveset in this report and category.</span></p>
     <div class="pro-layout">
       <section class="pro-rank-card" aria-label="League rankings"><div id="proRankings" class="table-scroll" tabindex="0"></div><div class="analysis-pagination"><span id="proPagination"></span><button id="proPrev" type="button" class="secondary">Previous</button><button id="proNext" type="button" class="secondary">Next</button></div></section>
       <aside class="pro-detail-card"><div id="proDetail"><h3>Pokémon details</h3><p>Select a Pokémon in the rankings.</p></div></aside>
@@ -161,7 +162,7 @@
     <section id="proLabPanel" role="tabpanel" aria-labelledby="proLabTab" class="pro-lab" hidden>
       <h2>Moveset lab</h2><label>Pokémon to evaluate<select id="proLabPokemon"></select></label><p class="hint">Evaluate every legal move combination for the selected Pokémon against your accepted weighted roster. Opponents use published movesets and PvPoke’s default IVs. This uses equal shields, zero starting energy and weighted mean Battle Rating (0–1000); it is a separate comparison from the five-scenario overall ranking. Elite TM and legacy moves are included.</p>
       <div class="pro-toolbar"><label>Shields per side<select id="proShields"><option value="0">0</option><option value="1" selected>1</option><option value="2">2</option></select></label><label>Maximum combinations<input id="proLimit" type="number" min="1" max="10000" value="500"></label><label>Within % of best<input id="proThreshold" type="number" min="0" max="100" value="10" step="0.5"></label><label class="pro-check"><input id="proBestOnly" type="checkbox" checked> Best moveset only (include ties)</label></div>
-      <button id="proEvaluate" type="button" disabled>Evaluate selected Pokémon’s movesets</button><p id="proVariantContext" class="hint"></p><div id="proVariants" class="table-scroll" tabindex="0">Select a Pokémon to begin.</div>
+      <button id="proEvaluate" type="button" disabled>Evaluate selected Pokémon’s movesets</button><p id="proVariantContext" class="hint"></p><p id="proLabMovesetLegend" class="pro-moveset-legend" hidden><span class="pro-alternate-key">Alternate moveset</span><span class="pro-better-key">Beats recommended</span><span class="hint">Compared using weighted Battle Rating against this lab’s roster.</span></p><div id="proVariants" class="table-scroll" tabindex="0">Select a Pokémon to begin.</div>
     </section>
     <p class="hint">Powered by <a href="https://pvpoke.com/rankings/" target="_blank" rel="noopener">PvPoke</a> · <a href="includes/pro/vendor/LICENSE">MIT license</a>. Simulations estimate performance under fixed assumptions; actual play varies.</p>
   </section>

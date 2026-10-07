@@ -112,3 +112,27 @@ test('published zero weights cannot make an explicitly included custom roster in
  assert.equal(PvPPro.customWeight(.5),.5);assert.equal(PvPPro.customWeight(1000),1000);
  assert.throws(()=>validateRoster([{speciesId:'a',weight:1},{speciesId:'b',weight:0}],new Set(['a','b'])),/b: enter a matchup weight/);
 });
+
+test('moveset highlights ignore ordinary charged order but retain fast and extra move differences',()=>{
+ const recommended={moveset:['F','A','B','EXTRA']};
+ assert.equal(PvPPro.compareMoveset({moveset:['F','B','A','EXTRA'],score:90},recommended,89).kind,'recommended');
+ assert.equal(PvPPro.compareMoveset({moveset:['G','B','A','EXTRA'],score:90},recommended,89).kind,'better');
+ assert.equal(PvPPro.compareMoveset({moveset:['F','A','EXTRA','B'],score:88},recommended,89).kind,'alternate');
+ assert.ok(PvPPro.sameMoveset(['F','A'],['F','A','none']));
+ assert.equal(PvPPro.compareMoveset({moveset:['F','X','B'],score:89},recommended,89).kind,'alternate');
+ assert.equal(PvPPro.compareMoveset({moveset:['F','X','B'],score:88},recommended,89).kind,'alternate');
+ assert.equal(PvPPro.compareMoveset({moveset:['F','X','B'],score:90},recommended,undefined).kind,'alternate');
+ assert.equal(PvPPro.compareMoveset({moveset:['F','X','B'],score:90},null,89),null);
+});
+test('generated moveset comparisons use the same report and category baseline',()=>{
+ const result=run('generate',{policy:'top',topN:5}).find(item=>item.type==='result');assert.ok(result);
+ const published=JSON.parse(fs.readFileSync(path.join(base,'data/league-1500.json'))).overall;
+ let better=0,alternate=0;
+ for(const rows of [result.rows,...result.categories.map(c=>c.rows)])for(const row of rows){
+  const recommended=published.find(p=>p.speciesId===row.speciesId),baseline=rows.find(p=>p.speciesId===row.speciesId&&PvPPro.sameMoveset(p.moveset,recommended.moveset));
+  assert.ok(baseline);const comparison=PvPPro.compareMoveset(row,recommended,baseline.score);
+  if(comparison.kind==='better'){assert.ok(row.score>baseline.score);better++;}
+  if(comparison.kind==='alternate'){assert.ok(row.score<=baseline.score);alternate++;}
+ }
+ assert.ok(better>0);assert.ok(alternate>0);
+});

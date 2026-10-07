@@ -244,3 +244,14 @@ summary { font-weight: 600; }
 .pro-search-guide {width:100%;border-collapse:collapse;font-size:14px;}
 .pro-search-guide th,.pro-search-guide td {text-align:left;white-space:normal;padding:9px;border-bottom:1px solid var(--line);}
 @media(max-width:600px){.pro-search-help{flex-direction:column;}.pro-search-guide th:first-child{min-width:110px;}}
+/* Keep the numeric score gradient; mark moveset status on the other cells. */
+.pro-moveset-row-alternate > td:not(.rated-cell) {background:#fff6df;}
+.pro-moveset-row-better > td:not(.rated-cell) {background:#e8f3ff;}
+.pro-moveset-row-alternate > td:first-child {box-shadow:inset 4px 0 #b97806;}
+.pro-moveset-row-better > td:first-child {box-shadow:inset 4px 0 #2268b5;}
+.pro-moveset-badge {display:table;margin-top:8px;padding:3px 7px;border:1px solid;border-radius:6px;font-size:11px;line-height:1.5;font-weight:700;}
+.pro-moveset-alternate,.pro-alternate-key {color:#765000;background:#fff0c6;border-color:#b97806;}
+.pro-moveset-better,.pro-better-key {color:#164f8c;background:#dcecff;border-color:#2268b5;}
+.pro-moveset-recommended {color:var(--muted);background:var(--panel);border-color:var(--line);}
+.pro-moveset-legend {display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin:16px 0;}
+.pro-moveset-legend > span:not(.hint) {padding:4px 9px;border-left:4px solid;border-radius:4px;font-size:12px;font-weight:600;}
