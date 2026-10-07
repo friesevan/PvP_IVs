@@ -3,7 +3,8 @@
   const cache = new Map();
   const api = 'https://api.github.com/repos/pvpoke/pvpoke/';
   async function json(url, signal, optional = false) {
-    if (!url.includes('/commits?') && cache.has(url)) return cache.get(url);
+    const mutable=url.startsWith(api);
+    if (!mutable && cache.has(url)) return cache.get(url);
     const response = await fetch(url, {signal});
     if (optional && response.status===404) return null;
     if (!response.ok) {
@@ -33,7 +34,12 @@
     return {...snapshot,pokemon,moves,rankings:Object.fromEntries(caps.map((cap,i)=>[cap,rankings[i]]))};
   }
   async function branches(signal) {
-    const data=await json(api+'branches?per_page=100',signal);return data.map(item=>item.name);
+    const names=[];
+    for(let page=1;;page++) {
+      const data=await json(api+'branches?'+new URLSearchParams({per_page:'100',page:String(page)}),signal);
+      names.push(...data.map(item=>item.name));
+      if(data.length<100)return names;
+    }
   }
   async function cups(branch,signal) {
     const data=await json(api+'contents/src/data/rankings?'+new URLSearchParams({ref:branch}),signal);return data.filter(item=>item.type==='dir').map(item=>item.name);

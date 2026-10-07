@@ -4,6 +4,7 @@
   const form=$('analysisForm'), status=$('analysisStatus'), host=$('analysisReports');
   let controller, reports = new Map(), activeCap='', view='rows', sortKey='Score', ascending=false, page=0;
   const pageSize=75;
+  let optionsLoaded=false, loadingOptions=false;
   const pokemonColumns=['Pokemon','Status','Old Rank','Rank','Old Score','Score','Difference','Fast Move','Charged Move 1','Charged Move 2','Moveset Change','Update','Attack Availability','Buffs','Nerfs','Rework','XL','Level','Attack','Defense','Stamina','Bulk','Stat Product','Types','Shadow'];
   const typeColumns=['Type','Compared','New','Removed','Old Score','Score','Difference','Update'];
   const visible = new Set(pokemonColumns.filter(key=>!['Attack','Defense','Stamina','Bulk','Stat Product','Shadow'].includes(key)));
@@ -16,6 +17,7 @@
     $('appSubtitle').textContent=analysis?'Based on PvPokeAnalysis · Data from PvPoke':'Modification of PvP IVs';
     $('appSubtitle').href=analysis?'https://github.com/friesevan/PvPokeAnalysis':'https://pvpivs.com/';
     $('appIntro').textContent=analysis?'Explore ranking changes across updates, branches and cups.':'Compare your Pokémon. Plan your best evolutions.';
+    if(analysis && !optionsLoaded) loadOptions();
     if(replace){const url=new URL(location.href);if(analysis)url.searchParams.set('app','analysis');else url.searchParams.delete('app');history.replaceState(null,'',url);}
   }
   $('ivTab').addEventListener('click',()=>appTab('iv',true));$('analysisTab').addEventListener('click',()=>appTab('analysis',true));
@@ -24,19 +26,42 @@
   const earlier=new Date();earlier.setUTCDate(earlier.getUTCDate()-90);$('previousDate').value=earlier.toISOString().slice(0,10);
   function snapshot(prefix){return {branch:$(prefix+'Branch').value.trim(),cup:$(prefix+'Cup').value.trim(),date:$(prefix+'Date').value};}
   function validation(value) {
-    if(!value.branch || value.branch.length>200)throw new Error('Enter a branch name or commit SHA for both snapshots.');
+    if(!value.branch || value.branch.length>200)throw new Error('Select a branch for both snapshots.');
     if(!/^[a-zA-Z0-9_-]+$/.test(value.cup))throw new Error('Cup must be a folder name such as all, remix or sunshine.');
     if(value.date && (Number.isNaN(Date.parse(value.date+'T00:00:00Z')) || new Date(value.date+'T00:00:00Z').toISOString().slice(0,10)!==value.date))throw new Error('Enter a valid cutoff date.');
   }
-  $('analysisDiscover').addEventListener('click',async()=>{
-    const button=$('analysisDiscover');button.disabled=true;status.textContent='Loading branch and cup suggestions…';
+  function setOptions(id,names,fallback) {
+    const select=$(id), current=select.value;
+    const options=[...new Set([fallback,...names])];
+    select.replaceChildren(...options.map(name=>{const option=element('option',name);option.value=name;return option;}));
+    select.value=options.includes(current)?current:fallback;
+  }
+  async function loadCups(prefix) {
+    const branch=$(prefix+'Branch').value;
+    // A new branch starts with the safe default, never the previous branch's cup list.
+    setOptions(prefix+'Cup',[],'all');
     try {
-      const previous=snapshot('previous'),current=snapshot('current');validation(previous);validation(current);
-      const values=await Promise.all([PvPokeData.branches(),PvPokeData.cups(previous.branch),PvPokeData.cups(current.branch)]);
-      for(const [id,names] of [['analysisBranches',values[0]],['previousCups',values[1]],['currentCups',values[2]]]) $(id).replaceChildren(...names.map(name=>{const option=element('option');option.value=name;return option;}));
-      status.textContent='Suggestions loaded from the selected branches. You can also type a branch, commit SHA or cup folder directly. Historical cups can still be entered manually.';
-    }catch(error){status.textContent=error.message;}finally{button.disabled=false;}
-  });
+      const cups=await PvPokeData.cups(branch);
+      if($(prefix+'Branch').value===branch)setOptions(prefix+'Cup',cups,'all');
+    }catch(error){if($(prefix+'Branch').value===branch)status.textContent='Could not load cups for '+branch+'. Using all. '+error.message;}
+  }
+  async function loadOptions() {
+    if(loadingOptions)return;
+    loadingOptions=true;
+    for(const prefix of ['previous','current'])$(prefix+'Branch').disabled=true;
+    const button=$('analysisDiscover');button.disabled=true;status.textContent='Loading branches and cups…';
+    try {
+      const results=await Promise.allSettled([PvPokeData.branches(),PvPokeData.cups($('previousBranch').value),PvPokeData.cups($('currentBranch').value)]);
+      const branches=results[0].status==='fulfilled'?results[0].value:[];
+      for(const prefix of ['previous','current'])setOptions(prefix+'Branch',branches,'master');
+      for(const [i,prefix] of ['previous','current'].entries())setOptions(prefix+'Cup',results[i+1].status==='fulfilled'?results[i+1].value:[],'all');
+      optionsLoaded=results.every(result=>result.status==='fulfilled');
+      const errors=results.filter(result=>result.status==='rejected').map(result=>result.reason.message);
+      status.textContent=errors.length?'Some options could not be loaded. Defaults are master and all. '+[...new Set(errors)].join(' '):'All branches and cups loaded. Cup options follow the selected branch.';
+    }finally{loadingOptions=false;button.disabled=false;for(const prefix of ['previous','current'])$(prefix+'Branch').disabled=false;}
+  }
+  $('analysisDiscover').addEventListener('click',loadOptions);
+  for(const prefix of ['previous','current'])$(prefix+'Branch').addEventListener('change',()=>loadCups(prefix));
   $('analysisCancel').addEventListener('click',()=>controller?.abort());
   form.addEventListener('submit',async event=>{
     event.preventDefault();if(!form.reportValidity())return;

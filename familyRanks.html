@@ -66,20 +66,19 @@
   <section id="analysisPanel" role="tabpanel" aria-labelledby="analysisTab" hidden>
     <form id="analysisForm">
       <div class="analysis-heading"><h2>Compare PvPoke snapshots</h2><p class="hint">Choose two branches, cutoff dates and cups. Leave a date blank for the latest commit. Cutoffs include the entire selected UTC day.</p></div>
-      <datalist id="analysisBranches"><option value="master"></datalist>
       <div class="snapshot-grid">
         <fieldset class="snapshot-card"><legend>Previous snapshot</legend>
-          <label>Branch or commit SHA<input id="previousBranch" value="master" list="analysisBranches" required autocomplete="off"></label>
+          <label>Branch<select id="previousBranch"><option value="master">master</option></select></label>
           <label>Cutoff date<input id="previousDate" type="date"></label>
-          <label>Cup folder<input id="previousCup" value="all" list="previousCups" required autocomplete="off"></label><datalist id="previousCups"><option value="all"></datalist>
+          <label>Cup<select id="previousCup"><option value="all">all</option></select></label>
         </fieldset>
         <fieldset class="snapshot-card"><legend>Current snapshot</legend>
-          <label>Branch or commit SHA<input id="currentBranch" value="master" list="analysisBranches" required autocomplete="off"></label>
+          <label>Branch<select id="currentBranch"><option value="master">master</option></select></label>
           <label>Cutoff date<input id="currentDate" type="date"></label>
-          <label>Cup folder<input id="currentCup" value="all" list="currentCups" required autocomplete="off"></label><datalist id="currentCups"><option value="all"></datalist>
+          <label>Cup<select id="currentCup"><option value="all">all</option></select></label>
         </fieldset>
       </div>
-      <button type="button" id="analysisDiscover" class="secondary">Load branch &amp; cup suggestions</button>
+      <button type="button" id="analysisDiscover" class="secondary">Refresh branches &amp; cups</button>
       <fieldset><legend>Leagues to compare</legend><div class="toggles">
         <label><input type="checkbox" name="analysisLeague" value="1500" checked> Great · 1,500 CP</label>
         <label><input type="checkbox" name="analysisLeague" value="2500" checked> Ultra · 2,500 CP</label>

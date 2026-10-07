@@ -122,7 +122,7 @@ summary { font-weight: 600; }
 .snapshot-card { border: 1px solid var(--line); border-radius: 12px; padding: 20px; display: grid; gap: 14px; background: var(--bg); margin: 10px 0; }
 .snapshot-card legend { font-size: 15px; }
 .snapshot-card label, .analysis-filters label { display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 600; }
-.snapshot-card input { width: 100%; font-weight: 400; background: var(--panel); }
+.snapshot-card input, .snapshot-card select { width: 100%; font-weight: 400; background: var(--panel); }
 .snapshot-meta { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 18px; display: flex; flex-direction: column; gap: 5px; font-size: 13px; overflow-wrap: anywhere; }
 .snapshot-meta span { color: var(--muted); }
 .analysis-report-card { background: var(--panel); border: 1px solid var(--line); border-radius: 18px; padding: 22px; margin-top: 20px; }

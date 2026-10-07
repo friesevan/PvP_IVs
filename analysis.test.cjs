@@ -77,3 +77,9 @@ test('shadow level uses its own recommended IVs rather than normal form defaults
  const data=snapshot([rank('test_shadow',90)],[base,shadow]);const report=buildReport(data,data,'1500',xl);
  assert.equal(report.rows[0].Level,40);assert.equal(report.rows[0].XL,0);
 });
+
+test('branch options include every API page',async()=>{
+ let requests=0;
+ const data=dataContext(async url=>{requests++;const page=new URL(url).searchParams.get('page');return {ok:true,json:async()=>page==='1'?Array.from({length:100},(_,i)=>({name:'branch-'+i})):[{name:'last-branch'}]};});
+ const names=await data.branches();assert.equal(names.length,101);assert.equal(names.at(-1),'last-branch');assert.equal(requests,2);
+});

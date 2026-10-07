@@ -223,9 +223,10 @@ Description of features and functionality for the Pokémon Go PvP IVs website: h
 ## PvPoke Analysis tab
 
 The second app tab ports [PvPokeAnalysis](https://github.com/friesevan/PvPokeAnalysis)
-into browser reports. Enter previous/current PvPoke branches (or commit SHAs),
-optional cutoff dates and cup folders. Use “Load branch & cup suggestions” for
-available names; manual input supports other branches and historical cups.
+into browser reports. Select previous/current PvPoke branches,
+optional cutoff dates and cup folders. Branch and cup dropdowns load all available choices automatically. Cup choices
+follow the selected branch; use “Refresh branches & cups” to reload them.
+Defaults are `master` and `all` if options cannot be loaded.
 Choose leagues and generate the comparison directly in the app.
 
 Pokémon and type reports support sorting, search, status filters, pagination,
