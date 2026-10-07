@@ -9,14 +9,22 @@
   <script defer src="includes/calculate.js"></script>
   <script defer src="includes/familyRanksCore.js"></script>
   <script defer src="includes/familyRanks.js"></script>
+  <script defer src="includes/analysis/core.js"></script>
+  <script defer src="includes/analysis/data.js"></script>
+  <script defer src="includes/analysis/ui.js"></script>
 </head>
 <body>
 <main>
   <header class="site-header">
-    <h1>PvP IV Pro</h1>
-    <p class="subtitle"><a href="https://pvpivs.com/" target="_blank" rel="noopener">Modification of PvP IVs</a></p>
-    <p class="intro">Compare your Pokémon. Plan your best evolutions.</p>
+    <h1 id="appTitle">PvP IV Pro</h1>
+    <p class="subtitle"><a id="appSubtitle" href="https://pvpivs.com/" target="_blank" rel="noopener">Modification of PvP IVs</a></p>
+    <p class="intro" id="appIntro">Compare your Pokémon. Plan your best evolutions.</p>
   </header>
+  <nav id="appTabs" class="app-tabs" role="tablist" aria-label="Tools">
+    <button id="ivTab" type="button" role="tab" aria-selected="true" aria-controls="ivPanel">PvPIV Pro</button>
+    <button id="analysisTab" type="button" role="tab" aria-selected="false" aria-controls="analysisPanel" tabindex="-1">PvPoke Analysis</button>
+  </nav>
+  <section id="ivPanel" role="tabpanel" aria-labelledby="ivTab">
   <form id="comparisonForm">
     <div class="inputs">
       <label class="pokemon">Base Pokémon<input id="pokemon" list="pokemonNames" placeholder="e.g. Eevee" autocomplete="off" required><datalist id="pokemonNames"></datalist></label>
@@ -54,6 +62,48 @@
   <div id="results" class="results"></div>
   <p class="hint"><span class="gradient-key"></span> Red → yellow → green shows IV rank percentile from low to high. <span class="winner-key">★ Best in column</span> has a green border. Dashed blue borders mark recommendations; solid blue borders mark your choices. Click a valid cell to choose it; click again to release it. Duplicate IV spreads count as one Pokémon.</p>
   <p class="hint">Ratings measure stat product relative to the best IV spread for that Pokémon and league, not strength against other species. CP limits alone do not establish cup eligibility. Family forms and stats come from the repository’s Pokémon data; regional, Mega, and speculative forms retain their labels. Evolution requirements other than Tyrogue’s IV rule are not checked.</p>
+  </section>
+  <section id="analysisPanel" role="tabpanel" aria-labelledby="analysisTab" hidden>
+    <form id="analysisForm">
+      <div class="analysis-heading"><h2>Compare PvPoke snapshots</h2><p class="hint">Choose two branches, cutoff dates and cups. Leave a date blank for the latest commit. Cutoffs include the entire selected UTC day.</p></div>
+      <datalist id="analysisBranches"><option value="master"></datalist>
+      <div class="snapshot-grid">
+        <fieldset class="snapshot-card"><legend>Previous snapshot</legend>
+          <label>Branch or commit SHA<input id="previousBranch" value="master" list="analysisBranches" required autocomplete="off"></label>
+          <label>Cutoff date<input id="previousDate" type="date"></label>
+          <label>Cup folder<input id="previousCup" value="all" list="previousCups" required autocomplete="off"></label><datalist id="previousCups"><option value="all"></datalist>
+        </fieldset>
+        <fieldset class="snapshot-card"><legend>Current snapshot</legend>
+          <label>Branch or commit SHA<input id="currentBranch" value="master" list="analysisBranches" required autocomplete="off"></label>
+          <label>Cutoff date<input id="currentDate" type="date"></label>
+          <label>Cup folder<input id="currentCup" value="all" list="currentCups" required autocomplete="off"></label><datalist id="currentCups"><option value="all"></datalist>
+        </fieldset>
+      </div>
+      <button type="button" id="analysisDiscover" class="secondary">Load branch &amp; cup suggestions</button>
+      <fieldset><legend>Leagues to compare</legend><div class="toggles">
+        <label><input type="checkbox" name="analysisLeague" value="1500" checked> Great · 1,500 CP</label>
+        <label><input type="checkbox" name="analysisLeague" value="2500" checked> Ultra · 2,500 CP</label>
+        <label><input type="checkbox" name="analysisLeague" value="10000" checked> Master · Unlimited</label>
+      </div></fieldset>
+      <div class="save-actions"><button type="submit" id="analysisGenerate">Generate comparison</button><button type="button" id="analysisCancel" class="secondary" hidden>Cancel</button></div>
+      <p id="analysisStatus" role="status" aria-live="polite">Results appear here in the app. No spreadsheet software or file downloads needed.</p>
+      <p class="hint">Data loads directly from the public <a href="https://github.com/pvpoke/pvpoke" target="_blank" rel="noopener">PvPoke repository</a>. Only leagues available at both snapshots are compared. Public GitHub API limits may apply.</p>
+    </form>
+    <section id="analysisOutput" hidden>
+      <div id="analysisMetadata" class="snapshot-grid"></div>
+      <div class="analysis-report-card">
+        <div id="analysisLeagueTabs" class="analysis-switches" aria-label="Report league"></div>
+        <div class="analysis-switches" aria-label="Report type"><button id="pokemonReport" type="button" class="secondary" aria-pressed="true">Pokémon</button><button id="typeReport" type="button" class="secondary" aria-pressed="false">Types</button></div>
+        <p id="analysisSummary" class="hint"></p>
+        <div class="analysis-filters"><label>Search report<input id="analysisSearch" type="search" placeholder="Pokémon, type, move or update…"></label><label>Show<select id="analysisRowFilter"><option value="all">All entries</option><option value="changed">Changed entries</option><option value="Compared">Present in both</option><option value="New">New entrants</option><option value="Removed">Removed entries</option></select></label></div>
+        <details id="analysisColumnDetails"><summary>Visible columns</summary><div id="analysisColumns" class="analysis-columns"></div></details>
+        <p class="hint">Scores measure PvPoke performance; higher is better. Rank is the position in the source list. Difference = current score − previous score. Type averages use Pokémon present in both snapshots; dual types count in both groups. XL and level use PvPoke’s default IV spread, not your IV entries.</p>
+        <p class="hint move-legend"><span class="move-buff">Buff</span><span class="move-nerf">Nerf</span><span class="move-rework">Rework</span><strong>Bold: newly recommended move</strong><strong>ALL CAPS: new move in game data</strong></p>
+        <div id="analysisReports" class="table-scroll" tabindex="0" aria-label="Scrollable analysis report"></div>
+        <div class="analysis-pagination"><span id="analysisCount" role="status"></span><button type="button" id="analysisPreviousPage" class="secondary">Previous</button><button type="button" id="analysisNextPage" class="secondary">Next</button></div>
+      </div>
+    </section>
+  </section>
 </main>
 </body>
 </html>

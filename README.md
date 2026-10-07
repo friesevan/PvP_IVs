@@ -1,4 +1,4 @@
-# PvP IV Pro
+# PvP IV Pro + PvPoke Analysis
 
 A modification of [PvP IVs](https://pvpivs.com/) for comparing a base Pokémon’s
 IV spreads across its family and leagues, and planning evolutions.
@@ -218,3 +218,33 @@ Description of features and functionality for the Pokémon Go PvP IVs website: h
 ## [About](https://pvpivs.com/about.html) 
 
 ## [Contribute](https://pvpivs.com/contribute.html)
+
+
+## PvPoke Analysis tab
+
+The second app tab ports [PvPokeAnalysis](https://github.com/friesevan/PvPokeAnalysis)
+into browser reports. Enter previous/current PvPoke branches (or commit SHAs),
+optional cutoff dates and cup folders. Use “Load branch & cup suggestions” for
+available names; manual input supports other branches and historical cups.
+Choose leagues and generate the comparison directly in the app.
+
+Pokémon and type reports support sorting, search, status filters, pagination,
+and column selection. Scores, ordinal ranks, score changes, recommended moves,
+new attack availability, move buffs/nerfs/reworks, XL, levels, base stats, bulk,
+stat product and typing are shown without exporting spreadsheets. Each report
+links to the two source commits. New/removed entrants are included explicitly;
+type averages use only matched Pokémon so cohort changes do not distort deltas.
+
+Snapshots use the latest whole-repository commit at/before each UTC cutoff,
+including commits that update rankings without changing Pokémon game data.
+Every file for a snapshot is pinned to its resolved SHA. Missing ranking files
+skip that league; missing game data, invalid selections and GitHub rate limits
+produce errors. Data loads directly from public GitHub endpoints, no token or
+server credentials are embedded. Repeated immutable file loads are cached in
+memory; latest branch commits are resolved again per comparison.
+
+XL and level use the source project's XL table and PvPoke default IVs. Master
+League has no XL estimate in the original report. Move formatting preserves the
+spreadsheet's colors and new recommendation markers, while also recognizing
+fast-move turn changes and flagging buff/debuff mechanic changes as reworks.
+Tests: `node --test familyRanks.test.cjs analysis.test.cjs`.

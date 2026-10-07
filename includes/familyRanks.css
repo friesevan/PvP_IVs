@@ -112,3 +112,46 @@ summary { font-weight: 600; }
 .plan-list li { gap: 20px; padding: 14px 0; font-size: 14px; }
 @media (max-width: 600px) { main { padding: 24px 12px; } form { padding: 16px; } .iv-entry { padding: 12px; } .entry-number { width: 100%; } .entry-level { max-width: none; } .plan-list li { flex-wrap: wrap; gap: 8px; } }
 @media (prefers-color-scheme: dark) { :root { --bg: #131e2b; --panel: #1c2a3a; --text: #edf3fa; --muted: #adbed1; --line: #33465b; --accent: #83d8b9; } .level-warning { color: #ffaaaa; } }
+
+[hidden] { display: none !important; }
+.app-tabs { display: flex; gap: 6px; padding: 6px; border: 1px solid var(--line); border-radius: 14px; background: var(--panel); margin-bottom: 24px; }
+.app-tabs button { flex: 1; margin: 0; background: transparent; color: var(--muted); padding: 12px; }
+.app-tabs button[aria-selected=true] { background: var(--accent); color: var(--panel); }
+.analysis-heading h2 { font-size: 22px; margin: 0; letter-spacing: -.02em; }
+.snapshot-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 20px; }
+.snapshot-card { border: 1px solid var(--line); border-radius: 12px; padding: 20px; display: grid; gap: 14px; background: var(--bg); margin: 10px 0; }
+.snapshot-card legend { font-size: 15px; }
+.snapshot-card label, .analysis-filters label { display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 600; }
+.snapshot-card input { width: 100%; font-weight: 400; background: var(--panel); }
+.snapshot-meta { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 18px; display: flex; flex-direction: column; gap: 5px; font-size: 13px; overflow-wrap: anywhere; }
+.snapshot-meta span { color: var(--muted); }
+.analysis-report-card { background: var(--panel); border: 1px solid var(--line); border-radius: 18px; padding: 22px; margin-top: 20px; }
+.analysis-switches { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+.analysis-switches button { margin: 0; padding: 8px 14px; font-size: 14px; }
+.analysis-switches [aria-pressed=true] { background: var(--accent); color: var(--panel); border-color: var(--accent); }
+.analysis-filters { display: flex; flex-wrap: wrap; gap: 16px; margin: 20px 0; }
+.analysis-filters label:first-child { flex: 1; min-width: 220px; }
+.analysis-columns { display: flex; flex-wrap: wrap; gap: 10px 18px; margin-bottom: 18px; }
+.analysis-columns label { display: flex; align-items: center; gap: 6px; font-size: 13px; }
+.analysis-table { width: max-content; min-width: 100%; font-size: 13px; border-collapse: separate; border-spacing: 0; }
+#analysisReports { max-height: 650px; border: 1px solid var(--line); border-radius: 10px; }
+.analysis-table th, .analysis-table td { padding: 12px; min-width: 100px; max-width: 260px; white-space: pre-line; overflow-wrap: anywhere; vertical-align: top; border-right: 1px solid var(--line); }
+.analysis-table thead th { position: sticky; top: 0; z-index: 2; background: var(--bg); }
+.analysis-table th:first-child { position: sticky; left: 0; min-width: 180px; background: var(--panel); border-right: 2px solid var(--line); z-index: 1; }
+.analysis-table thead th:first-child { z-index: 3; background: var(--bg); }
+.analysis-table caption { background: var(--panel); }
+.analysis-table .column-sort { text-align: left; }
+.numeric-cell { font-variant-numeric: tabular-nums; }
+.move-buff { background: #d7f1df; color: #205438; }
+.move-nerf { background: #fbe0df; color: #7c2d2b; }
+.move-rework { background: #dce8fb; color: #244574; }
+.move-new, .move-added { font-weight: 750; }
+.move-legend { display: flex; flex-wrap: wrap; gap: 12px; }
+.move-legend span { padding: 2px 8px; border-radius: 5px; }
+.status-new { color: var(--accent); font-weight: 650; }
+.status-removed, .analysis-error { color: #b03932; }
+.analysis-pagination { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 16px; font-size: 13px; }
+.analysis-pagination span { margin-right: auto; color: var(--muted); }
+.analysis-pagination button { margin: 0; padding: 7px 12px; font-size: 13px; }
+@media(max-width:600px) { .snapshot-grid { grid-template-columns: 1fr; gap: 12px; } .analysis-report-card { padding: 14px; } .app-tabs button { font-size: 14px; } }
+@media(prefers-color-scheme:dark) { .app-tabs button[aria-selected=true], .analysis-switches [aria-pressed=true] { color: #131e2b; } .move-buff { background: #214632; color: #a1e8b8; } .move-nerf { background: #4a292d; color: #ffb4ad; } .move-rework { background: #243d60; color: #b6d2ff; } .status-removed,.analysis-error { color: #ffb4ad; } }
