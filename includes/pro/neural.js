@@ -39,5 +39,5 @@ function render(d){
  const download=el('a','Download report data ↗');download.href='includes/pro/data/team-search.json';download.download='team-search.json';host.append(download);
 }
 async function load(){if(pending)return pending;pending=fetch('includes/pro/data/team-search.json').then(r=>{if(!r.ok)throw Error('Report could not be loaded');return r.json();}).then(render).catch(e=>{$('nnReport').textContent=e.message+'. Reload to retry.';pending=null;});return pending;}
-document.addEventListener('neural-open',load);$('nnInfo').addEventListener('click',()=>$('nnHelp').showModal());$('nnClose').addEventListener('click',()=>$('nnHelp').close());
+document.addEventListener('neural-open',load);if(!$('proNeuralPanel').hidden)load();$('nnInfo').addEventListener('click',()=>$('nnHelp').showModal());$('nnClose').addEventListener('click',()=>$('nnHelp').close());
 })();
