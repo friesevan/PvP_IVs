@@ -3,7 +3,7 @@ const os=require('node:os');const {BattleRunner}=require('./runner.cjs');
 const availableCores=()=>typeof os.availableParallelism==='function'?os.availableParallelism():os.cpus().length;
 const defaultWorkers=()=>Math.min(availableCores(),Math.max(1,Math.floor(os.totalmem()*.5/(256*1048576))));
 class BattlePool{
- constructor(size=defaultWorkers()){if(!Number.isInteger(size)||size<1)throw Error('Worker count must be a positive integer');this.runners=Array.from({length:size},()=>new BattleRunner());this.busy=false;}
+ constructor(size=defaultWorkers(),runnerFactory=()=>new BattleRunner()){if(!Number.isInteger(size)||size<1)throw Error('Worker count must be a positive integer');this.runners=Array.from({length:size},()=>runnerFactory());this.busy=false;}
  get size(){return this.runners.length;}
  get peakWorkerHeapBytes(){return Math.max(0,...this.runners.map(r=>r.workerHeapBytes));}
  get recycles(){return this.runners.reduce((sum,r)=>sum+r.recycles,0);}

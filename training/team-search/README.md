@@ -1,0 +1,150 @@
+# Neural search for Great League teams
+
+This system learns a neural matchup model from **complete three-on-three battles**, then uses it to search for strong teams and movesets. It is separate from the earlier five-parameter strategy tuner. It optimizes team composition under Champion's existing battle strategy and an explicit opponent distribution; it cannot certify the globally optimal team or a human win rate.
+
+## Run on the M2 Max
+
+The installed trainer is at `Desktop/Projects/PvPokeTeamTrainer`. From that folder, with Node 20 or later:
+
+```sh
+node --test training/team-search/*.test.cjs
+node training/team-search/prepare.cjs --shortlist 10000 --scout-opponents 300 --workers 12
+node training/team-search/launch.cjs --hours 6 --workers 12
+```
+
+The launcher starts a detached, caffeinated process on macOS, writes `launch.json` and `training.log`, and returns immediately. A cached `pool.json` avoids repeating preparation. Direct foreground execution is also available:
+
+```sh
+caffeinate -i node training/team-search/search.cjs --hours 6 --workers 12
+```
+
+Check progress:
+
+```sh
+node training/team-search/status.cjs
+```
+
+Resume a launcher-created experiment:
+
+```sh
+node training/team-search/launch.cjs --hours 6 --workers 12 --resume
+```
+
+Use the original settings when resuming. The launcher restores its stored validation seed; worker count and hours can change, while ensemble size stays fixed. Resume creates a new time budget. To stop a foreground run, press Ctrl+C and wait for Saved. For a detached run, use `node training/team-search/stop.cjs` (or pass its output directory). This verifies the launcher’s unique process identity and signals the Node process directly. `process.json` records its PID, start/end times, and exit code. The search catches SIGINT/SIGTERM, stops dispatch, drains active work, and saves. It preserves every fully evaluated team within an incomplete round.
+
+An absolute deadline can replace a relative budget:
+
+```sh
+node training/team-search/launch.cjs --until 2026-10-09T21:25:00Z --workers 12
+```
+
+Use a future timestamp. Preparation and any warm-start model fit must happen before enough time remains to search. The foreground relative search budget begins after pool preparation; a deadline remains absolute. In-progress battles/model fits can finish shortly after the deadline. Default output is `training/runs/team-search`; the original strategy run in `training/runs/overnight` remains intact.
+
+## Eligible population and movesets
+
+1. Start with published **standard Great League (1,500 CP)** entries and the bundled PvPoke default matchup weights. Sort by descending weight, breaking ties by published overall rank. Keep the top 300 positive-weight entries. Missing weights use 1, matching the app. This is a frozen data/engine snapshot, not live measured usage.
+2. Shadow and regional forms are separate candidate entries. A team cannot contain two entries with the same Pokédex number. The current top-300 pool has 215 distinct Pokédex numbers, contains no unreleased or Mega entries, and has total weight 964.
+3. Enumerate legal fast/charged combinations from the actual engine pools, including allowed special moves. The full preparation mode (`--shortlist 10000 --scout-opponents 300`) evaluates **every legal combination** against all 300 recommended-moveset opponents, excluding the identical species entry, over the five published shield/energy scenarios.
+4. Rank a species' combinations by weighted mean **raw battle rating** across those opponents and scenarios, then retain up to five. This is a clear 1v1 selection metric, not PvPoke's normalized Overall score or proof of the best moveset in every team context. Default IVs and battle assumptions are fixed.
+5. Full preparation produced **12,335 legal combinations, 18,440,825 1v1 simulations and 1,498 retained variants**. 299 species have five variants; one has three. Recommended movesets remain in the top five for 290 species. The ranking does not force a recommended combination into the final five.
+
+Exhaustive scouting runs in small chunks, with a 120-second task watchdog and atomic on-disk cache files. It can restart using completed chunks. The returned best five per chunk are sufficient to recover the best five globally; the final result merges all chunks for each species. Worker isolates recycle regularly and have bounded heaps.
+
+For a cheaper approximate preparation, use a smaller shortlist and scout panel:
+
+```sh
+node training/team-search/prepare.cjs --shortlist 64 --scout-opponents 24 --out training/runs/approx/pool.json
+```
+
+That mode first projects type-aware cycle damage, includes the recommended combination in scouting, then simulates only the shortlist. It may miss combinations. The final overnight run uses the exhaustive pool.
+
+## Neural model
+
+A team's feature vector `x(T)` includes all three ordered members and explicit team coverage summaries. Inputs represent:
+
+- typing, real Great League stats, CP/level, published score and default weight;
+- fast-move type, damage/turn, energy/turn and duration;
+- charged-move coverage, costs, power and proc chances;
+- expected self/opponent attack/defense changes, including moves that affect both;
+- Shadow status;
+- fixed scout matchup profiles and best/worst coverage by opponent type.
+
+Lead and bench order are retained because the engine's strategy/tie-breaking can depend on roster order. A default network has 16 tanh hidden units. Twelve independently initialized, bootstrapped networks form the ensemble:
+
+```text
+h(T) = tanh(W x(T) + b)
+s(T) = vᵀ h(T) + c
+K = −Kᵀ
+P(A, B) = sigmoid(s(A) − s(B) + h(A)ᵀ K h(B))
+```
+
+The scalar term learns general strength. The learned antisymmetric interaction matrix captures counter relationships such as A beating B, B beating C, and C beating A. Swapping the teams complements the prediction, and identical feature vectors predict 0.5. The model predicts expected matchup reward; ties count as half a win.
+
+All parameters train by backpropagation and Adam on binary cross-entropy with fractional targets from mirrored fixtures. Gradients are checked numerically, including constrained interaction parameters. A cyclic-counter test verifies that the model learns a relationship a scalar strength model cannot represent. This is implemented directly in JavaScript, with no npm/Python/GPU dependency.
+
+Independent ensemble fits run concurrently using shared, read-only feature/sample buffers; the M2 Max uses all 12 cores for model fitting, candidate inference and battle simulation. Changing the number of concurrent workers does not change the fixed ensemble size or its seeds. GPU/Neural Engine acceleration is not used; the expensive work is the branching battle simulator.
+
+For a proposed team's estimated overall score, average each network's predictions against 256 independently sampled, weight-distributed reference opponent teams, then average the ensemble. Network disagreement guides exploration; it is **not a calibrated confidence interval**.
+
+## Simulation and search
+
+- Both sides use the unmodified Champion preferences. The system does not train switching/catching strategy or use the earlier tuned policy.
+- Candidate teams use retained movesets. Opponents use published recommended movesets, sampled by weight without replacement by Pokédex number. This models individual usage weights, not observed or correlated human team compositions.
+- Start with 128 random legal teams. Each round evaluates 24 teams against 64 **new** opponent fixtures, with sides exchanged: 128 battles per candidate.
+- Propose 12,000 unseen ordered teams each round, mixing mutations of observed leaders and fresh random teams. Half the evaluation slots target neural predictions, a quarter explores disagreement, and the remaining slots include genuine uniform exploration and a leader retest.
+- Log the average score of neural, uncertainty, random and retest groups on their shared opponent batch. This measures proposal quality; it is not an equal-total-compute proof that neural search beats every alternative.
+- Retain raw per-opponent outcomes. A fixed hash reserves approximately 20% of candidate identities from fitting. Prediction diagnostics compare the neural model with a constant-score baseline on those identities. At most 12,000 labeled training fixtures are sampled per fit to keep fitting bounded.
+- Training leaders use a cautious selection heuristic: shrink their fixture-score average toward 0.5 with eight pseudo-fixtures, then subtract 1.28 posterior-standard-deviation units. This heuristic reduces noise but is not a frequentist confidence bound or enough by itself to prevent multiple-comparison selection bias.
+
+Six epochs per fit reduced held-out team-average error by about 9% versus ten in a three-seed comparison, although per-matchup error was slightly higher. Team selection uses expected overall performance, so six is the current default. Extra per-charged-move type features worsened this pilot and were not retained. Parallel inference preserved all 12,000 candidate predictions exactly and reduced a controlled benchmark from about 8.4 seconds to 1.5 seconds.
+
+The initial average-score regression model failed to outperform a constant predictor in a small pilot. Training on individual opponent results and adding counter interactions improved preliminary held-out matchup error by roughly 11–13%. That is predictive evidence; final team performance must still be measured independently.
+
+## Screening, final testing and baselines
+
+Reserve the final 20% of wall-clock budget for evaluation:
+
+1. Screen up to 24 training leaders on a separately seeded batch of 512 fresh opponent fixtures. These outcomes never fit the network. Select up to eight finalists from screening results, rather than noisy training scores.
+2. Evaluate the screened finalists on another independently seeded set of 512 opponent fixtures. The primary team is selected **before** this final set. The detached launcher generates a fresh validation seed for a new experiment, preventing reuse of inspected pilot validation fixtures.
+3. Evaluate twelve fixed baseline teams on the same final opponent fixtures: four uniform-random teams, four weight-sampled teams with each member's best scouted moveset, and four deterministic greedy coverage teams. Coverage baselines maximize weighted best-member scout ratings over the first 24 scouted opponents, with different weak-link penalties, bounded coordinate swaps and lead orders. They are fixed before final opponent testing.
+4. Compare the primary team with each baseline group using a paired bootstrap over whole opponent fixtures, preserving correlated mirrored battles. Intervals are conditional on these particular baseline teams and the pinned simulator.
+
+Each default screened/validated team gets 1,024 battles. Work checks the deadline and retains completed teams if time expires. Screening gets at most half the remaining evaluation budget, preserving room for final testing and baselines. A short deadline may leave incomplete evaluation; unvalidated teams are labeled accordingly. Selecting the best-looking *final* score among multiple finalists still introduces selection bias; the main comparison uses the screening-selected primary team.
+
+## Files
+
+Within the selected output directory:
+
+- `pool.json`: population, selected variants, stats/IVs, scouting settings, source-input hash and pool hash.
+- `checkpoint.json`: raw fixture labels, models, pending-round progress, diagnostics, screening, final testing and baselines; atomically saved after completed teams and rounds.
+- `history.jsonl`: timestamped round summaries and neural-versus-random proposal scores.
+- `models.json`: serialized ensemble.
+- `recommendations.json`: teams, movesets, simulation IVs/levels/CPs, training estimates, screening/final results and comparisons.
+- `report.html` / `findings.md`: readable results. Open the HTML report locally; it needs no server or external assets.
+- `training.log` / `launch.json` / `process.json`: detached execution log, verified process identity, start/end times and deadline metadata. Checkpoint runtime telemetry records throughput, peak sampled process memory, worker heap and recycling.
+
+Preparation's `.chunks` directory stores reusable scouting work. It is separate from the original strategy run.
+
+## Reusing verified pilot evidence
+
+`merge.cjs` combines raw fixture observations from checkpoints with the same pool and compatible simulator mechanics. It deduplicates identical team/opponent/seed records and rejects conflicting seeded results. `remap.cjs` translates retained legal movesets into another pool only when the original data and eligible weighted population match. Dropped movesets' teams are discarded. Models are discarded and retrained with the new features. New search checkpoints fingerprint the engine/vendor code and reject warm starts across changed mechanics. Legacy pilot checkpoints without that fingerprint are accepted with a warning and should only be used when their fixture evidence has been locally verified. These tools preserve simulation evidence while refining scouting/model architecture.
+
+```sh
+node training/team-search/merge.cjs MERGED.json CHECKPOINT_A.json CHECKPOINT_B.json
+node training/team-search/remap.cjs MERGED.json OLD_POOL.json NEW_POOL.json REMAPPED.json
+node training/team-search/search.cjs --pool NEW_POOL.json --warm-start REMAPPED.json --out NEW_DIRECTORY
+```
+
+A merged inherited battle counter represents unique retained labeled battles; it excludes discarded pilot work and pilot validations. Subsequent execution adds actual completed battles.
+
+Finished pilots' screening, final testing and baseline battles can also supply labels for a **new** experiment:
+
+```sh
+node training/team-search/absorb-evaluation.cjs FINISHED_CHECKPOINT.json POOL.json NEW_EVIDENCE.json
+```
+
+The source report remains unchanged. The tool reconstructs seeded fixtures, checks/deduplicates outcomes and clears old models/evaluation. It marks the old evaluation seeds as used; a warm-start search rejects reusing them for final testing. Use the detached launcher to generate a fresh validation seed. This makes efficient use of pilot simulations without treating fitted data as a final test of the new experiment.
+
+## Remaining limits
+
+The simulator inherits full-information Champion heuristics and the existing virtual-timer adapter. Dedicated catch-timing, side-parity and comprehensive mechanics comparisons remain necessary before competitive claims. Uniformly random candidate teams and independently weight-sampled opponent teams do not represent every human meta lineup. Only up to five individually scored movesets are explored; an excluded moveset might still be useful for a particular team. Better neural predictions do not automatically imply better recommendations, which is why screening and untouched final comparisons are required.

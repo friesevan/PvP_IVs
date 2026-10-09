@@ -17,7 +17,7 @@ On macOS, keep the computer awake while the command runs:
 caffeinate -i node training/train.cjs --hours 8
 ```
 
-Close neither the terminal nor the laptop lid. Independent battles run concurrently across a pool of workers. By default it uses all CPU cores reported by Node, capped by an estimated memory budget of 256 MB per worker using up to half of system RAM. On this 12-core, 64 GB M2 Max, that means 12 workers. Each worker is recycled every eight battles and has a 128 MB V8 old-generation limit; the main process retains checkpoints and aggregate results rather than simulation contexts. Eight hours is a wall-clock budget checked between battles; an in-progress battle may finish after the deadline. Training throughput depends on hardware and selected teams. No eight-hour run has been performed as part of creating this code.
+Close neither the terminal nor the laptop lid. Independent battles run concurrently across a pool of workers. By default it uses all CPU cores reported by Node, capped by an estimated memory budget of 256 MB per worker using up to half of system RAM. On this 12-core, 64 GB M2 Max, that means 12 workers. Each worker is recycled every eight battles and has a 128 MB V8 old-generation limit; the main process retains checkpoints and aggregate results rather than simulation contexts. Eight hours is a wall-clock budget checked between battles; an in-progress battle may finish after the deadline. Training throughput depends on hardware and selected teams. Earlier strategy-tuning runs did not establish a dependable improvement over default Champion preferences; the neural team-search experiment focuses on team composition instead.
 
 To resume for another eight hours:
 
@@ -149,3 +149,7 @@ For less CPU usage during other work, use `--workers 8` or a smaller number. Cha
 An existing process keeps the code it loaded at startup. To activate the multicore update, press Ctrl+C in that process's terminal, wait for the final Saved message, and restart with the resume command. Runtime updates do not migrate a live process or extend its deadline automatically.
 
 Multicore validation on this M2 Max / Node 20.18.1: an identical 96-battle generation took 26.2 seconds with one worker and 7.2 seconds with 12 workers (about 3.6× faster), with identical scores and selected policy. A 384-battle parallel recycling check peaked at 1,209 MB sampled process RSS and 56 MB worker heap. Deadline exit, Ctrl+C and resuming an existing checkpoint with 12 workers passed. Short benchmark speedup may differ during sustained training.
+
+## Neural search for team composition
+
+A separate experiment now searches three-Pokémon teams from the top 300 Great League entries by default weight, using up to five scouted movesets each. It learns a neural predictor from complete team-battle outcomes, rather than modifying five strategy preferences. See [team-search/README.md](team-search/README.md). It stores its own checkpoints under `training/runs/team-search` and leaves the original strategy experiment intact.

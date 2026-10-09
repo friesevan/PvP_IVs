@@ -20,7 +20,7 @@ function play(teamA,teamB,policyA=defaults,policyB=defaults,{seed=1,cp=1500}={})
  var battle=new Battle();battle.setCP(input.cp);
  var players=[new Player(0,3,battle),new Player(1,3,battle)];
  for(var i=0;i<2;i++){
-   var team=input.teams[i].map(row=>{var p=new Pokemon(row.speciesId,i,battle);p.initialize(input.cp);p.selectMove('fast',row.moveset[0]);p.selectMove('charged',row.moveset[1],0);p.selectMove('charged',row.moveset[2]||'none',1);return p;});
+   var team=input.teams[i].map(row=>{var p=new Pokemon(row.speciesId,i,battle);p.initialize(input.cp);p.selectMove('fast',row.moveset[0]);p.selectMove('charged',row.moveset[1],0);p.selectMove('charged',row.moveset[2]||'none',1);if(row.moveset[3]&&p.hasThirdChargedMove())p.selectMove('extra-charged',row.moveset[3],2);return p;});
    players[i].setRoster(team);players[i].setTeam(team);
    var ai=players[i].getAI();
    (function(ai,policy){var choose=ai.chooseOption;ai.chooseOption=function(options){return choose.call(ai,options.map(o=>{var factor=o.name==='SWITCH_BASIC'?policy.switch:o.name==='SWITCH_FARM'?policy.switchFarm:o.name==='BAIT_SHIELDS'?policy.bait:o.name==='FARM'?policy.farm:o.name===true?policy.shield:o.name===false?1/policy.shield:1;return new DecisionOption(o.name,Math.max(0,Math.round(o.weight*factor)));}));};})(ai,input.policies[i]);
