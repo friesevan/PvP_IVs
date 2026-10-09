@@ -404,3 +404,14 @@ body:has(#proPanel:not([hidden])) main {max-width:1800px;}
 
 .pro-inline-detail-content .pro-matchups .pro-pokemon-button{display:flex;flex-wrap:wrap;align-items:center;gap:3px;line-height:1.25;padding:2px 0}.pro-inline-detail-content .pro-matchups .pro-types{display:inline-flex;margin:0;gap:2px}
 .pro-inline-detail-content .pro-move-pools>section:first-child{grid-template-columns:minmax(0,1fr)}.pro-inline-detail-content .pro-move-card{min-width:0;overflow-wrap:anywhere}.pro-inline-detail-content .pro-move-stats,.pro-inline-detail-content .pro-move-flags{white-space:normal}.pro-inline-detail-content .pro-matchups li>span{white-space:nowrap;flex-shrink:0}
+
+/* Reserve the battle lane before simulation so columns and row height stay fixed. */
+main:has(#proPanel:not([hidden])){max-width:1800px}
+.pro-inline-detail-wrap,.pro-inline-detail-wrap:has(.pro-inline-battle:not([hidden])){width:100%;min-width:1080px;max-width:none;height:640px;grid-template-columns:minmax(700px,1fr) 360px;gap:16px;align-items:start}
+.pro-inline-detail-content{grid-template-columns:minmax(280px,.9fr) minmax(360px,1.1fr);max-height:640px;overflow:auto;align-content:start}
+.pro-inline-battle{height:640px;max-height:640px;overflow:auto;box-sizing:border-box;margin:0;grid-column:auto}
+.pro-inline-detail-content .pro-move-card-header{flex-wrap:wrap}.pro-inline-detail-content .pro-move-card-header span{overflow-wrap:normal}
+
+.pro-inline-detail-content .pro-inline-summary{grid-column:1/-1}.pro-inline-detail-content .pro-move-info .pro-move-pools{grid-template-columns:minmax(110px,.65fr) minmax(210px,1.35fr)}
+
+.pro-inline-detail-content .pro-move-info .pro-move-pools{grid-template-columns:180px minmax(180px,1fr)}.pro-inline-detail-content .pro-move-info .pro-move-pools>section,.pro-inline-detail-content .pro-move-info .pro-move-pools>section:first-child{grid-template-columns:repeat(auto-fit,180px)}.pro-inline-detail-content .pro-move-info .pro-move-card{width:180px;height:140px;box-sizing:border-box;overflow:auto}

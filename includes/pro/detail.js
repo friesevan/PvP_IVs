@@ -10,16 +10,17 @@
   function cancel(){sequence++;detailWorker?.terminate();battleWorker?.terminate();detailWorker=battleWorker=null;}
   function mount(config){
     cancel();const token=sequence,{host,data,row,category,battleHost}=config;const lookup=id=>data.pokemon.find(p=>p.speciesId===id),name=id=>lookup(id)?.speciesName||id;
-    battleHost.hidden=true;battleHost.replaceChildren();document.querySelector('.pro-layout').classList.remove('pro-has-battle');
+    function resetBattle(){battleHost.hidden=false;battleHost.replaceChildren(el('h3','Simulated battle'),el('p','Select an opponent matchup to view its battle graph.','hint'));document.querySelector('.pro-layout').classList.remove('pro-has-battle');}
+    resetBattle();
     const section=el('section',null,'pro-full-matchups'),label=el('label','Battle scenario'),select=el('select');select.setAttribute('aria-label','Battle scenario');
     const scenarios=data.rankingScenarios;for(const s of scenarios){const option=el('option',s.slug[0].toUpperCase()+s.slug.slice(1)+' · '+s.shields.join('–')+' shields');option.value=s.slug;select.append(option);}select.value=category==='overall'?'leads':category;select.disabled=category!=='overall';label.append(select);
     const context=el('p',null,'hint'),progress=el('p','Loading all matchups…','hint'),lists=el('div',null,'pro-matchup-groups'),moveHost=el('section',null,'pro-move-info');
     section.append(el('h4','All opponent matchups'),label,context,progress,lists);host.append(section,moveHost);
     let activeMatches=[];
     function request(){
-      battleWorker?.terminate();detailWorker?.terminate();battleHost.hidden=true;document.querySelector('.pro-layout').classList.remove('pro-has-battle');lists.replaceChildren();moveHost.replaceChildren();
+      battleWorker?.terminate();detailWorker?.terminate();resetBattle();lists.replaceChildren();moveHost.replaceChildren();
       const scenario=select.value,stored=config.custom?config.categoryRow(scenario)?.matches:null;
-      context.textContent=(config.custom?(config.historical?'Older saved report: reconstructed against its species roster with published opponents; original weights were not saved.':'Every opponent from this report. Raw Battle Rating is shown; category scoring also applies shield bonuses, iterative weights and normalization.'):'Reconstructed locally against all published league opponents using the bundled engine and default IVs. Published files contain only key matchups; these are not the original published battle records.')+(category==='overall'?' Overall combines five category scores and consistency; each list and graph shows one scenario.':'')+' Same-species matches are excluded. >500 win, <500 loss, 500 tie.';
+      context.textContent=(config.custom?(config.historical?'Older saved report: reconstructed against its species roster with published opponents; original weights were not saved.':'Every opponent from this report. Raw Battle Rating is shown; category scoring also applies shield bonuses, iterative weights and normalization.'):'Reconstructed locally against all published league opponents using the bundled engine and default IVs. Published files contain only key matchups; these are not the original published battle records.')+(category==='overall'?' Overall combines five category scores and consistency; each list and graph shows one scenario.':'')+' Same-species matches are excluded. >500 win, ≤500 loss (including ties).';
       progress.textContent=stored?'Loading retained matchup results…':'Simulating all opponents…';
       const current=detailWorker=new Worker('includes/pro/worker.js');
       current.onmessage=event=>{if(token!==sequence||current!==detailWorker)return;const result=event.data;if(result.type==='progress'){progress.textContent=result.text;return;}if(result.type==='error'){progress.textContent='Unable to load matchups: '+result.error;current.terminate();return;}if(result.type!=='details')return;
@@ -28,9 +29,9 @@
       current.postMessage({...config,host:undefined,battleHost:undefined,categoryRow:undefined,mode:'details',scenario,matches:stored||null});
     }
     function drawLists(){
-      lists.replaceChildren();for(const [title,test,order] of [['Wins',m=>m.rating>500,-1],['Losses',m=>m.rating<500,1],['Ties',m=>m.rating===500,1]]){
+      lists.replaceChildren();for(const [title,test,order] of [['Wins',m=>m.rating>500,-1],['Losses',m=>m.rating<=500,1]]){
         const items=activeMatches.filter(test).sort((a,b)=>order*(a.rating-b.rating)||name(a.opponent).localeCompare(name(b.opponent))),group=el('section');group.append(el('h4',title+' ('+items.length+')'));const ul=el('ul',null,'pro-matchups');
-        for(const item of items){const li=el('li'),button=el('button',name(item.opponent),'pro-pokemon-button');button.type='button';button.append(pokemonTypes(lookup(item.opponent)));button.addEventListener('click',()=>openBattle(item,button));const score=el('span',String(item.rating),item.rating>500?'pro-win':item.rating<500?'pro-loss':'');score.title='Raw BR '+item.rating+' · Shield-adjusted BR '+item.adjRating+(config.custom&&!config.historical?' · Opponent weight '+config.targets.find(t=>t.speciesId===item.opponent)?.weight:'');li.append(button,score);ul.append(li);}
+        for(const item of items){const li=el('li'),button=el('button',name(item.opponent),'pro-pokemon-button');button.type='button';button.append(pokemonTypes(lookup(item.opponent)));button.addEventListener('click',()=>openBattle(item,button));const score=el('span',String(item.rating),item.rating>500?'pro-win':item.rating<=500?'pro-loss':'');score.title='Raw BR '+item.rating+' · Shield-adjusted BR '+item.adjRating+(config.custom&&!config.historical?' · Opponent weight '+config.targets.find(t=>t.speciesId===item.opponent)?.weight:'');li.append(button,score);ul.append(li);}
         if(!items.length)ul.append(el('li','None'));group.append(ul);lists.append(group);
       }
     }
@@ -43,7 +44,7 @@
       if(window.innerWidth<1100)battleHost.scrollIntoView({behavior:'smooth',block:'start'});
     }
     function drawBattle(result,item){
-      battleHost.replaceChildren();const top=el('div',null,'pro-battle-heading'),close=el('button','Close','secondary');close.type='button';close.addEventListener('click',()=>{battleHost.hidden=true;document.querySelector('.pro-layout').classList.remove('pro-has-battle');});top.append(el('h3','Simulated battle'),close);battleHost.append(top);
+      battleHost.replaceChildren();const top=el('div',null,'pro-battle-heading'),close=el('button','Close','secondary');close.type='button';close.addEventListener('click',()=>{resetBattle();});top.append(el('h3','Simulated battle'),close);battleHost.append(top);
       result.fighters.forEach((fighter,i)=>{const block=el('section',null,'pro-fighter');block.style.setProperty('--fighter-color',i?'#c5573f':'#2467be');block.append(el('h4',name(fighter.speciesId)),pokemonTypes(lookup(fighter.speciesId)),moves(fighter.moveset,data),el('p','L'+fighter.level+' · IVs '+Object.values(fighter.ivs).join('/')+' · HP '+fighter.remaining+'/'+fighter.hp+' · shields '+fighter.remainingShields+'/'+fighter.shields,'hint'));battleHost.append(block);});
       battleHost.append(el('p',(result.rating>500?'Win':result.rating<500?'Loss':'Tie')+' · Battle Rating '+result.rating+(result.rating!==item.rating?' (stored '+item.rating+')':''),'pro-battle-result'));
       battleHost.append(el('p',select.selectedOptions[0].textContent+' · Starting energy '+result.startEnergy+'–0 · full starting HP · default IVs.','hint'));
@@ -63,7 +64,7 @@
           if(kind==='charged'){const fast=info.find(m=>m.id===row.moveset[0]),gain=fast?.energyGain;let energy=0;const counts=[];for(let i=0;i<4&&gain>0;i++){const count=Math.ceil(Math.max(0,m.energy-energy)/gain);energy=Math.min(100,energy+count*gain)-m.energy;counts.push(count);}card.append(el('p','Fast move count: '+(counts.length?counts.join(' – '):'Cannot generate energy'),'pro-move-stats'));}
           card.append(el('span',[chosen?'Selected moveset':'',rec?'PvPoke recommended':''].filter(Boolean).join(' · '),'pro-move-flags'));column.append(card);
         }grid.append(column);
-      }moveHost.append(grid,el('p','Power, DPT and DPE include STAB and Shadow attack bonuses, before opponent defense and effectiveness. EPT = energy per turn; DPE = power per energy. Counts use the selected fast move from zero energy, with leftover energy carried forward. * Event / Elite TM; † legacy / unavailable via ordinary TM. Dark left border = selected move.','hint'));
+      }moveHost.append(grid);
     }
     select.addEventListener('change',request);request();
   }

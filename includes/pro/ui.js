@@ -296,12 +296,8 @@
   let renderedDetail;
   function renderDetail(row){
     if(!row)return;const identity=[row,cp(),$('proSource').value,$('proCategory').value];if(renderedDetail&&identity.every((v,i)=>v===renderedDetail[i]))return;renderedDetail=identity;selected=row.speciesId;$('proLabPokemon').value=selected;const p=data.pokemon.find(item=>item.speciesId===row.speciesId),host=$('proDetail');host.replaceChildren();const summary=el('div',null,'pro-inline-summary');host.append(summary);
-    summary.append(el('h3',row.speciesName),PvPProDetail.pokemonTypes(p),el('p','Score '+row.score.toFixed(1),'hint'));
-    summary.append(PvPProDetail.moves(row.moveset,data));
-    const badge=movesetBadge(comparison(row),false,row);if(badge&&isCustom())summary.append(badge);
     if(row.stats)summary.append(el('p','Attack '+row.stats.atk+' · Defense '+row.stats.def+' · HP '+row.stats.hp,'hint'));
-    if(row.scores?.length)summary.append(el('p',row.scores.map((score,i)=>['Lead','Closer','Switch','Charger','Attacker','Consistency'][i]+': '+score).join(' · '),'hint'));
-    if(row.editorScore)summary.append(el('p','Editor score: '+row.editorScore+' · '+(row.editorNotes || ''),'hint'));
+    if(row.editorNotes)summary.append(el('p',row.editorNotes,'hint'));
     const targets=isCustom()?(custom._targets||[...new Set(custom.overall.map(r=>r.speciesId))].map(speciesId=>({speciesId,weight:1,moveset:leagueData.overall.find(r=>r.speciesId===speciesId)?.moveset}))).filter(t=>t.moveset):leagueData.overall.map(r=>({speciesId:r.speciesId,moveset:r.moveset,weight:1}));
     PvPProDetail.mount({host,data,cp:cp(),published:leagueData.overall,row,category:$('proCategory').value,targets,custom:isCustom(),historical:isCustom()&&!custom._targets,
       categoryRow:slug=>custom?.[slug]?.find(r=>rowKey(r)===rowKey(row)),battleHost:$('proBattlePanel')});
