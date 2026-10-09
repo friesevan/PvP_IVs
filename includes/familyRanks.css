@@ -378,3 +378,28 @@ body:has(#proPanel:not([hidden])) main {max-width:1800px;}
 .pro-ranking-table .pro-rank-basis{border-left:1px solid color-mix(in srgb,var(--accent) 45%,transparent);border-right:1px solid color-mix(in srgb,var(--accent) 45%,transparent)}.pro-ranking-table th.pro-rank-basis{border-top:2px solid color-mix(in srgb,var(--accent) 55%,transparent)}.pro-ranking-table tbody tr:last-child .pro-rank-basis{border-bottom:1px solid color-mix(in srgb,var(--accent) 45%,transparent)}.pro-rank-basis-label{display:block;color:var(--accent);font-size:9px;font-weight:500;letter-spacing:.03em;margin-bottom:4px}
 
 .pro-score-difference .pro-difference-moveset-badge{margin:0 0 0 7px;vertical-align:middle}
+
+/* Ranking details expand within the table; the full width belongs to rankings. */
+.pro-layout,.pro-layout.pro-has-battle,.pro-layout.pro-has-score-columns{grid-template-columns:minmax(0,1fr)}
+#proDetailParking[hidden]{display:none!important}
+.pro-ranking-table>tbody>tr.pro-inline-detail-row>td{padding:8px;background:var(--panel);white-space:normal}
+.pro-inline-detail-wrap{width:min(1500px,calc(100vw - 100px));max-width:100%;display:grid;grid-template-columns:minmax(0,1fr);gap:12px;position:relative}
+.pro-inline-detail-wrap:has(.pro-inline-battle:not([hidden])){grid-template-columns:minmax(0,2fr) minmax(280px,1fr)}
+.pro-inline-detail-content{display:grid;grid-template-columns:minmax(240px,.9fr) minmax(320px,1.1fr);gap:10px 16px;font-size:12px;min-width:0}
+.pro-inline-summary{grid-column:1/-1;display:flex;flex-wrap:wrap;align-items:center;gap:4px 12px}
+.pro-inline-summary h3{margin:0;font-size:15px}.pro-inline-summary p,.pro-inline-summary .pro-types,.pro-inline-summary .pro-move-chips{margin:2px 0}
+.pro-inline-detail-content h4{font-size:12px;margin:4px 0}.pro-inline-detail-content .hint{font-size:10px;line-height:1.35;margin:4px 0}
+.pro-inline-detail-content>.secondary{grid-column:1/-1;justify-self:start;font-size:11px;padding:5px 8px}
+.pro-inline-detail-content .pro-full-matchups{min-width:0}.pro-inline-detail-content .pro-matchup-groups{gap:8px}.pro-inline-detail-content .pro-matchups{max-height:220px}
+.pro-inline-detail-content .pro-matchups li{padding:3px 2px;gap:4px}.pro-inline-detail-content .pro-matchups .pro-pokemon-button{font-size:11px}.pro-inline-detail-content .pro-type-chip{font-size:9px;padding:1px 3px}
+.pro-inline-detail-content label{font-size:10px}.pro-inline-detail-content select{padding:4px;font-size:11px}
+.pro-inline-detail-content .pro-move-info{margin:0;border-top:0;padding:0;min-width:0}.pro-inline-detail-content .pro-move-pools{grid-template-columns:minmax(100px,.65fr) minmax(180px,1.35fr);gap:8px}
+.pro-inline-detail-content .pro-move-pools>section{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));align-content:start;gap:4px}.pro-inline-detail-content .pro-move-pools>section>h4{grid-column:1/-1}
+.pro-inline-detail-content .pro-move-card{padding:4px 6px;margin:0}.pro-inline-detail-content .pro-move-card-header{font-size:11px;padding-bottom:2px}.pro-inline-detail-content .pro-move-stats{font-size:10px;margin:2px 0}.pro-inline-detail-content .pro-move-flags{font-size:9px}
+.pro-inline-battle{grid-column:auto;position:static;max-height:none;padding:10px;min-width:0}.pro-inline-battle h3{font-size:14px}.pro-inline-battle .pro-fighter{padding:4px 0}.pro-inline-battle .hint{font-size:10px}
+.pro-ranking-table>tbody>tr:not(.pro-inline-detail-row)>td{padding-top:6px;padding-bottom:6px}
+@media(max-width:1000px){.pro-inline-detail-wrap:has(.pro-inline-battle:not([hidden])){grid-template-columns:minmax(0,1fr)}}
+@media(max-width:640px){.pro-inline-detail-content{grid-template-columns:minmax(0,1fr)}.pro-inline-summary{grid-column:auto}}
+@media(max-width:500px){.pro-inline-detail-wrap{width:calc(100vw - 70px)}.pro-inline-detail-content .pro-move-pools{grid-template-columns:1fr}}
+
+.pro-inline-detail-content .pro-matchups .pro-pokemon-button{display:flex;flex-wrap:wrap;align-items:center;gap:3px;line-height:1.25;padding:2px 0}.pro-inline-detail-content .pro-matchups .pro-types{display:inline-flex;margin:0;gap:2px}
