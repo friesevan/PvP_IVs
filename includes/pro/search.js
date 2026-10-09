@@ -2,7 +2,7 @@
 (function(root){
   'use strict';
   const lower=value=>String(value??'').toLowerCase();
-  function compile(query,data){
+  function compile(query,data,teamMode=false){
     const groups=lower(query).trim().split(/\s*,\s*/).filter(Boolean).map(group=>group.split('&').map(term=>term.trim()));
     const families=new Map();
     for(const p of data.pokemon){
@@ -30,11 +30,20 @@
       const traits=term==='bulky'?['bulky','extremely bulky']:term==='less bulky'?['less bulky','frail','glassy','glass cannon']:[term];
       return record.name.startsWith(term)||record.id.startsWith(term)||record.nicknames.includes(term)||record.types.includes(term)||record.tags.includes(term)||String(record.dex)===term||traits.some(t=>record.traits.includes(t));
     }
+    if(teamMode)return (team,index)=>{
+      if(!groups.length)return true;
+      // Each positive term may match a different member; NOT excludes the whole team.
+      function teamMatches(term){
+        if(term[0]==='!'&&term.length>1)return !teamMatches(term.slice(1));
+        return team.some(row=>{const record=index.get(row.speciesId);return !!record&&matches(term,record,row);});
+      }
+      return groups.some(group=>group.every(teamMatches));
+    };
     return (row,index)=>{
       if(!groups.length)return true;
       const record=index.get(row.speciesId);
       return !!record&&groups.some(group=>group.every(term=>matches(term,record,row)));
     };
   }
-  root.PvPProSearch={compile};
+  root.PvPProSearch={compile,compileTeam:(query,data)=>compile(query,data,true)};
 })(globalThis);

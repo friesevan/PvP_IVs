@@ -70,3 +70,35 @@ test('representative search results agree with the pinned upstream GameMaster se
   assert.deepEqual(ids(query),published.filter(row=>native.has(row.speciesId)).map(row=>row.speciesId),query);
  }
 });
+
+test('team AND terms can match different members, and NOT excludes any matching member',()=>{
+ const {records}=fixture(1500);
+ const team=[
+  {speciesId:'melmetal',moveset:['THUNDER_SHOCK','DOUBLE_IRON_BASH','DYNAMIC_PUNCH']},
+  {speciesId:'cramorant',moveset:['PECK','DIVE','FLY']},
+  {speciesId:'poliwrath',moveset:['COUNTER','ICE_PUNCH','SCALD']}
+ ];
+ const matches=query=>PvPProSearch.compileTeam(query,data)(team,records);
+ assert.equal(matches('melmetal&cramorant'),true);
+ assert.equal(matches(' MELMETAL & CRAMORANT & @counter '),true);
+ assert.equal(matches('melmetal&cramorant&@1fighting'),true);
+ assert.equal(matches('melmetal&azumarill'),false);
+ assert.equal(matches('melmetal&!cramorant'),false);
+ assert.equal(matches('melmetal&!azumarill'),true);
+ assert.equal(matches('!@counter'),false);
+ assert.equal(matches('melmetal&azumarill,cramorant'),true);
+ assert.equal(matches('water&@counter'),true);
+ assert.equal(matches(''),true);
+ assert.equal(matches('melmetal&'),false);
+ const withoutCounter=team.map(row=>row.speciesId==='poliwrath'?{...row,moveset:['BUBBLE','ICE_PUNCH','SCALD']}:row);
+ assert.equal(PvPProSearch.compileTeam('melmetal&cramorant&@counter',data)(withoutCounter,records),false);
+ assert.equal(PvPProSearch.compileTeam('!@counter',data)(withoutCounter,records),true);
+});
+
+test('single-term team searches preserve all ranking predicates',()=>{
+ const {published,records}=fixture(1500);
+ for(const query of ['gfisk','water','shadow','gen2','184','+politoed','@counter','@2mud','@legacy','@special','bulky','50k','5km','meta','notes','hundo','xl']){
+  const single=PvPProSearch.compile(query,data),team=PvPProSearch.compileTeam(query,data);
+  assert.deepEqual(published.filter(row=>team([row],records)).map(row=>row.speciesId),published.filter(row=>single(row,records)).map(row=>row.speciesId),query);
+ }
+});
