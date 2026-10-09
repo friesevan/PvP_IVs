@@ -116,18 +116,9 @@
       <label>League<select id="proLeague"><option value="500">Little · 500 CP</option><option value="1500" selected>Great · 1,500 CP</option><option value="2500">Ultra · 2,500 CP</option><option value="10000">Master · Unlimited</option></select></label>
       <label class="pro-rank-control">Rankings<select id="proSource"><option value="published">Great League</option><option value="custom" disabled hidden>Generated custom roster</option></select></label>
       <label class="pro-rank-control">Category<select id="proCategory"><option value="overall">Overall</option></select></label>
-      <label class="pro-search pro-rank-control">Search Pokémon<input id="proSearch" type="search" placeholder="water&amp;@fighting, gfisk, +politoed…" aria-describedby="proSearchStatus"></label>
+
     </div>
-    <div class="pro-search-help pro-rank-control"><span id="proSearchStatus" class="hint" role="status"></span><details><summary>PvPoke search guide</summary>
-      <p>Combine terms with <strong>&amp;</strong> (AND), <strong>,</strong> (OR), and <strong>!</strong> (NOT). Move searches use learnable moves, including Elite TM moves, regardless of the displayed moveset.</p>
-      <div class="table-scroll"><table class="pro-search-guide"><thead><tr><th>Search by</th><th>Examples</th></tr></thead><tbody>
-      <tr><td>Name or nickname</td><td>azumarill · gfisk</td></tr><tr><td>Type or tag</td><td>water · legendary · mythical · ultrabeast · regional · alolan · galarian · starter · shadow · shadoweligible · mega · supermega · xl</td></tr>
-      <tr><td>Generation or region</td><td>gen1 · gen2 · kanto · johto · hoenn · sinnoh · unova · kalos · alola · galar · hisui · paldea</td></tr><tr><td>Pokédex number or family</td><td>184 · +politoed</td></tr>
-      <tr><td>Move name or type</td><td>@counter · @fighting</td></tr><tr><td>Fast or charged moves only</td><td>@1fighting · @2mud</td></tr><tr><td>Legacy or special moves</td><td>@legacy (excludes Return/Frustration) · @special (includes them)</td></tr>
-      <tr><td>Traits</td><td id="proSearchTraits">Bulky · Spammy · Technical · Inconsistent</td></tr><tr><td>Second charged move cost</td><td>10k · 50k · 75k · 100k</td></tr><tr><td>Buddy distance</td><td>1km · 3km · 5km · 20km</td></tr>
-      <tr><td>Meta, editor notes, perfect IVs</td><td>meta · notes · 4* · hundo</td></tr><tr><td>Combine searches</td><td>water&amp;@fighting · water,fighting · !water</td></tr>
-      </tbody></table></div><p class="hint">Meta uses PvPoke’s bundled league meta group. Traits, XL and perfect IVs use the league’s default Pokémon build and published recommended moveset. Notes searches entries with editor notes in the displayed report.</p>
-    </details></div>
+
     <p class="hint">League rankings use the published open-league data from <a href="https://github.com/pvpoke/pvpoke/tree/f627e89e53c0c7b903fff097df7a0ad0ac95decc" target="_blank" rel="noopener">PvPoke · f627e89</a>, including editor adjustments. Select a Pokémon to explore its moves, all opponent matchups and simulated battles.</p>
     <div class="pro-builder-actions"><button id="proOpenBuilder" type="button" class="secondary" aria-expanded="false" aria-controls="proBuilder">Create custom rankings</button></div>
     <section id="proBuilder" class="pro-roster-card" hidden aria-labelledby="proBuilderTitle"><div class="pro-builder-heading"><div><h2 id="proBuilderTitle">Create custom rankings</h2><p class="hint">Choose your roster, set moveset limits, then generate.</p></div><button id="proCloseBuilder" type="button" class="secondary">Close</button></div>
@@ -158,7 +149,19 @@
     <p id="proMovesetLegend" class="pro-moveset-legend" hidden><span class="pro-alternate-key">Alternate moveset</span><span class="pro-better-key">Beats recommended</span><span class="hint">Compared with the same Pokémon’s recommended moveset in this report and category.</span></p>
     </details>
     <div class="pro-layout">
-      <section class="pro-rank-card" aria-label="League rankings"><div id="proRankings" class="table-scroll" tabindex="0"></div><div class="analysis-pagination"><span id="proPagination"></span><button id="proPrev" type="button" class="secondary">Previous</button><button id="proNext" type="button" class="secondary">Next</button></div></section>
+      <section class="pro-rank-card" aria-label="League rankings">
+      <label class="pro-search pro-rank-control">Search Pokémon<input id="proSearch" type="search" placeholder="water&amp;@fighting, gfisk, +politoed…" aria-describedby="proSearchStatus"></label>
+    <div class="pro-search-help pro-rank-control"><span id="proSearchStatus" class="hint" role="status"></span><details><summary>PvPoke search guide</summary>
+      <p>Combine terms with <strong>&amp;</strong> (AND), <strong>,</strong> (OR), and <strong>!</strong> (NOT). Move searches use learnable moves, including Elite TM moves, regardless of the displayed moveset.</p>
+      <div class="table-scroll"><table class="pro-search-guide"><thead><tr><th>Search by</th><th>Examples</th></tr></thead><tbody>
+      <tr><td>Name or nickname</td><td>azumarill · gfisk</td></tr><tr><td>Type or tag</td><td>water · legendary · mythical · ultrabeast · regional · alolan · galarian · starter · shadow · shadoweligible · mega · supermega · xl</td></tr>
+      <tr><td>Generation or region</td><td>gen1 · gen2 · kanto · johto · hoenn · sinnoh · unova · kalos · alola · galar · hisui · paldea</td></tr><tr><td>Pokédex number or family</td><td>184 · +politoed</td></tr>
+      <tr><td>Move name or type</td><td>@counter · @fighting</td></tr><tr><td>Fast or charged moves only</td><td>@1fighting · @2mud</td></tr><tr><td>Legacy or special moves</td><td>@legacy (excludes Return/Frustration) · @special (includes them)</td></tr>
+      <tr><td>Traits</td><td id="proSearchTraits">Bulky · Spammy · Technical · Inconsistent</td></tr><tr><td>Second charged move cost</td><td>10k · 50k · 75k · 100k</td></tr><tr><td>Buddy distance</td><td>1km · 3km · 5km · 20km</td></tr>
+      <tr><td>Meta, editor notes, perfect IVs</td><td>meta · notes · 4* · hundo</td></tr><tr><td>Combine searches</td><td>water&amp;@fighting · water,fighting · !water</td></tr>
+      </tbody></table></div><p class="hint">Meta uses PvPoke’s bundled league meta group. Traits, XL and perfect IVs use the league’s default Pokémon build and published recommended moveset. Notes searches entries with editor notes in the displayed report.</p>
+    </details></div>
+<div id="proRankings" class="table-scroll" tabindex="0"></div><div class="analysis-pagination"><span id="proPagination"></span><button id="proPrev" type="button" class="secondary">Previous</button><button id="proNext" type="button" class="secondary">Next</button></div></section>
       <aside class="pro-detail-card"><div id="proDetail"><h3>Pokémon details</h3><p>Select a Pokémon in the rankings.</p></div></aside>
       <aside id="proBattlePanel" class="pro-battle-card" aria-label="Simulated battle" hidden></aside>
     </div>

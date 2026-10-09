@@ -312,3 +312,7 @@ body:has(#proPanel:not([hidden])) main {max-width:1800px;}
 .pro-move-info .pro-move-card-header span {font-size:10px;}
 .pro-move-info .pro-move-stats {font-size:10px;line-height:1.4;margin:3px 0;}
 .pro-move-info .pro-move-flags,.pro-move-info>.hint {font-size:10px;line-height:1.4;}
+
+.pro-rank-card>.pro-search {display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:600;margin-bottom:8px;}
+.pro-rank-card>.pro-search input {width:100%;box-sizing:border-box;}
+.pro-rank-card>.pro-search-help {font-size:12px;margin:8px 0 16px;flex-wrap:wrap;}
