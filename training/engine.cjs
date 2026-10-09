@@ -3,8 +3,7 @@ const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
 const base=path.resolve(__dirname,'../includes/pro');
 const data=JSON.parse(fs.readFileSync(path.join(base,'data/gamemaster.json')));
 const archetypes=JSON.parse(fs.readFileSync(path.join(__dirname,'vendor/aiArchetypes.json')));
-function random(seed){let s=seed>>>0;return ()=>{s=(s+0x6D2B79F5)>>>0;let t=Math.imul(s^(s>>>15),1|s);t^=t+Math.imul(t^(t>>>7),61|t);return ((t^(t>>>14))>>>0)/4294967296;};}
-const defaults={switch:1,switchFarm:1,bait:1,farm:1,shield:1};
+const {random,defaults}=require('./utils.cjs');
 function play(teamA,teamB,policyA=defaults,policyB=defaults,{seed=1,cp=1500}={}){
  let time=0,id=0,result=null,events=0,lastPhase='',timeouts=0;const timers=new Map(),rng=random(seed);
  const schedule=(fn,delay,repeat)=>{const key=++id;timers.set(key,{fn,at:time+delay,repeat});return key;};
@@ -46,7 +45,7 @@ function play(teamA,teamB,policyA=defaults,policyB=defaults,{seed=1,cp=1500}={})
    time=item.at;if(item.repeat)item.at+=item.repeat;else timers.delete(key);item.fn();
  }
  if(result===null){timeouts++;result=.5;}
- const timeline=b.getTimeline();
+ const timeline=b.getTimeline();b.stop();timers.clear();
  return {score:result,turns:b.getTurns(),timedOut:!!timeouts,charged:timeline.filter(e=>e.type.startsWith('charged ')).length,remaining:Array.from(players,p=>p.getRemainingPokemon())};
 }
 module.exports={play,random,defaults};

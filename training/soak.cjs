@@ -1,0 +1,7 @@
+#!/usr/bin/env node
+'use strict';
+const assert=require('node:assert/strict');const {BattleRunner}=require('./runner.cjs');
+const rows=require('../includes/pro/data/league-1500.json').overall.slice(0,60);
+const count=process.argv[2]===undefined?2048:Number(process.argv[2]);if(!Number.isInteger(count)||count<1)throw Error('Usage: node training/soak.cjs [positive battle count]');
+const runner=new BattleRunner();let maxRss=0,maxWorkerHeap=0;const start=Date.now();
+(async()=>{try{for(let i=0;i<count;i++){const offset=i%10*6;const result=await runner.play(rows.slice(offset,offset+3),rows.slice(offset+3,offset+6),undefined,undefined,{seed:i+1});assert.equal(result.timedOut,false);maxRss=Math.max(maxRss,process.memoryUsage().rss);maxWorkerHeap=Math.max(maxWorkerHeap,runner.workerHeapBytes);assert.ok(maxWorkerHeap<128*1048576,'Worker heap must remain below its 128 MB limit');if((i+1)%128===0)console.log(JSON.stringify({battles:i+1,rssMB:Math.round(process.memoryUsage().rss/1048576),maxRssMB:Math.round(maxRss/1048576),workerHeapMB:Math.round(runner.workerHeapBytes/1048576),recycles:runner.recycles}));}console.log(JSON.stringify({passed:true,battles:count,seconds:(Date.now()-start)/1000,maxRssMB:Math.round(maxRss/1048576),maxWorkerHeapMB:Math.round(maxWorkerHeap/1048576),recycles:runner.recycles}));}finally{await runner.close();}})().catch(error=>{console.error(error);process.exitCode=1;});

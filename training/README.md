@@ -4,10 +4,10 @@ This is a runnable CPU-only starting point for improving PvPoke's existing Champ
 
 ## Run
 
-Install Node.js 22 or later from https://nodejs.org/ if necessary. No npm packages, Python environment or GPU are required. In a checkout of this repository:
+Install Node.js 20 or later from https://nodejs.org/ if necessary. No npm packages, Python environment or GPU are required. In a checkout of this repository:
 
 ```sh
-node --test training/engine.test.cjs
+node --test training/engine.test.cjs training/runner.test.cjs
 node training/train.cjs --hours 8
 ```
 
@@ -17,7 +17,7 @@ On macOS, keep the computer awake while the command runs:
 caffeinate -i node training/train.cjs --hours 8
 ```
 
-Close neither the terminal nor the laptop lid. The program runs on one CPU core. Eight hours is a wall-clock budget checked between battles; an in-progress battle may finish after the deadline. Training throughput depends on hardware and selected teams. No eight-hour run has been performed as part of creating this code.
+Close neither the terminal nor the laptop lid. Battles run sequentially in one worker, so the program mainly uses one CPU core. The worker is recycled every eight battles and has a 128 MB V8 old-generation limit; the main process retains checkpoints and aggregate results rather than simulation contexts. Eight hours is a wall-clock budget checked between battles; an in-progress battle may finish after the deadline. Training throughput depends on hardware and selected teams. No eight-hour run has been performed as part of creating this code.
 
 To resume for another eight hours:
 
@@ -39,7 +39,7 @@ For a quick end-to-end test:
 node training/train.cjs --generations 1 --population 2 --games 1 --eval-games 1 --eval-every 1 --out training/runs/smoke
 ```
 
-Ctrl+C saves progress after the current battle. Interrupted candidate batches are discarded; the last completed generation remains the incumbent. Checkpoints use atomic replacement. Unexpected battle timeouts stop training instead of silently being rewarded as draws.
+A startup message shows the deadline and checkpoint path. Progress messages appear approximately every ten seconds between completed battles, with cumulative battle count, process RSS and the current worker heap. Generation results still appear as JSON. Ctrl+C saves progress after the current battle pair. Interrupted candidate batches are discarded; the last completed generation remains the incumbent. Checkpoints use atomic replacement. Unexpected battle timeouts stop training instead of silently being rewarded as draws.
 
 ## What happens during training
 
@@ -103,3 +103,29 @@ Not for adding full team battles or basic catching: PvPoke already supplies a us
 - [PvPoke training AI design](https://pvpoke.com/articles/development/developing-trainer-battle-ai/)
 - [Pinned PvPoke sources](https://github.com/pvpoke/pvpoke/tree/f627e89e53c0c7b903fff097df7a0ad0ac95decc)
 - [ReBeL: reinforcement learning and search for imperfect-information games](https://arxiv.org/abs/2007.13544). Relevant research for a future agent; this runner does not implement ReBeL or inherit its theoretical guarantees.
+
+## Recovering from the original out-of-memory crash
+
+The original runner repeatedly compiled the combat engine into VM contexts within a long-lived Node process. Sustained runs accumulated enough memory to exhaust its heap. The updated runner isolates that work in a worker that is completely terminated every eight battles. It does not change battle mechanics or policy parameters, and it accepts existing checkpoints.
+
+If you downloaded `PvPokeTrainerUpdate.zip`, open a terminal in your **existing** PvPokeTeamTrainer folder and run:
+
+```sh
+cp training/runs/overnight/checkpoint.json training/runs/overnight/checkpoint.before-update.json
+unzip -o ~/Downloads/PvPokeTrainerUpdate.zip
+caffeinate -i node training/train.cjs --hours 6 --resume
+```
+
+Adjust the ZIP path to where you downloaded it. The patch contains only training code and documentation; it does not contain or delete `training/runs`. Keep your original runs folder. If using Git, pull the updated branch instead, then use the same resume command.
+
+`--hours 6 --resume` gives the resumed process a **new six-hour budget**, not just the hours remaining from the failed invocation. A fatal crash cannot run the shutdown handler, so an incomplete generation's simulations are lost; the last atomically saved completed generation remains available.
+
+Optional sustained regression check:
+
+```sh
+node --max-old-space-size=128 training/soak.cjs 2048
+```
+
+This checks 2,048 full battles, periodically reports RSS and worker recycling, and fails on engine timeouts or excessive worker heap. Process RSS includes all threads and is greater than the worker's JavaScript heap limit. It is a bounded-memory regression test, not an overnight evaluation of strategic improvement.
+
+Validation of the memory fix on Node 20.18.1: 2,048 full battles completed in 487 seconds, with peak sampled process RSS of 370 MB and peak sampled worker heap of 55 MB. Seeded battle/recycling tests, original first-generation result parity, checkpoint resume, Ctrl+C and automatic deadline exit also passed. This is a regression check beyond the observed failure point, not a claim that a six-hour run has been completed.
