@@ -48,3 +48,15 @@ Its final score was **62.1%** over 512 mirrored battles. It beat two uniform-ran
 - Numerical gradient checks, cyclic-counter learning, deterministic worker-count comparisons, exhaustive chunk/cache equivalence, checkpoint interruption/resume, detached deadline shutdown and safe stop were verified.
 
 Completed earlier pilots' evaluations can become training evidence for a new experiment. Their seeds are marked as used and cannot serve as that new experiment's screening or final test. The final launcher selects a fresh validation seed.
+
+## Stronger independent comparison
+
+A separate experiment screened 12 training leaders against 128 new opponent fixtures, then evaluated four finalists and 12 fixed baseline teams against 256 untouched fixtures each, with sides exchanged. The screening-selected primary, **Melmetal / Cramorant / Jumpluff**, scored **62.7%**. Other finalists scored 62.3–65.4%; their final scores did not determine the primary.
+
+| Baseline group (four teams each) | Primary advantage | 95% paired-fixture interval |
+| --- | ---: | ---: |
+| uniform-random | 31.5 points | 26.5 to 36.4 |
+| weight-sampled-best-moves | 12.3 points | 7.1 to 17.3 |
+| greedy-scout-coverage | 14.0 points | 8.3 to 19.4 |
+
+These intervals remain conditional on these fixed baseline teams and modeled opponents. The installed larger-sample pipeline also completed screening, testing and all three baseline styles. Its separately selected Melmetal / Jumpluff / Quagsire (Shadow) primary scored 67.6% on another 128-fixture test, not a directly comparable score improvement.
