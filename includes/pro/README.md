@@ -389,10 +389,12 @@ Ranking search queries beginning with `@` inspect only the displayed row’s mov
 
 Rankings display 500 Pokémon per page. Clicking a Pokémon toggles a detail row immediately beneath that exact moveset variant. Its compact summary, matchup lists and move cards share the available width; clicking a matchup opens the battle graph within that expanded row. Filtering or paging away cancels hidden detail work.
 
-Expanded details omit the name, typing, score, displayed moveset and category ranking scores already visible in the ranking table. Additional battle stats and editor notes remain. A reserved 360px battle lane and fixed-height detail area keep the layout stable when a battle opens or closes. PvPoke Pro uses a wider page; smaller screens scroll the expanded row horizontally rather than resize its columns when simulating.
+Expanded details omit the name, typing, score, displayed moveset and category ranking scores already visible in the ranking table. Additional battle stats and editor notes remain. A reserved one-third-width battle lane and fixed-height detail area keep the layout stable when a battle opens or closes. PvPoke Pro uses a wider page; smaller screens scroll the expanded row horizontally rather than resize its columns when simulating.
 
 For a simpler matchup display, raw Battle Rating 500 ties are included in the Losses list (ascending), rather than a separate Ties section. Battle results still identify a tie and the underlying rating/scoring calculations are unchanged.
 
-Inline fast and charged move cards share fixed 180px × 140px dimensions. Their former explanatory footer is removed; move values, flags, and tooltip information remain available.
+Inline fast and charged move cards share the full move-column width and a fixed 140px height. Their former explanatory footer is removed; move values, flags, and tooltip information remain available.
 
 Changing ranking categories resets display sorting to the leftmost score, highest first. The primary score reads that category’s retained row score directly; cached comparison snapshots cannot override it. Display sorting uses a copy and never changes stored category row order.
+
+Expanded rows use equal horizontal thirds for matchups, move information, and simulated battles. Fast moves appear above charged moves in the middle lane. The battle lane is reserved even before a matchup is selected.
