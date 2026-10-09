@@ -199,14 +199,16 @@
     const baseline=(lab?variants:rows()).find(item=>item.speciesId===row.speciesId&&PvPPro.sameMoveset(item.moveset,recommended?.moveset));
     return PvPPro.compareMoveset(row,recommended,lab?baseline?.rating:baseline?.score,lab?row.rating:row.score);
   }
-  function movesetBadge(comparison,lab=false){
+  function movesetBadge(comparison,lab=false,row){
     if(!comparison)return null;
-    const text=comparison.kind==='recommended'?'Recommended':comparison.kind==='better'?'Beats recommended (+'+(comparison.delta<.1?'<0.1':comparison.delta.toFixed(1))+')':'Alternate moveset';
-    const badge=el('span',text,'pro-moveset-badge pro-moveset-'+comparison.kind);
+    const wrap=el('span',null,'pro-moveset-comparison');
+    const gain=comparison.delta<.1?'<0.1':comparison.delta?.toFixed(1);
+    const text=comparison.kind==='recommended'?'Recommended':'Alternate Moveset'+(comparison.kind==='better'?' · Beats recommended by '+gain+(lab?' BR':' points'):'');
+    const badge=el('span',text,'pro-moveset-badge');wrap.append(badge);
     badge.title=comparison.kind==='recommended'?'PvPoke recommended moveset (charged move order ignored).':comparison.baselineScore==null?'Recommended moveset is not present in this saved report; a score comparison is unavailable.':(lab?'Recommended weighted Battle Rating: ':'Recommended moveset score in this report: ')+comparison.baselineScore.toFixed(1)+(lab?'. Compared against the same lab opponents and shield setting.':'. Compared in the current category against the same opponents.');
-    return badge;
+    if(comparison.kind!=='recommended'&&row){const recommended=leagueData?.overall.find(item=>item.speciesId===row.speciesId);if(recommended)wrap.append(el('span','Recommended: '+recommended.moveset.filter(id=>id!=='none').map(move).join(' · '),'pro-recommended-reference'));}
+    return wrap;
   }
-  function highlightMoveset(tr,comparison){if(comparison&&comparison.kind!=='recommended')tr.classList.add('pro-moveset-row-'+comparison.kind);}
   function render(){
     updateSavedControls();
     let list=rows();if($('proRankBestOnly').checked&&isCustom()){const seen=new Set();list=list.filter(row=>{if(seen.has(row.speciesId))return false;seen.add(row.speciesId);return true;});}if(!list.length){$('proRankings').textContent='Load a league to view rankings.';return;}
@@ -220,13 +222,13 @@
     const pages=Math.max(1,Math.ceil(filtered.length/25));page=Math.max(0,Math.min(page,pages-1));
     const table=el('table',null,'pro-ranking-table');table.append(el('caption',(activeSaved?(savedRankings.find(item=>item.id===activeSaved)?.name||'Saved'):(isCustom()?'Generated':leagueName()))+' · '+$('proCategory').selectedOptions[0].textContent+(isCustom()?' · '+$('proLeague').selectedOptions[0].textContent:'')));
     const head=table.createTHead().insertRow();
-    for(const [label,key] of [['Rank',null],['Pokémon','speciesName'],['Score','score'],[isCustom()?'Moveset · screening metrics':'Recommended moveset',null]]){const th=el('th');th.scope='col';if(key){const button=el('button',label+(sortKey===key?(descending?' ↓':' ↑'):' ↕'),'column-sort');button.type='button';button.addEventListener('click',()=>{descending=sortKey===key?!descending:key==='score';sortKey=key;render();});th.append(button);th.setAttribute('aria-sort',sortKey===key?(descending?'descending':'ascending'):'none');}else th.textContent=label;head.append(th);}
+    for(const [label,key] of [['Rank',null],['Pokémon','speciesName'],['Score','score'],[isCustom()?'Moveset':'Recommended moveset',null]]){const th=el('th');th.scope='col';if(key){const button=el('button',label+(sortKey===key?(descending?' ↓':' ↑'):' ↕'),'column-sort');button.type='button';button.addEventListener('click',()=>{descending=sortKey===key?!descending:key==='score';sortKey=key;render();});th.append(button);th.setAttribute('aria-sort',sortKey===key?(descending?'descending':'ascending'):'none');}else th.textContent=label;head.append(th);}
     const body=table.createTBody();
     for(const row of filtered.slice(page*25,(page+1)*25)){
-      const tr=body.insertRow(),comp=comparison(row);highlightMoveset(tr,comp);if(rowKey(row)===selectedKey)tr.classList.add('pro-selected');tr.insertCell().textContent=rankMap.get(rowKey(row));
+      const tr=body.insertRow(),comp=comparison(row);if(rowKey(row)===selectedKey)tr.classList.add('pro-selected');tr.insertCell().textContent=rankMap.get(rowKey(row));
       const button=el('button',row.speciesName,'pro-pokemon-button');button.type='button';button.addEventListener('click',()=>{if(selected!==row.speciesId){stop();variants=[];selected=row.speciesId;renderVariants();}selectedKey=rowKey(row);render();$('proDetail').scrollIntoView({behavior:'smooth',block:'nearest'});});
       tr.insertCell().append(button,PvPProDetail.pokemonTypes(data.pokemon.find(p=>p.speciesId===row.speciesId)));const score=tr.insertCell();score.textContent=row.score.toFixed(1);score.className='rated-cell';score.style.setProperty('--rating-hue',Math.max(0,Math.min(130,row.score*1.3)));
-      const moves=tr.insertCell();moves.append(PvPProDetail.moves(row.moveset,data));const badge=movesetBadge(comp);if(badge&&isCustom())moves.append(badge);if(row.cycleProjection!=null)moves.append(el('p','Cycle '+row.cycleProjection.toFixed(2)+' damage / turn'+(row.scoutScore!=null?' · Scout '+row.scoutScore.toFixed(1)+'/100':''),'hint'));
+      const moves=tr.insertCell();moves.append(PvPProDetail.moves(row.moveset,data));const badge=movesetBadge(comp,false,row);if(badge&&isCustom())moves.append(badge);
     }
     if(!filtered.length){const cell=body.insertRow().insertCell();cell.colSpan=4;cell.textContent=query&&!searchIndex?(searchError||'Preparing search data…'):'No Pokémon match this search.';}
     $('proRankings').replaceChildren(table);$('proPagination').textContent=filtered.length+' Pokémon · Page '+(page+1)+' / '+pages;$('proPrev').disabled=page===0;$('proNext').disabled=page===pages-1;
@@ -239,7 +241,7 @@
     if(!row)return;const identity=[row,cp(),$('proSource').value,$('proCategory').value];if(renderedDetail&&identity.every((v,i)=>v===renderedDetail[i]))return;renderedDetail=identity;selected=row.speciesId;$('proLabPokemon').value=selected;const p=data.pokemon.find(item=>item.speciesId===row.speciesId),host=$('proDetail');host.replaceChildren();
     host.append(el('h3',row.speciesName),PvPProDetail.pokemonTypes(p),el('p','Score '+row.score.toFixed(1),'hint'));
     host.append(PvPProDetail.moves(row.moveset,data));
-    const badge=movesetBadge(comparison(row));if(badge&&isCustom())host.append(badge);
+    const badge=movesetBadge(comparison(row),false,row);if(badge&&isCustom())host.append(badge);
     if(row.stats)host.append(el('p','Attack '+row.stats.atk+' · Defense '+row.stats.def+' · HP '+row.stats.hp,'hint'));
     if(row.scores?.length)host.append(el('p',row.scores.map((score,i)=>['Lead','Closer','Switch','Charger','Attacker','Consistency'][i]+': '+score).join(' · '),'hint'));
     if(row.editorScore)host.append(el('p','Editor score: '+row.editorScore+' · '+(row.editorNotes || ''),'hint'));
@@ -250,20 +252,21 @@
   }
   function renderVariants(){
     const host=$('proVariants');host.replaceChildren();
-    $('proLabMovesetLegend').hidden=!variants.length;
+    $('proLabMovesetLegend').hidden=true;
     if(!variants.length){host.textContent='Select a Pokémon, then evaluate its movesets against your accepted roster.';$('proVariantContext').textContent='';return;}
     const threshold=Number($('proThreshold').value);if(!Number.isFinite(threshold)||threshold<0||threshold>100){host.textContent='Threshold must be from 0 to 100%.';return;}
     const shown=PvPPro.filterVariants(variants,$('proBestOnly').checked,threshold),table=el('table',null,'pro-variants-table');
     table.append(el('caption',name(selected)+' · '+shown.length+' / '+variants.length+' movesets shown'));
     const head=table.createTHead().insertRow();for(const text of ['Moveset','Weighted Battle Rating','Below best']){const th=el('th',text);th.scope='col';head.append(th);}
     const body=table.createTBody();
-    for(const row of shown){const tr=body.insertRow(),comp=comparison(row,true);highlightMoveset(tr,comp);tr.insertCell().append(PvPProDetail.moves(row.moveset,data));const badge=movesetBadge(comp,true);if(badge)tr.cells[0].append(badge);tr.insertCell().textContent=row.rating.toFixed(1);tr.insertCell().textContent=(variants[0].rating ? (1-row.rating/variants[0].rating)*100 : 0).toFixed(2)+'%';
+    for(const row of shown){const tr=body.insertRow(),comp=comparison(row,true);tr.insertCell().append(PvPProDetail.moves(row.moveset,data));const badge=movesetBadge(comp,true,row);if(badge)tr.cells[0].append(badge);tr.insertCell().textContent=row.rating.toFixed(1);tr.insertCell().textContent=(variants[0].rating ? (1-row.rating/variants[0].rating)*100 : 0).toFixed(2)+'%';
       const detail=el('details');detail.append(el('summary','Matchups'));for(const item of row.matches)detail.append(el('p',name(item.opponent)+' · '+item.rating,'hint'));tr.cells[0].append(detail);}
     host.append(table);
   }
   function updateSavedControls(){
     const available=!!custom&&isCustom();
-    $('proSavedControls').hidden=!available;$('proBestFilter').hidden=!available;$('proMovesetLegend').hidden=!available;
+    $('proRankingOptions').hidden=!available;$('proRankingOptionsTitle').textContent=activeSaved?'Edit Saved Ranking':'Save Ranking & Options';$('proSavedControls').hidden=!available;$('proBestFilter').hidden=!available;$('proMovesetLegend').hidden=true;
+    if(available)$('proRankingOptions').append($('proStatus'));else $('proRankPanel').before($('proStatus'));
     $('proStatus').hidden=$('proBuilder').hidden&&!available&&$('proLabPanel').hidden;
     $('proRunSummary').hidden=!available;
     $('proSaveRanking').disabled=saveBusy||!available;
@@ -287,7 +290,7 @@
       if(cp()!==record.cp){$('proLeague').value=String(record.cp);await load();}
       if(request!==sourceRequest)return;
       if(loadedCp!==record.cp)throw new Error('Unable to load the saved ranking’s league.');
-      stop();custom=record.rankings;activeSaved=record.id;selectedKey='';selected='';page=0;
+      stop();$('proRankingOptions').open=false;custom=record.rankings;activeSaved=record.id;selectedKey='';selected='';page=0;
       $('proSource').value=value;$('proCategory').value='overall';$('proSavedName').value=record.name;
       $('proGeneratedContext').textContent=record.context;$('proRunSummary').textContent=record.summary;
       render();status('Loaded saved rankings: '+record.name+'.');
@@ -302,7 +305,7 @@
       if(action==='save'){
         if(!custom||!isCustom())throw new Error('Generate custom rankings first.');
         const record={id:crypto.randomUUID(),name:rankingName,cp:cp(),leagueLabel:$('proLeague').selectedOptions[0].textContent,updatedAt:Date.now(),rankings:custom,context:$('proGeneratedContext').textContent,summary:$('proRunSummary').textContent,source:PvPPro.source};
-        await PvPProSaved.put(record);activeSaved=record.id;
+        await PvPProSaved.put(record);activeSaved=record.id;$('proRankingOptions').open=false;
         savedRankings=await PvPProSaved.list();refreshSavedOptions();$('proSource').value='saved:'+record.id;
       }else if(action==='rename'){
         const record=await PvPProSaved.get(activeSaved);if(!record)throw new Error('Saved ranking not found.');

@@ -147,6 +147,7 @@
     <button id="proCancel" type="button" class="secondary" hidden>Cancel calculation</button>
     <p id="proStatus" role="status" aria-live="polite">Open this tab to load rankings.</p>
     <section id="proRankPanel" role="tabpanel" aria-labelledby="proRankTab">
+    <details id="proRankingOptions" class="pro-ranking-options" hidden><summary id="proRankingOptionsTitle">Save Ranking</summary>
     <div id="proSavedControls" class="pro-saved-controls" hidden>
       <label>Ranking name<input id="proSavedName" type="text" maxlength="120" placeholder="Name your custom rankings" autocomplete="off"></label>
       <div class="save-actions"><button id="proSaveRanking" type="button" disabled>Save rankings</button><button id="proRenameRanking" type="button" class="secondary" hidden>Rename</button><button id="proDeleteRanking" type="button" class="secondary" hidden>Delete saved ranking</button></div>
@@ -155,6 +156,7 @@
 <p id="proGeneratedContext" class="hint" hidden></p>
     <label id="proBestFilter" class="pro-best-filter" hidden><input id="proRankBestOnly" type="checkbox"> Show best moveset per Pokémon only</label><div id="proRunSummary" class="hint"></div>
     <p id="proMovesetLegend" class="pro-moveset-legend" hidden><span class="pro-alternate-key">Alternate moveset</span><span class="pro-better-key">Beats recommended</span><span class="hint">Compared with the same Pokémon’s recommended moveset in this report and category.</span></p>
+    </details>
     <div class="pro-layout">
       <section class="pro-rank-card" aria-label="League rankings"><div id="proRankings" class="table-scroll" tabindex="0"></div><div class="analysis-pagination"><span id="proPagination"></span><button id="proPrev" type="button" class="secondary">Previous</button><button id="proNext" type="button" class="secondary">Next</button></div></section>
       <aside class="pro-detail-card"><div id="proDetail"><h3>Pokémon details</h3><p>Select a Pokémon in the rankings.</p></div></aside>

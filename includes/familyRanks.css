@@ -245,10 +245,6 @@ summary { font-weight: 600; }
 .pro-search-guide th,.pro-search-guide td {text-align:left;white-space:normal;padding:9px;border-bottom:1px solid var(--line);}
 @media(max-width:600px){.pro-search-help{flex-direction:column;}.pro-search-guide th:first-child{min-width:110px;}}
 /* Keep the numeric score gradient; mark moveset status on the other cells. */
-.pro-moveset-row-alternate > td:not(.rated-cell) {background:#fff6df;}
-.pro-moveset-row-better > td:not(.rated-cell) {background:#e8f3ff;}
-.pro-moveset-row-alternate > td:first-child {box-shadow:inset 4px 0 #b97806;}
-.pro-moveset-row-better > td:first-child {box-shadow:inset 4px 0 #2268b5;}
 .pro-moveset-badge {display:table;margin-top:8px;padding:3px 7px;border:1px solid;border-radius:6px;font-size:11px;line-height:1.5;font-weight:700;}
 .pro-moveset-alternate,.pro-alternate-key {color:#765000;background:#fff0c6;border-color:#b97806;}
 .pro-moveset-better,.pro-better-key {color:#164f8c;background:#dcecff;border-color:#2268b5;}
@@ -295,3 +291,24 @@ body:has(#proPanel:not([hidden])) main {max-width:1800px;}
 .pro-ranking-table th,.pro-ranking-table td {padding:10px 8px;overflow-wrap:anywhere;}
 .pro-ranking-table .pro-move-chip {font-size:11px;padding:2px 5px;}
 .pro-ranking-table .column-sort {font-size:12px;}
+
+/* Compact ranking controls and neutral moveset labels. Type and score colors remain. */
+.pro-ranking-options {margin:12px 0;border:1px solid var(--line);border-radius:10px;background:var(--panel);padding:12px 16px;}
+.pro-ranking-options>summary {font-size:14px;font-weight:650;margin:0;}
+.pro-ranking-options[open]>summary {margin-bottom:12px;}
+.pro-ranking-options .pro-saved-controls {margin:0;padding:0;border:0;background:transparent;}
+.pro-ranking-options .pro-saved-controls>label {font-size:13px;max-width:420px;}
+.pro-ranking-options .save-actions button {font-size:12px;padding:7px 10px;}
+.pro-ranking-options #proStatus {font-size:12px;margin-bottom:0;}
+.pro-ranking-options .hint,.pro-ranking-options .pro-best-filter {font-size:12px;}
+.pro-moveset-badge {display:inline-block;margin-top:5px;padding:2px 5px;border:1px solid var(--line);border-radius:4px;color:var(--muted);background:var(--bg);font-size:10px;line-height:1.4;}
+.pro-recommended-reference {display:block;color:var(--muted);font-size:10px;line-height:1.4;margin-top:3px;font-weight:400;}
+.pro-move-info {margin-top:14px;border-top:1px solid var(--line);padding-top:10px;}
+.pro-move-info>summary {font-size:13px;font-weight:650;margin-bottom:8px;}
+.pro-move-info .pro-move-pools {gap:5px;}
+.pro-move-info h4 {font-size:12px;margin:8px 0;}
+.pro-move-info .pro-move-card {padding:5px 7px;margin:5px 0;border-left-width:4px;border-radius:0 7px 7px 0;}
+.pro-move-info .pro-move-card-header {gap:5px;padding-bottom:3px;font-size:12px;}
+.pro-move-info .pro-move-card-header span {font-size:10px;}
+.pro-move-info .pro-move-stats {font-size:10px;line-height:1.4;margin:3px 0;}
+.pro-move-info .pro-move-flags,.pro-move-info>.hint {font-size:10px;line-height:1.4;}

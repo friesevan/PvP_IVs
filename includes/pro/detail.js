@@ -13,7 +13,7 @@
     battleHost.hidden=true;battleHost.replaceChildren();document.querySelector('.pro-layout').classList.remove('pro-has-battle');
     const section=el('section',null,'pro-full-matchups'),label=el('label','Battle scenario'),select=el('select');select.setAttribute('aria-label','Battle scenario');
     const scenarios=data.rankingScenarios;for(const s of scenarios){const option=el('option',s.slug[0].toUpperCase()+s.slug.slice(1)+' · '+s.shields.join('–')+' shields');option.value=s.slug;select.append(option);}select.value=category==='overall'?'leads':category;select.disabled=category!=='overall';label.append(select);
-    const context=el('p',null,'hint'),progress=el('p','Loading all matchups…','hint'),lists=el('div',null,'pro-matchup-groups'),moveHost=el('section',null,'pro-move-info');
+    const context=el('p',null,'hint'),progress=el('p','Loading all matchups…','hint'),lists=el('div',null,'pro-matchup-groups'),moveHost=el('details',null,'pro-move-info');
     section.append(el('h4','All opponent matchups'),label,context,progress,lists);host.append(section,moveHost);
     let activeMatches=[];
     function request(){
@@ -52,7 +52,7 @@
       if(config.custom)battleHost.append(el('p','This graph reruns the same engine, movesets and scenario as the report. Shield-adjusted BR '+result.adjRating+' is used before the category’s weighting and score normalization.','hint'));
     }
     function drawMoves(info){
-      moveHost.replaceChildren(el('h4','Move details'));const grid=el('div',null,'pro-move-pools');const p=lookup(row.speciesId),recommended=config.custom?(config.published.find(r=>r.speciesId===row.speciesId)?.moveset||[]):row.moveset;
+      moveHost.replaceChildren(el('summary','Move details'));const grid=el('div',null,'pro-move-pools');const p=lookup(row.speciesId),recommended=config.custom?(config.published.find(r=>r.speciesId===row.speciesId)?.moveset||[]):row.moveset;
       for(const kind of ['fast','charged']){const column=el('section');column.append(el('h4',kind==='fast'?'Fast moves':'Charged moves'));
         for(const m of info.filter(m=>m.kind===kind)){
           const card=typed(el('article',null,'pro-move-card'),m.type),chosen=row.moveset.includes(m.id),rec=recommended.includes(m.id);if(chosen)card.classList.add('pro-chosen-move');
