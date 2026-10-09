@@ -36,13 +36,18 @@
         if(!items.length)ul.append(el('li','None'));group.append(ul);lists.append(group);
       }
     }
+    function scrollToBattle(){
+      const sidebar=battleHost.closest('#proDetailParking');
+      if(sidebar&&sidebar.scrollHeight>sidebar.clientHeight)sidebar.scrollTo({top:sidebar.scrollTop+battleHost.getBoundingClientRect().top-sidebar.getBoundingClientRect().top-sidebar.clientTop-12,behavior:'smooth'});
+      else battleHost.scrollIntoView({behavior:'smooth',block:'start'});
+    }
     function openBattle(item,button){
       battleWorker?.terminate();for(const b of lists.querySelectorAll('button'))b.removeAttribute('aria-current');button.setAttribute('aria-current','true');
       battleHost.hidden=false;document.querySelector('.pro-layout').classList.add('pro-has-battle');battleHost.replaceChildren(el('h3',name(row.speciesId)+' vs '+name(item.opponent)),el('p','Simulating battle…','hint'));
-      const current=battleWorker=new Worker('includes/pro/worker.js');current.onmessage=event=>{if(token!==sequence||current!==battleWorker)return;const result=event.data;if(result.type==='error'){battleHost.append(el('p',result.error,'hint'));return;}if(result.type==='battle'){drawBattle(result,item);current.terminate();battleWorker=null;}};
+      const current=battleWorker=new Worker('includes/pro/worker.js');current.onmessage=event=>{if(token!==sequence||current!==battleWorker)return;const result=event.data;if(result.type==='error'){battleHost.append(el('p',result.error,'hint'));return;}if(result.type==='battle'){drawBattle(result,item);scrollToBattle();current.terminate();battleWorker=null;}};
       current.onerror=e=>battleHost.append(el('p',e.message,'hint'));
       current.postMessage({...config,host:undefined,battleHost:undefined,categoryRow:undefined,mode:'battle',scenario:select.value,opponent:item.opponent});
-      if(window.innerWidth<1100)battleHost.scrollIntoView({behavior:'smooth',block:'start'});
+      scrollToBattle();
     }
     function drawBattle(result,item){
       battleHost.replaceChildren();const top=el('div',null,'pro-battle-heading'),close=el('button','Close','secondary');close.type='button';close.addEventListener('click',()=>{resetBattle();});top.append(el('h3','Simulated battle'),close);battleHost.append(top);
