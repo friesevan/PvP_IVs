@@ -146,6 +146,11 @@
     const mode=settings.mode,guidance=settings.guidance??.75;
     return {id:settings.id||'score-'+Date.now(),mode,guidance,label:mode==='calculate'?Math.round(guidance*100)+'%':mode==='equal'?'Equal':mode==='manual'?'Individual':'Default',targets:report._targets.map(t=>({...t})),model:report._weightModel||null,scores:Object.fromEntries(['overall','leads','closers','switches','chargers','attackers'].map(slug=>[slug,Object.fromEntries(report[slug].map(r=>[r.variantId,r.score]))]))};
   }
+  function rankingColumnOrder(ids,saved=[]){
+    const order=[...new Set(saved)].filter(id=>ids.includes(id));
+    for(const id of ids){if(order.includes(id))continue;const kind=id.startsWith('score:')?'score:':id.startsWith('diff:')?'diff:':null;if(!kind){order.push(id);continue;}let after=-1;for(let i=0;i<order.length;i++)if(order[i].startsWith(kind))after=i;if(after<0&&kind==='diff:')for(let i=0;i<order.length;i++)if(order[i].startsWith('score:'))after=i;if(after<0){const anchor=ids.indexOf(id);for(let i=0;i<order.length;i++)if(ids.indexOf(order[i])<anchor)after=i;}order.splice(after+1,0,id);}
+    return order;
+  }
   function publishedScoreColumn(report,league,{id='published-'+Date.now()}={}){
     return {id,mode:'published',label:'PvPoke',targets:[],scores:Object.fromEntries(['overall','leads','closers','switches','chargers','attackers'].map(slug=>{const source=new Map((league[slug]||[]).map(r=>[r.speciesId,r.score]));return [slug,Object.fromEntries((report[slug]||[]).filter(r=>source.has(r.speciesId)).map(r=>[r.variantId,source.get(r.speciesId)]))];}))};
   }
@@ -183,5 +188,5 @@
     output.overall=report.overall.map(r=>{const values=scores.get(r.variantId),consistency=r.scores[5];return {...r,score:overallScore(values,consistency),scores:[...values,consistency]};}).sort((a,b)=>b.score-a.score||a.variantId.localeCompare(b.variantId));
     return output;
   }
-  root.PvPPro={source,customWeight,sameMoveset,compareMoveset,validateRoster,enumerate,filterVariants,key,cycleDpt,selectCandidates,categoryScores,overallScore,seededCandidates,weightPrior,calculateMetaWeights,weightModelVersion,rescoreRankings,chooseOpponents,chooseCandidates,scoreColumn,publishedScoreColumn};
+  root.PvPPro={source,customWeight,sameMoveset,compareMoveset,validateRoster,enumerate,filterVariants,key,cycleDpt,selectCandidates,categoryScores,overallScore,seededCandidates,weightPrior,calculateMetaWeights,weightModelVersion,rescoreRankings,chooseOpponents,chooseCandidates,scoreColumn,publishedScoreColumn,rankingColumnOrder};
 })(typeof self!=='undefined'?self:globalThis);

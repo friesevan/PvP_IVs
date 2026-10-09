@@ -80,3 +80,10 @@ test('published score columns map category references to every species variant w
  const league={overall:[{speciesId:'a',score:92.3}],leads:[{speciesId:'a',score:88.1}]};const before=JSON.stringify(report),column=PvPPro.publishedScoreColumn(report,league,{id:'published-test'});
  assert.equal(column.mode,'published');assert.equal(column.label,'PvPoke');assert.deepEqual(column.targets,[]);assert.equal(column.scores.overall['a:recommended'],92.3);assert.equal(column.scores.overall['a:alternate'],92.3);assert.equal(column.scores.leads['a:alternate'],88.1);assert.equal(column.scores.overall.missing,undefined);assert.deepEqual(column.scores.closers,{});assert.equal(JSON.stringify(report),before);
 });
+test('new ranking columns follow the rightmost column of their kind after arbitrary reordering',()=>{
+ const base=['rank','pokemon','score:primary','score:equal','score:new','diff:old','diff:new','moves'];
+ assert.deepEqual(PvPPro.rankingColumnOrder(base,['rank','score:equal','pokemon','diff:old','moves','score:primary']),['rank','score:equal','pokemon','diff:old','diff:new','moves','score:primary','score:new']);
+ assert.deepEqual(PvPPro.rankingColumnOrder(base,[]),base);
+ assert.deepEqual(PvPPro.rankingColumnOrder(['rank','score:a','score:b','diff:new','moves'],['rank','score:b','moves','score:a']),['rank','score:b','moves','score:a','diff:new']);
+ assert.deepEqual(PvPPro.rankingColumnOrder(['rank','score:a'],['removed','rank','score:a','score:a']),['rank','score:a']);
+});
