@@ -10,12 +10,12 @@
   function cancel(){sequence++;detailWorker?.terminate();battleWorker?.terminate();detailWorker=battleWorker=null;}
   function mount(config){
     cancel();const token=sequence,{host,data,row,category,battleHost}=config;const lookup=id=>data.pokemon.find(p=>p.speciesId===id),name=id=>lookup(id)?.speciesName||id;
-    function resetBattle(){battleHost.hidden=false;battleHost.replaceChildren(el('h3','Simulated battle'),el('p','Select an opponent matchup to view its battle graph.','hint'));document.querySelector('.pro-layout').classList.remove('pro-has-battle');}
+    function resetBattle(){battleHost.hidden=true;battleHost.replaceChildren();document.querySelector('.pro-layout').classList.remove('pro-has-battle');}
     resetBattle();
     const section=el('section',null,'pro-full-matchups'),label=el('label','Battle scenario'),select=el('select');select.setAttribute('aria-label','Battle scenario');
     const scenarios=data.rankingScenarios;for(const s of scenarios){const option=el('option',s.slug[0].toUpperCase()+s.slug.slice(1)+' · '+s.shields.join('–')+' shields');option.value=s.slug;select.append(option);}select.value=category==='overall'?'leads':category;select.disabled=category!=='overall';label.append(select);
     const context=el('p',null,'hint'),progress=el('p','Loading all matchups…','hint'),lists=el('div',null,'pro-matchup-groups'),moveHost=el('section',null,'pro-move-info');
-    section.append(el('h4','All opponent matchups'),label,context,progress,lists);host.append(section,moveHost);
+    section.append(el('h4','All opponent matchups'),label,context,progress,lists);host.append(moveHost,section);
     let activeMatches=[];
     function request(){
       battleWorker?.terminate();detailWorker?.terminate();resetBattle();lists.replaceChildren();moveHost.replaceChildren();

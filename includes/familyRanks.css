@@ -422,3 +422,30 @@ main:has(#proPanel:not([hidden])){max-width:1800px}
 .pro-inline-detail-content .pro-move-info .pro-move-pools{grid-template-columns:minmax(0,1fr);gap:8px}
 .pro-inline-detail-content .pro-move-info .pro-move-pools>section,.pro-inline-detail-content .pro-move-info .pro-move-pools>section:first-child{grid-template-columns:minmax(0,1fr)}
 .pro-inline-detail-content .pro-move-info .pro-move-card{width:100%;height:140px}
+
+/* Selected Pokémon occupy a stable sidebar beside the ranking table. */
+.pro-layout.pro-has-details,.pro-layout.pro-has-details.pro-has-battle,.pro-layout.pro-has-details.pro-has-score-columns{grid-template-columns:minmax(0,1fr) clamp(300px,32vw,440px);gap:20px;align-items:start}
+.pro-layout.pro-has-details>.pro-rank-card{grid-column:1;min-width:0}
+#proDetailParking{grid-column:2;order:0;position:sticky;top:16px;max-height:calc(100vh - 32px);overflow:auto;min-width:0;padding:12px}
+.pro-sidebar-content{display:flex;flex-direction:column;gap:12px;min-width:0;font-size:12px}
+.pro-sidebar-content h4{font-size:12px;margin:4px 0 8px}
+.pro-sidebar-content .hint{font-size:10px;line-height:1.35;margin:4px 0}
+.pro-sidebar-content .pro-inline-summary{display:block}
+.pro-sidebar-content .pro-move-info{margin:0;padding:0;border:0}
+.pro-sidebar-content .pro-move-pools{display:grid;grid-template-columns:minmax(0,1fr);gap:10px}
+.pro-sidebar-content .pro-move-pools>section{display:grid;grid-template-columns:minmax(0,1fr);gap:4px}
+.pro-sidebar-content .pro-move-card{width:100%;height:140px;box-sizing:border-box;overflow:auto;min-width:0;padding:6px 8px;margin:0;overflow-wrap:anywhere}
+.pro-sidebar-content .pro-move-card-header{font-size:11px;flex-wrap:wrap;padding-bottom:3px}
+.pro-sidebar-content .pro-move-stats{font-size:10px;margin:3px 0;white-space:normal}
+.pro-sidebar-content .pro-move-flags{font-size:9px;white-space:normal}
+.pro-sidebar-content .pro-matchup-groups{gap:8px}
+.pro-sidebar-content .pro-matchups{max-height:260px}
+.pro-sidebar-content .pro-matchups li{padding:3px 2px;gap:4px}
+.pro-sidebar-content .pro-matchups .pro-pokemon-button{font-size:11px;display:flex;flex-wrap:wrap;gap:3px;line-height:1.25}
+.pro-sidebar-content .pro-type-chip{font-size:9px;padding:1px 3px}
+.pro-sidebar-content label{font-size:10px}
+.pro-sidebar-content select{padding:4px;font-size:11px}
+.pro-sidebar-content>.secondary{align-self:start;font-size:11px;padding:5px 8px}
+#proDetailParking>.pro-battle-card{position:static;grid-column:auto;max-height:none;overflow:visible;margin:16px 0 0;padding:12px 0 0;border:0;border-top:1px solid var(--line);box-shadow:none}
+#proBattlePanel[hidden]{display:none!important}
+@media(max-width:600px){.pro-layout.pro-has-details,.pro-layout.pro-has-details.pro-has-battle,.pro-layout.pro-has-details.pro-has-score-columns{grid-template-columns:minmax(0,1fr)}#proDetailParking{grid-column:1;position:static;max-height:none}}
