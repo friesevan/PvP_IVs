@@ -403,3 +403,4 @@ body:has(#proPanel:not([hidden])) main {max-width:1800px;}
 @media(max-width:500px){.pro-inline-detail-wrap{width:calc(100vw - 70px)}.pro-inline-detail-content .pro-move-pools{grid-template-columns:1fr}}
 
 .pro-inline-detail-content .pro-matchups .pro-pokemon-button{display:flex;flex-wrap:wrap;align-items:center;gap:3px;line-height:1.25;padding:2px 0}.pro-inline-detail-content .pro-matchups .pro-types{display:inline-flex;margin:0;gap:2px}
+.pro-inline-detail-content .pro-move-pools>section:first-child{grid-template-columns:minmax(0,1fr)}.pro-inline-detail-content .pro-move-card{min-width:0;overflow-wrap:anywhere}.pro-inline-detail-content .pro-move-stats,.pro-inline-detail-content .pro-move-flags{white-space:normal}.pro-inline-detail-content .pro-matchups li>span{white-space:nowrap;flex-shrink:0}
