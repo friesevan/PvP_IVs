@@ -13,7 +13,7 @@
       if(term[0]==='!'&&term.length>1)return !matches(term.slice(1),record,row);
       if(term[0]==='+')return families.has(term.slice(1))&&families.get(term.slice(1))===record.familyId;
       if(term[0]==='@'){
-        let text=term.slice(1),moves=record.moves;
+        let text=term.slice(1),moves=record.moves.filter(m=>(row.moveset||[]).includes(m.id));
         if(text==='legacy'||text==='special')return moves.some(m=>(m.legacy||m.elite)&&!['RETURN','FRUSTRATION'].includes(m.id)||text==='special'&&['RETURN','FRUSTRATION'].includes(m.id));
         if(text==='beam')return moves.some(m=>['HYPER_BEAM','SOLAR_BEAM'].includes(m.id));
         if(text[0]==='1'||text[0]==='2'){moves=moves.filter(m=>m.kind===(text[0]==='1'?'fast':'charged'));text=text.slice(1);}

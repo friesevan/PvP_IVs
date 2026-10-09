@@ -146,6 +146,9 @@
     const mode=settings.mode,guidance=settings.guidance??.75;
     return {id:settings.id||'score-'+Date.now(),mode,guidance,label:mode==='calculate'?Math.round(guidance*100)+'%':mode==='equal'?'Equal':mode==='manual'?'Individual':'Default',targets:report._targets.map(t=>({...t})),model:report._weightModel||null,scores:Object.fromEntries(['overall','leads','closers','switches','chargers','attackers'].map(slug=>[slug,Object.fromEntries(report[slug].map(r=>[r.variantId,r.score]))]))};
   }
+  function publishedScoreColumn(report,league,{id='published-'+Date.now()}={}){
+    return {id,mode:'published',label:'PvPoke',targets:[],scores:Object.fromEntries(['overall','leads','closers','switches','chargers','attackers'].map(slug=>{const source=new Map((league[slug]||[]).map(r=>[r.speciesId,r.score]));return [slug,Object.fromEntries((report[slug]||[]).filter(r=>source.has(r.speciesId)).map(r=>[r.variantId,source.get(r.speciesId)]))];}))};
+  }
   // Reweight only retained battle outcomes; never invokes the battle engine.
   function rescoreRankings(report,{mode='equal',guidance=.75,defaultWeights={},published=[]}={}){
     const slugs=['leads','closers','switches','chargers','attackers'],targets=report._targets;
@@ -180,5 +183,5 @@
     output.overall=report.overall.map(r=>{const values=scores.get(r.variantId),consistency=r.scores[5];return {...r,score:overallScore(values,consistency),scores:[...values,consistency]};}).sort((a,b)=>b.score-a.score||a.variantId.localeCompare(b.variantId));
     return output;
   }
-  root.PvPPro={source,customWeight,sameMoveset,compareMoveset,validateRoster,enumerate,filterVariants,key,cycleDpt,selectCandidates,categoryScores,overallScore,seededCandidates,weightPrior,calculateMetaWeights,weightModelVersion,rescoreRankings,chooseOpponents,chooseCandidates,scoreColumn};
+  root.PvPPro={source,customWeight,sameMoveset,compareMoveset,validateRoster,enumerate,filterVariants,key,cycleDpt,selectCandidates,categoryScores,overallScore,seededCandidates,weightPrior,calculateMetaWeights,weightModelVersion,rescoreRankings,chooseOpponents,chooseCandidates,scoreColumn,publishedScoreColumn};
 })(typeof self!=='undefined'?self:globalThis);

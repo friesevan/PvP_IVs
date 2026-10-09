@@ -75,3 +75,8 @@ test('candidate rank limits use published league order within the filtered pool,
  const candidates=PvPPro.chooseCandidates(eligible,published,3),opponents=PvPPro.chooseOpponents(candidates,2);assert.deepEqual(opponents.map(r=>r.speciesId),['d','c']);assert.equal(candidates.length,3);
  for(const limit of [1,0,2.5,NaN,10001])assert.throws(()=>PvPPro.chooseCandidates(eligible,published,limit));assert.deepEqual(PvPPro.chooseCandidates(eligible,published,100),[eligible[2],eligible[1],eligible[3],eligible[0]]);
 });
+test('published score columns map category references to every species variant without simulating',()=>{
+ const report={overall:[{speciesId:'a',variantId:'a:recommended',score:99},{speciesId:'a',variantId:'a:alternate',score:80},{speciesId:'missing',variantId:'missing',score:70}],leads:[{speciesId:'a',variantId:'a:alternate',score:50}]};
+ const league={overall:[{speciesId:'a',score:92.3}],leads:[{speciesId:'a',score:88.1}]};const before=JSON.stringify(report),column=PvPPro.publishedScoreColumn(report,league,{id:'published-test'});
+ assert.equal(column.mode,'published');assert.equal(column.label,'PvPoke');assert.deepEqual(column.targets,[]);assert.equal(column.scores.overall['a:recommended'],92.3);assert.equal(column.scores.overall['a:alternate'],92.3);assert.equal(column.scores.leads['a:alternate'],88.1);assert.equal(column.scores.overall.missing,undefined);assert.deepEqual(column.scores.closers,{});assert.equal(JSON.stringify(report),before);
+});

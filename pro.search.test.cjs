@@ -29,12 +29,11 @@ test('names, nicknames, types, tags, dex, generations and families match PvPoke 
   const {records}=fixture(1500);assert.deepEqual(ids(tag),fixture(1500).published.filter(row=>records.get(row.speciesId).tags.includes(tag)||records.get(row.speciesId).name.startsWith(tag)||records.get(row.speciesId).id.startsWith(tag)).map(row=>row.speciesId));
  }
 });
-test('move pools support prefixes, types, fast/charged restriction and special moves',()=>{
- assert.ok(ids('@counter').includes('poliwrath'));
- assert.ok(ids('@1fighting').includes('poliwrath'));assert.ok(!ids('@1mud').includes('azumarill'));
- assert.ok(ids('@2mud').includes('stunfisk_galarian'));
- assert.ok(ids('@special').includes('sableye'));assert.ok(ids('@legacy').includes('venusaur'));
- const {records}=fixture(1500);for(const id of ids('@legacy'))assert.ok(records.get(id).moves.some(m=>(m.legacy||m.elite)&&!['RETURN','FRUSTRATION'].includes(m.id)));
+test('move queries use only the displayed moveset, including type and legacy restrictions',()=>{
+ const {published,records}=fixture(1500);
+ for(const query of ['@counter','@1fighting','@2mud','@special','@legacy']){
+  for(const id of ids(query)){const row=published.find(r=>r.speciesId===id),moves=records.get(id).moves.filter(m=>row.moveset.includes(m.id));assert.ok(moves.length);if(query==='@counter')assert.ok(moves.some(m=>m.name.startsWith('counter')));if(query==='@1fighting')assert.ok(moves.some(m=>m.kind==='fast'&&m.type==='fighting'));if(query==='@2mud')assert.ok(moves.some(m=>m.kind==='charged'&&m.name.startsWith('mud')));if(query==='@legacy')assert.ok(moves.some(m=>(m.legacy||m.elite)&&!['RETURN','FRUSTRATION'].includes(m.id)));}
+ }
 });
 test('AND binds before OR, NOT inverts a term, case and whitespace are accepted',()=>{
  const water=new Set(ids('water')),fight=new Set(ids('@fighting'));
@@ -52,11 +51,11 @@ test('cost, distance, meta, editor notes, XL, hundo and traits use league-aware 
  assert.deepEqual(ids('notes'),published.filter(row=>row.editorNotes?.trim()).map(row=>row.speciesId));
  const row={...published.find(row=>row.editorNotes),editorNotes:undefined};assert.equal(PvPProSearch.compile('notes',data)(row,records),false);
 });
-test('generated and saved variants are filtered by species capability and report notes without losing variants',()=>{
+test('generated and saved variants match their actual moveset, not species capability',()=>{
  const {published,records}=fixture(1500),sample=published.find(row=>row.speciesId==='poliwrath');
  const variants=[{...sample,variantId:'poliwrath|A',moveset:['BUBBLE','ICE_PUNCH','SCALD']},{...sample,variantId:'poliwrath|B',moveset:['COUNTER','ICE_PUNCH','SCALD']}];
- assert.equal(variants.filter(row=>PvPProSearch.compile('@counter',data)(row,records)).length,2);
- assert.equal(variants.filter(row=>PvPProSearch.compile('!@counter',data)(row,records)).length,0);
+ assert.equal(variants.filter(row=>PvPProSearch.compile('@counter',data)(row,records)).length,1);
+ assert.equal(variants.filter(row=>PvPProSearch.compile('!@counter',data)(row,records)).length,1);
 });
 
 test('representative search results agree with the pinned upstream GameMaster search',()=>{
@@ -66,7 +65,7 @@ test('representative search results agree with the pinned upstream GameMaster se
  context.window={location:{href:'/rankings/all/1500/overall/'}};
  vm.runInContext("var searchGM=GameMaster.getInstance();var searchBattle=new Battle();searchBattle.setCP(1500);searchBattle.setCup('all');",context);
  context.searchGM.groups.searchMeta=meta;
- for(const query of ['azumarill','gfisk','water','galarian','184','gen2','+politoed','@counter','@fighting','@1fighting','@2mud','@special','spammy','bulky','50k','5km','meta','notes','hundo','xl','water&@fighting','water,fighting','!water']){
+ for(const query of ['azumarill','gfisk','water','galarian','184','gen2','+politoed','spammy','bulky','50k','5km','meta','notes','hundo','xl','water,fighting','!water']){
   context.query=query;const native=new Set(vm.runInContext('searchGM.generatePokemonListFromSearchString(query,searchBattle)',context));
   assert.deepEqual(ids(query),published.filter(row=>native.has(row.speciesId)).map(row=>row.speciesId),query);
  }
