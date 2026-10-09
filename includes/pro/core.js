@@ -53,7 +53,7 @@
     return policy==='all'?sorted:sorted.slice(0,topN);
   }
   // Rectangular scoring: the opponent population has one recommended row per species.
-  function categoryScores(candidates,baselines,targets,slug){
+  function categoryScores(candidates,baselines,targets,slug,fixedMeta=false){
     const curved=rows=>rows.map(row=>row.matches.map(m=>m.adjRating));
     const cb=curved(baselines),cc=curved(candidates);
     let previous=cb.map(matches=>Math.floor(matches.reduce((a,b)=>a+b,0)/targets.length)),scores=[],fallbacks=0;
@@ -67,7 +67,7 @@
       return Math.floor(values[i].reduce((sum,a,j)=>sum+a*weights[j],0)/weights.reduce((a,b)=>a+b,0));
     });
     for(let n=0;n<7;n++){
-      const best=previous.reduce((best,value)=>Math.max(best,value),0),meta=previous.map(score=>Math.max((best>0?score/best:0)-(.1+.06*n),0)**1.65);
+      const best=previous.reduce((best,value)=>Math.max(best,value),0),meta=previous.map(score=>fixedMeta?1:Math.max((best>0?score/best:0)-(.1+.06*n),0)**1.65);
       scores=calculate(candidates,cc,meta);previous=calculate(baselines,cb,meta);
     }
     if(slug==='chargers')scores=scores.map((score,i)=>score*candidates[i].chargerFactor);
@@ -88,5 +88,48 @@
     if(scores[4]<=75&&consistency<=75)score=(score**14*scores[4]*consistency)**(1/16);
     return Math.floor(score*10)/10;
   }
-  root.PvPPro={source,customWeight,sameMoveset,compareMoveset,validateRoster,enumerate,filterVariants,key,cycleDpt,selectCandidates,categoryScores,overallScore,seededCandidates};
+  const weightModelVersion='adaptive-meta-v1';
+  function weightPrior(rows){
+    const best=Math.max(1,...rows.map(r=>r.score||0));
+    return rows.map(r=>{
+      const base=customWeight(r.weight);
+      return Math.max(1e-6,base>1?base:Math.max(base,1e-3)*Math.max(0,(r.score||0)/best)**20);
+    });
+  }
+  // Entropy-regularized, PvPoke-guided fixed point over recommended-only battles.
+  // The diagonal is a fixed neutral 0.5; damping limits feedback between counters.
+  function calculateMetaWeights(rows,matrix,{guidance=.75,temperature=.035,maxIterations=300,tolerance=1e-6,peak=40}={}){
+    const n=rows.length;
+    if(n<2||new Set(rows.map(r=>r.speciesId)).size!==n)throw new Error('Calculate weights needs at least two unique Pokémon.');
+    if(!Number.isFinite(guidance)||guidance<0||guidance>1||!Number.isFinite(temperature)||temperature<=0||!Number.isFinite(peak)||peak<=0||peak>1000||!Number.isInteger(maxIterations)||maxIterations<1||maxIterations>1000||!Number.isFinite(tolerance)||tolerance<=0)throw new Error('Invalid weight model settings.');
+    if(matrix.length!==n||matrix.some(row=>row.length!==n||Array.from(row).some(v=>!Number.isFinite(v)||v<0||v>1)))throw new Error('Invalid weight performance matrix.');
+    const prior=weightPrior(rows),normalize=values=>{const sum=values.reduce((a,b)=>a+b,0);return values.map(v=>v/sum);};
+    const softmax=values=>{const best=Math.max(...values);return normalize(values.map(v=>Math.exp(v-best)));};
+    let probabilities=normalize(prior),residual=Infinity,iterations=0,performance=[],damping=.4,previousResidual=Infinity;
+    const response=distribution=>{
+      const performance=matrix.map((row,i)=>row.reduce((sum,v,j)=>sum+(i===j?.5:v)*distribution[j],0));
+      let target=softmax(performance.map((score,i)=>guidance*Math.log(prior[i])+(1-guidance)*score/temperature));
+      const highest=Math.max(...target);return normalize(target.map(v=>Math.max(v,highest*1e-6)));
+    };
+    for(let step=0;step<maxIterations;step++){
+      const target=response(probabilities);
+      residual=target.reduce((sum,v,i)=>sum+Math.abs(v-probabilities[i]),0);
+      if(residual>previousResidual*1.01)damping=Math.max(.01,damping*.5);
+      // A look-ahead response stabilizes counter / counter-counter cycles.
+      const lookahead=probabilities.map((v,i)=>(1-damping)*v+damping*target[i]);
+      const corrected=response(lookahead);
+      probabilities=probabilities.map((v,i)=>(1-damping)*v+damping*corrected[i]);iterations=step+1;previousResidual=residual;
+      if(residual<tolerance)break;
+    }
+    residual=response(probabilities).reduce((sum,v,i)=>sum+Math.abs(v-probabilities[i]),0);
+    // Report performance against the final distribution, not the preceding pass.
+    performance=matrix.map((row,i)=>row.reduce((sum,v,j)=>sum+(i===j?.5:v)*probabilities[j],0));
+    const highest=Math.max(...probabilities),weights=probabilities.map(v=>peak*(v/highest)),sorted=probabilities.slice().sort((a,b)=>a-b);
+    return {version:weightModelVersion,guidance,temperature,peak,iterations,residual,damping,converged:residual<tolerance,
+      entries:rows.map((r,i)=>({speciesId:r.speciesId,weight:weights[i],share:probabilities[i],performance:performance[i]*1000,prior:prior[i]})),
+      effectiveOpponents:1/probabilities.reduce((sum,p)=>sum+p*p,0),minimum:Math.min(...weights),maximum:Math.max(...weights),
+      bottomHalfShare:sorted.slice(0,Math.floor(n/2)).reduce((a,b)=>a+b,0),
+      lowPriorShare:rows.reduce((sum,r,i)=>sum+(customWeight(r.weight)<=1?probabilities[i]:0),0)};
+  }
+  root.PvPPro={source,customWeight,sameMoveset,compareMoveset,validateRoster,enumerate,filterVariants,key,cycleDpt,selectCandidates,categoryScores,overallScore,seededCandidates,weightPrior,calculateMetaWeights,weightModelVersion};
 })(typeof self!=='undefined'?self:globalThis);

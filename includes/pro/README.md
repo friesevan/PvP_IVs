@@ -41,9 +41,48 @@ The app sends these filters to the unchanged `GameMaster.generateFilteredPokemon
 
 The app intersects upstream eligibility with the published population so every opponent has a recommended moveset. It does not expose an Exclude builder or import Pokebox groups. The `custom` cup uses `includeLowStatProduct: true` and `excludeLowPokemon: false`; release flags, low-CP bans, duplicate-form rules and Little Cup Shadow level restrictions remain upstream. The catalog's ordinary minimum stat-product thresholds (0 / 1370 / 2800 / 4900 by league) are bypassed. Species that exist in gamemaster but not the published population cannot be added as opponents in this version.
 
-Weights offer **Default**, **Equal**, and an inactive **Calculate** placeholder. Default uses bundled PvPoke override weights, preserving zero; missing or invalid weights use 1. Equal assigns every accepted opponent weight 1. A zero-weight Pokémon is still ranked as a candidate but contributes no opponent score. Weights must be finite, from 0 to 1000; at least two accepted species must have positive weights to avoid an empty non-mirror opponent population. A weight changes importance as an opponent, not a direct bonus to its own score. Filters apply asynchronously; generation remains disabled while pending or invalid.
+Weights offer **Default**, **Equal**, and **Calculate**. Default uses bundled PvPoke override weights, preserving zero; missing or invalid weights use 1. Equal assigns every accepted opponent weight 1. A zero-weight Pokémon is still ranked as a candidate but contributes no opponent score. Weights must be finite, from 0 to 1000; at least two accepted species must have positive weights to avoid an empty non-mirror opponent population. A weight changes importance as an opponent, not a direct bonus to its own score. Filters apply asynchronously; generation remains disabled while pending or invalid.
 
 Movesets offer **Recommended** (one published combination) or **Multiple**, with a configurable maximum per Pokémon. Multiple uses the scouted top-N method below and retains the recommended combination within that maximum. The selection explanation opens from an info icon in a dialog.
+
+## 4a. Calculated meta weights
+
+Calculate is a **performance-based estimate**, not measured usage. Stronger Pokémon tend to be more relevant, but simulations cannot infer availability, popularity, team synergy, tournament trends, or player preferences. The default hybrid preserves curated PvPoke guidance while shrinking the many floor-weight opponents. Similarity to curated weights is a design goal; it is not validation against real usage.
+
+**Scope and battles.** Every accepted species uses its bundled overall recommended moveset. Build a full recommended-versus-recommended matrix in all five scenarios, with default league IVs and the same engine/starting-energy rules as the ranking run. No opponent sampling and no alternate-moveset inflation are used. `U[i,j]` is the arithmetic mean of the five **raw** Battle Ratings divided by 1000. Weight estimation assigns the self-species diagonal a fixed neutral 0.5, rather than simulating or rewarding a mirror; final ranking scores still exclude mirrors. Raw BR is used here so shield bonuses, category normalization and consistency do not create an extra usage multiplier.
+
+**Tapered prior.** For each selected species, let `b` be its finite bundled override weight from 0 to 1000 (missing/invalid defaults to 1), and `r` its published Overall score divided by the best accepted published score:
+
+```
+a[i] = max(0.000001, b[i])                         if b[i] > 1
+a[i] = max(0.000001, max(b[i], 0.001) × r[i]^20)  otherwise
+p[i] = a[i] / sum(a)
+```
+
+This preserves curated priorities above 1 while reducing the published 0–1 floor according to strength. A published zero is a tiny prior in Calculate, not a permanent ban. Default mode continues to preserve an actual zero. The prior is normalized within the current roster; Pokémon outside that roster contribute no mass.
+
+**Dynamic response.** Set PvPoke guidance `g` to 0.75 by default; the UI permits 0 through 1. Set temperature `T` to 0.035 (35 BR points). Against the current opponent distribution:
+
+```
+s[i] = sum_j(U[i,j] × p[j])
+logit[i] = g × log(a[i]) + (1 - g) × s[i] / T
+q = softmax(logit)
+q = normalize(max(q[i], max(q) × 0.000001))
+```
+
+At 0% guidance, only simulated performance drives the response; at 100%, the tapered PvPoke prior does. Softmax expresses relative strength without a hard eligibility cutoff. The tiny relative floor prevents exact zero or a dead-end meta while limiting the aggregate floor mass. The temperature is a model assumption, not a calibrated usage probability.
+
+**Stability.** Updates begin with damping `d = 0.4`. First compute a look-ahead distribution `(1-d) × p + d × q`, then evaluate its response `qLookahead` and update `p = (1-d) × p + d × qLookahead`. If the L1 fixed-point residual increases by more than 1%, halve damping, down to 0.01. The look-ahead step reduces counter/counter-counter oscillation. Stop when the residual is below 0.000001 or after 300 updates. Recompute the residual against the final distribution. If convergence is not achieved, retain the finite final estimate and explicitly label the iteration limit; never silently claim stability. This is not guaranteed to have a unique solution or converge for every performance-only matchup cycle.
+
+**Final weights.** Scale the largest weight to the greatest valid bundled override weight, with a minimum scale of 1: `weight[i] = peak × p[i] / max(p)`. Scaling changes display units, not relative influence. Fractions are retained at full precision in simulations and saved reports; preview formatting does not round the underlying weights. Effective opponents is `1 / sum(p[i]^2)`. The preview also reports the weight range and total mass assigned to the bottom half of the accepted population.
+
+**Ranking integration.** Generate automatically calculates stale weights before selecting movesets. Its recommended-moveset battle records are reused by final ranking/scouting in that same worker run. A separate Calculate weights action allows inspection first; a later generation reuses those weights, but its battle cache starts a new run. Calculate then freezes its explicit opponent weights for scoring and disables the existing seven-pass opponent **meta multiplier**, avoiding double weighting. Existing score curves/passes, Switch hard-loss penalty, shield bonuses, Charger factor, normalization and Overall aggregation remain unchanged. Default and Equal retain their existing scoring behavior. Normalized scores from different modes are not directly interchangeable.
+
+**Lifecycle.** Changing the league, accepted species, or guidance invalidates the weight estimate; moveset limits do not, because weights use recommendations only. Cancel terminates the worker. Reports save exact opponent weights in `_targets` plus model version, guidance, temperature, convergence status, scenario list, per-species shares/performance and summary metrics in `_weightModel`. An already-saved report retains its original weights; rebuilding creates a new calculation.
+
+**Validation.** The pinned Great League top-500 recommended battle matrix, at 75% guidance, converged in 26 updates. The published 0–1 weight group dropped from 35.9% of the input weight mass to 11.0%; the bottom half of the roster had 2.9% of estimated mass. Minimum weight was approximately 0.00174, maximum 40. Cosine similarity to the curated weight vector was 0.966, with 17 of its top 20 weighted species retained. These are resemblance/concentration measurements, not usage accuracy. This controlled comparison still ranked Corsola’s Rock Blast set above Night Shade in Overall; the method was not tuned to force a particular moveset to win.
+
+Additional independent top-100 runs converged in Little, Great, Ultra and Master. Similarity to published input weights was 0.976 in Great, 0.979 in Ultra and 0.973 in Master. Little’s top-100 input weights were all 1, so its performance-weighted result intentionally differs from that flat baseline (similarity 0.388); a top-20 overlap is not informative with such ties. Run `node scripts/benchmark-weights.cjs 100` to reproduce these smaller runs. Tests in `pro.weights.test.cjs` cover fractional tails, deterministic/permutation-invariant results, neutral mirrors, counter sensitivity, cyclic cases, explicit unfinished estimates, frozen category weights, exact saved targets and baseline cache reuse.
 
 ## 5. Pokémon initialization, combinations and projection
 

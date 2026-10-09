@@ -359,3 +359,6 @@ body:has(#proPanel:not([hidden])) main {max-width:1800px;}
 .pro-pokemon-tile[data-type="dark"]{--pokemon-color:#705848}
 .pro-pokemon-tile[data-type="steel"]{--pokemon-color:#b8b8d0}
 .pro-pokemon-tile[data-type="fairy"]{--pokemon-color:#ee99ac}
+.pro-calculate-controls{padding:16px;margin-top:12px;border:1px solid var(--line);border-radius:12px;background:var(--bg)}
+.pro-calculation-toolbar{display:flex;align-items:center;gap:14px;flex-wrap:wrap}.pro-guidance-label{flex:1;min-width:220px;max-width:480px;margin:0;font-size:.8rem}.pro-guidance-label output{float:right;font-weight:700;color:#39897c;font-variant-numeric:tabular-nums}.pro-guidance-label input{display:block;width:100%;accent-color:#39897c;padding:0;margin:10px 0}.pro-guidance-label small{font-size:.68rem;font-weight:400;color:var(--muted)}
+.pro-weight-metrics{display:flex;flex-wrap:wrap;gap:20px;margin-top:14px;padding-top:14px;border-top:1px solid var(--line)}.pro-weight-metrics strong{font-size:1rem}.pro-calculate-controls .hint{font-size:.78rem;line-height:1.5;margin:12px 0 0}
