@@ -376,3 +376,5 @@ body:has(#proPanel:not([hidden])) main {max-width:1800px;}
 .pro-opponent-weights{margin:16px 0;padding:14px;border:1px solid var(--line);border-radius:12px;background:var(--bg)}.pro-opponent-weights h4{margin:0 0 12px;font-size:.85rem}
 
 .pro-ranking-table .pro-rank-basis{border-left:1px solid color-mix(in srgb,var(--accent) 45%,transparent);border-right:1px solid color-mix(in srgb,var(--accent) 45%,transparent)}.pro-ranking-table th.pro-rank-basis{border-top:2px solid color-mix(in srgb,var(--accent) 55%,transparent)}.pro-ranking-table tbody tr:last-child .pro-rank-basis{border-bottom:1px solid color-mix(in srgb,var(--accent) 45%,transparent)}.pro-rank-basis-label{display:block;color:var(--accent);font-size:9px;font-weight:500;letter-spacing:.03em;margin-bottom:4px}
+
+.pro-score-difference .pro-difference-moveset-badge{margin:0 0 0 7px;vertical-align:middle}
