@@ -237,6 +237,7 @@ function detail(request){
     self.postMessage({type:'battle',rating:r.rating,adjRating:r.adjRating,fighters,events,startEnergy:r.startEnergy,scenario:request.scenario});return;
   }
   const battle=new Battle();battle.setCP(request.cp);const p=createPokemon(request.row.speciesId,0,battle,request.row.moveset);
+  self.postMessage({type:'build',ivs:{...p.ivs},level:p.level,cp:p.cp});
   const moveInfo=[...p.fastMovePool,...p.chargedMovePool,...p.extraChargedMovePool].map(m=>({id:m.moveId,type:m.type,name:m.name,kind:m.energyGain>0?'fast':'charged',power:m.power*m.stab*p.shadowAtkMult,energy:m.energy,energyGain:m.energyGain,turns:m.cooldown/500,archetype:m.archetype,buffs:m.buffs,buffTarget:m.buffTarget,buffChance:m.buffApplyChance,legacy:m.legacy,elite:m.elite}));
   let matches=request.matches;
   if(!matches){

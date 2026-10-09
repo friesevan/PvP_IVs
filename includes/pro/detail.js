@@ -15,7 +15,8 @@
     const section=el('section',null,'pro-full-matchups'),label=el('label','Battle scenario'),select=el('select');select.setAttribute('aria-label','Battle scenario');
     const scenarios=data.rankingScenarios;for(const s of scenarios){const option=el('option',s.slug[0].toUpperCase()+s.slug.slice(1)+' · '+s.shields.join('–')+' shields');option.value=s.slug;select.append(option);}select.value=category==='overall'?'leads':category;select.disabled=category!=='overall';label.append(select);
     const context=el('p',null,'hint'),progress=el('p','Loading all matchups…','hint'),lists=el('div',null,'pro-matchup-groups'),moveHost=el('section',null,'pro-move-info');
-    section.append(el('h4','All opponent matchups'),label,context,progress,lists);host.append(moveHost,section);
+    const profile=el('section',null,'pro-pokemon-summary'),build=el('dl',null,'pro-build-summary');profile.append(el('h3',name(row.speciesId)),pokemonTypes(lookup(row.speciesId)),moves(row.moveset,data),build);build.append(el('dt','Recommended build'),el('dd','Loading…'));
+    section.append(el('h4','All opponent matchups'),label,context,progress,lists);host.append(profile,moveHost,section);
     let activeMatches=[];
     function request(){
       battleWorker?.terminate();detailWorker?.terminate();resetBattle();lists.replaceChildren();moveHost.replaceChildren();
@@ -23,7 +24,7 @@
       context.textContent=(config.custom?(config.historical?'Older saved report: reconstructed against its species roster with published opponents; original weights were not saved.':'Every opponent from this report. Raw Battle Rating is shown; category scoring also applies shield bonuses, iterative weights and normalization.'):'Reconstructed locally against all published league opponents using the bundled engine and default IVs. Published files contain only key matchups; these are not the original published battle records.')+(category==='overall'?' Overall combines five category scores and consistency; each list and graph shows one scenario.':'')+' Same-species matches are excluded. >500 win, ≤500 loss (including ties).';
       progress.textContent=stored?'Loading retained matchup results…':'Simulating all opponents…';
       const current=detailWorker=new Worker('includes/pro/worker.js');
-      current.onmessage=event=>{if(token!==sequence||current!==detailWorker)return;const result=event.data;if(result.type==='progress'){progress.textContent=result.text;return;}if(result.type==='error'){progress.textContent='Unable to load matchups: '+result.error;current.terminate();return;}if(result.type!=='details')return;
+      current.onmessage=event=>{if(token!==sequence||current!==detailWorker)return;const result=event.data;if(result.type==='build'){build.replaceChildren();for(const [label,value] of [['Recommended IVs',result.ivs.atk+' / '+result.ivs.def+' / '+result.ivs.hp],['Level',result.level],['CP',result.cp]])build.append(el('dt',label),el('dd',String(value)));return;}if(result.type==='progress'){progress.textContent=result.text;return;}if(result.type==='error'){progress.textContent='Unable to load matchups: '+result.error;current.terminate();return;}if(result.type!=='details')return;
         activeMatches=result.matches;progress.textContent=activeMatches.length+' opponents · '+(stored?'Retained results from this report':'Locally simulated results');drawLists();drawMoves(result.moveInfo);current.terminate();detailWorker=null;
       };current.onerror=event=>{progress.textContent='Unable to load matchups: '+event.message;};
       current.postMessage({...config,host:undefined,battleHost:undefined,categoryRow:undefined,mode:'details',scenario,matches:stored||null});

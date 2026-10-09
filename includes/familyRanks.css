@@ -449,3 +449,9 @@ main:has(#proPanel:not([hidden])){max-width:1800px}
 #proDetailParking>.pro-battle-card{position:static;grid-column:auto;max-height:none;overflow:visible;margin:16px 0 0;padding:12px 0 0;border:0;border-top:1px solid var(--line);box-shadow:none}
 #proBattlePanel[hidden]{display:none!important}
 @media(max-width:600px){.pro-layout.pro-has-details,.pro-layout.pro-has-details.pro-has-battle,.pro-layout.pro-has-details.pro-has-score-columns{grid-template-columns:minmax(0,1fr)}#proDetailParking{grid-column:1;position:static;max-height:none}}
+
+.pro-pokemon-summary{padding-bottom:12px;border-bottom:1px solid var(--line)}
+.pro-pokemon-summary h3{font-size:18px;margin:0 0 6px;line-height:1.2}
+.pro-pokemon-summary>.pro-types,.pro-pokemon-summary>.pro-move-chips{display:flex;flex-wrap:wrap;gap:4px;margin:6px 0}
+.pro-build-summary{display:grid;grid-template-columns:1fr auto;gap:4px 12px;margin:10px 0 0;font-size:11px}
+.pro-build-summary dt{color:var(--muted)}.pro-build-summary dd{margin:0;font-weight:650;font-variant-numeric:tabular-nums;color:var(--accent)}
