@@ -136,3 +136,31 @@ test('generated moveset comparisons use the same report and category baseline',(
  }
  assert.ok(better>0);assert.ok(alternate>0);
 });
+
+test('custom reports retain every matchup for all five scenarios and replay the exact battle',()=>{
+ const report=run('generate',{policy:'top',topN:1}).find(m=>m.type==='result');
+ assert.equal(report.targets.length,5);
+ for(const category of report.categories){
+  const row=category.rows[0];assert.equal(row.matches.length,4);assert.equal(row.scenario,category.slug);
+  assert.ok(row.matches.every(m=>Number.isFinite(m.rating)&&Number.isFinite(m.adjRating)));
+  const opponent=row.matches[0];
+  const messages=run('battle',{row,targets:report.targets,scenario:category.slug,opponent:opponent.opponent});
+  const battle=messages.find(m=>m.type==='battle');assert.ok(battle,JSON.stringify(messages));
+  assert.equal(battle.rating,opponent.rating);assert.equal(battle.adjRating,opponent.adjRating);
+  assert.ok(battle.events.length);assert.equal(battle.fighters.length,2);
+  for(let i=0;i<2;i++){
+   const damage=battle.events.filter(e=>e.actor!==i&&/^(fast |charged )/.test(e.type)).reduce((sum,e)=>sum+e.damage,0);
+   assert.equal(Math.max(0,battle.fighters[i].hp-damage),battle.fighters[i].remaining);
+  }
+ }
+});
+test('detail reconstruction includes all opponents, ties and accurate move bonuses',()=>{
+ const published=JSON.parse(fs.readFileSync(path.join(base,'data/league-1500.json'))).overall;
+ const row=published.find(r=>r.speciesId==='melmetal'),targets=published.slice(0,8).map(r=>({speciesId:r.speciesId,moveset:r.moveset,weight:1}));
+ const result=run('details',{row,targets,scenario:'leads'}).find(m=>m.type==='details');
+ assert.ok(result);assert.equal(result.matches.length,7);
+ const iron=result.moveInfo.find(m=>m.id==='DOUBLE_IRON_BASH');assert.ok(Math.abs(iron.power-84)<.0001);assert.equal(iron.energy,35);
+ const shock=result.moveInfo.find(m=>m.id==='THUNDER_SHOCK');assert.equal(shock.energyGain/shock.turns,4.5);
+ const retained=[{opponent:targets[1].speciesId,rating:500,adjRating:500}];
+ const saved=run('details',{row,targets,scenario:'leads',matches:retained}).find(m=>m.type==='details');assert.deepEqual(saved.matches,retained);
+});

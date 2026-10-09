@@ -126,7 +126,7 @@ function generate(request){
   }
   for(const item of counts)item.selected=candidates.filter(row=>row.speciesId===item.speciesId).length;
   const ranked=rankRecords(candidates,baselines,targets,data,battle,cache,'Ranking');
-  self.postMessage({type:'result',...ranked,summary:{counts,totalCombinations,selectedCombinations:candidates.length,shortlistedCombinations,opponents:targets.length,simulations:ranked.simulations+scoutSimulations,scoutSimulations,scoutOpponents,fallbacks:ranked.fallbacks+scoutFallbacks,policy,topN}});
+  self.postMessage({type:'result',...ranked,targets,summary:{counts,totalCombinations,selectedCombinations:candidates.length,shortlistedCombinations,opponents:targets.length,simulations:ranked.simulations+scoutSimulations,scoutSimulations,scoutOpponents,fallbacks:ranked.fallbacks+scoutFallbacks,policy,topN}});
 }
 function rankRecords(candidates,baselines,targets,data,battle,cache,phase){
   const cp=battle.getCP();
@@ -162,7 +162,7 @@ function rankRecords(candidates,baselines,targets,data,battle,cache,phase){
     const scored=PvPPro.categoryScores(input(candidates),input(baselines),targets,scenario.slug);fallbacks+=scored.fallbacks;
     const rows=candidates.map((row,i)=>{
       allScores.get(row).push(scored.scores[i]);const m=matches.get(row).filter(m=>m.opponent!==row.speciesId);
-      return {...row,score:scored.scores[i],stats:metadata.get(row).stats,matchups:m.filter(m=>m.rating>500).sort((a,b)=>b.rating-a.rating).slice(0,5).map(({opponent,rating})=>({opponent,rating})),counters:m.filter(m=>m.rating<500).sort((a,b)=>a.rating-b.rating).slice(0,5).map(({opponent,rating})=>({opponent,rating}))};
+      return {...row,matches:m,scenario:scenario.slug,score:scored.scores[i],stats:metadata.get(row).stats,matchups:m.filter(m=>m.rating>500).sort((a,b)=>b.rating-a.rating).slice(0,5).map(({opponent,rating})=>({opponent,rating})),counters:m.filter(m=>m.rating<500).sort((a,b)=>a.rating-b.rating).slice(0,5).map(({opponent,rating})=>({opponent,rating}))};
     }).sort((a,b)=>b.score-a.score||a.variantId.localeCompare(b.variantId));categories.push({slug:scenario.slug,rows});
   }
   const rows=categories[0].rows.map(row=>{
@@ -173,4 +173,42 @@ function rankRecords(candidates,baselines,targets,data,battle,cache,phase){
   return {rows,categories,simulations,fallbacks};
 
 }
-self.onmessage=function(event){try{if(event.data.mode==='searchIndex')searchIndex(event.data);else if(event.data.mode==='filter')filterRoster(event.data);else if(event.data.mode==='variants')variants(event.data);else generate(event.data);}catch(error){self.postMessage({type:'error',error:error.message});}};
+// Detail requests use the same initialization and scenario rules as rankRecords.
+function detailBattle(request,target){
+  const battle=new Battle();battle.setCP(request.cp);
+  const scenario=request.data.rankingScenarios.find(s=>s.slug===request.scenario);
+  if(!scenario)throw new Error('Unknown ranking scenario.');
+  const p=createPokemon(request.row.speciesId,0,battle,request.row.moveset);
+  const opponent=createPokemon(target.speciesId,1,battle,target.moveset);
+  battle.setNewPokemon(p,0,false);battle.setNewPokemon(opponent,1,false);p.reset();opponent.reset();
+  p.startEnergy=scenario.energy[0]?Math.min(100,p.fastMove.energyGain*Math.max(1,Math.floor(scenario.energy[0]*500/p.fastMove.cooldown))):0;
+  opponent.startEnergy=0;p.setShields(scenario.shields[0]);opponent.setShields(scenario.shields[1]);
+  const startEnergy=p.startEnergy;
+  battle.simulate();
+  const rating=Math.floor((p.hp/p.stats.hp+(opponent.stats.hp-opponent.hp)/opponent.stats.hp)*500);
+  const opRating=Math.floor((opponent.hp/opponent.stats.hp+(p.stats.hp-p.hp)/p.stats.hp)*500);
+  const bonus=rating>opRating&&rating!==500?100*(opponent.startingShields-opponent.shields+p.shields):0;
+  return {battle,p,opponent,rating,adjRating:rating+bonus,startEnergy,scenario};
+}
+function detail(request){
+  const {gm}=setup(request.data,request.cp,request.published,request.targets);
+  if(request.mode==='battle'){
+    const target=request.targets.find(t=>t.speciesId===request.opponent);
+    if(!target)throw new Error('Opponent missing from the report.');
+    const r=detailBattle(request,target);
+    const fighters=[r.p,r.opponent].map(p=>({speciesId:p.speciesId,hp:p.stats.hp,remaining:p.hp,moveset:[p.fastMove.moveId,...p.activeChargedMoves.map(m=>m.moveId)],shields:p.startingShields,remainingShields:p.shields,level:p.level,ivs:p.ivs}));
+    const events=r.battle.getTimeline().filter(e=>/^(fast |charged |shield$|faint$)/.test(e.type)).map(e=>({type:e.type,name:e.name,actor:e.actor,turn:e.turn,time:e.time,damage:/^(fast |charged )/.test(e.type)?e.values[0]:0}));
+    self.postMessage({type:'battle',rating:r.rating,adjRating:r.adjRating,fighters,events,startEnergy:r.startEnergy,scenario:request.scenario});return;
+  }
+  const battle=new Battle();battle.setCP(request.cp);const p=createPokemon(request.row.speciesId,0,battle,request.row.moveset);
+  const moveInfo=[...p.fastMovePool,...p.chargedMovePool,...p.extraChargedMovePool].map(m=>({id:m.moveId,type:m.type,name:m.name,kind:m.energyGain>0?'fast':'charged',power:m.power*m.stab*p.shadowAtkMult,energy:m.energy,energyGain:m.energyGain,turns:m.cooldown/500,archetype:m.archetype,buffs:m.buffs,buffTarget:m.buffTarget,buffChance:m.buffApplyChance,legacy:m.legacy,elite:m.elite}));
+  let matches=request.matches;
+  if(!matches){
+    matches=[];for(const target of request.targets){if(target.speciesId===request.row.speciesId)continue;
+      const r=detailBattle(request,target);matches.push({opponent:target.speciesId,rating:r.rating,adjRating:r.adjRating});
+      if(matches.length%50===0)self.postMessage({type:'progress',text:'Simulated '+matches.length+' opponents…'});
+    }
+  }
+  self.postMessage({type:'details',matches,moveInfo});
+}
+self.onmessage=function(event){try{if(['details','battle'].includes(event.data.mode))detail(event.data);else if(event.data.mode==='searchIndex')searchIndex(event.data);else if(event.data.mode==='filter')filterRoster(event.data);else if(event.data.mode==='variants')variants(event.data);else generate(event.data);}catch(error){self.postMessage({type:'error',error:error.message});}};

@@ -108,6 +108,7 @@
   }
   let leagueMeta=[];
   async function load(){
+    PvPProDetail.cancel();$('proBattlePanel').hidden=true;renderedDetail=null;
     if(searchWorker){searchWorker.terminate();searchWorker=null;}searchIndex=null;
     generatedSnapshot=null;activeSaved='';updateSavedControls();
     clearTimeout(filterTimer);if(filterWorker){filterWorker.terminate();filterWorker=null;}filterPending=false;selectedKey='';loadedCp=0;selected='';variants=[];leagueData=null;weights.clear();stop();$('proRankings').textContent='Loading league…';$('proDetail').textContent='Loading Pokémon details…';renderVariants();const league=cp(),request=++loading;status('Loading published PvPoke rankings…');$('proGenerate').disabled=true;
@@ -173,7 +174,7 @@
       if(result.type==='progress'){status(result.text);return;}
       if(result.type==='error'){stop();status('Calculation failed: '+result.error);return;}
       if(result.type==='result'){
-        activeSaved='';$('proSavedName').value='';selectedKey='';custom={overall:result.rows,...Object.fromEntries(result.categories.map(item=>[item.slug,item.rows]))};
+        activeSaved='';$('proSavedName').value='';selectedKey='';custom={_targets:result.targets,overall:result.rows,...Object.fromEntries(result.categories.map(item=>[item.slug,item.rows]))};
         $('proSource').querySelector('option[value=custom]').disabled=false;$('proSource').querySelector('option[value=custom]').hidden=false;$('proSource').value='custom';$('proCategory').value='overall';page=0;render();
         $('proGeneratedContext').textContent='Generated: '+context+'. All selected movesets versus recommended-only opponents. Rectangular PvPoke-style scores; editor adjustments are not applied.';const summary=result.summary;
         $('proRunSummary').textContent=summary.selectedCombinations+' / '+summary.totalCombinations+' combinations ranked · '+summary.opponents+' recommended opponents · '+summary.simulations.toLocaleString()+' simulated battles'+(summary.scoutOpponents?' · Scout sample: '+summary.scoutOpponents+' opponents; recommended moveset retained':'')+(summary.fallbacks?' · '+summary.fallbacks+' scoring rows/passes used the zero-meta-weight fallback':'')+'.';
@@ -223,9 +224,9 @@
     const body=table.createTBody();
     for(const row of filtered.slice(page*25,(page+1)*25)){
       const tr=body.insertRow(),comp=comparison(row);highlightMoveset(tr,comp);if(rowKey(row)===selectedKey)tr.classList.add('pro-selected');tr.insertCell().textContent=rankMap.get(rowKey(row));
-      const button=el('button',row.speciesName,'pro-pokemon-button');button.type='button';button.addEventListener('click',()=>{if(selected!==row.speciesId){stop();variants=[];selected=row.speciesId;renderVariants();}selectedKey=rowKey(row);renderDetail(row);render();$('proDetail').scrollIntoView({behavior:'smooth',block:'nearest'});});
-      tr.insertCell().append(button);const score=tr.insertCell();score.textContent=row.score.toFixed(1);score.className='rated-cell';score.style.setProperty('--rating-hue',Math.max(0,Math.min(130,row.score*1.3)));
-      const moves=tr.insertCell();moves.append(el('span',(row.moveset||[]).map(move).join(' · ')));const badge=movesetBadge(comp);if(badge&&isCustom())moves.append(badge);if(row.cycleProjection!=null)moves.append(el('p','Cycle '+row.cycleProjection.toFixed(2)+' damage / turn'+(row.scoutScore!=null?' · Scout '+row.scoutScore.toFixed(1)+'/100':''),'hint'));
+      const button=el('button',row.speciesName,'pro-pokemon-button');button.type='button';button.addEventListener('click',()=>{if(selected!==row.speciesId){stop();variants=[];selected=row.speciesId;renderVariants();}selectedKey=rowKey(row);render();$('proDetail').scrollIntoView({behavior:'smooth',block:'nearest'});});
+      tr.insertCell().append(button,PvPProDetail.pokemonTypes(data.pokemon.find(p=>p.speciesId===row.speciesId)));const score=tr.insertCell();score.textContent=row.score.toFixed(1);score.className='rated-cell';score.style.setProperty('--rating-hue',Math.max(0,Math.min(130,row.score*1.3)));
+      const moves=tr.insertCell();moves.append(PvPProDetail.moves(row.moveset,data));const badge=movesetBadge(comp);if(badge&&isCustom())moves.append(badge);if(row.cycleProjection!=null)moves.append(el('p','Cycle '+row.cycleProjection.toFixed(2)+' damage / turn'+(row.scoutScore!=null?' · Scout '+row.scoutScore.toFixed(1)+'/100':''),'hint'));
     }
     if(!filtered.length){const cell=body.insertRow().insertCell();cell.colSpan=4;cell.textContent=query&&!searchIndex?(searchError||'Preparing search data…'):'No Pokémon match this search.';}
     $('proRankings').replaceChildren(table);$('proPagination').textContent=filtered.length+' Pokémon · Page '+(page+1)+' / '+pages;$('proPrev').disabled=page===0;$('proNext').disabled=page===pages-1;
@@ -233,24 +234,19 @@
     renderDetail(list.find(row=>rowKey(row)===selectedKey));
     $('proGeneratedContext').hidden=!isCustom();
   }
+  let renderedDetail;
   function renderDetail(row){
-    if(!row)return;selected=row.speciesId;$('proLabPokemon').value=selected;const p=data.pokemon.find(item=>item.speciesId===row.speciesId),host=$('proDetail');host.replaceChildren();
-    host.append(el('h3',row.speciesName),el('p',(p?.types||[]).filter(type=>type!=='none').join(' / ')+' · Score '+row.score.toFixed(1),'pro-type-line'));
-    host.append(el('p',(row.moveset||[]).map(move).join(' · '),'pro-moveset'));
+    if(!row)return;const identity=[row,cp(),$('proSource').value,$('proCategory').value];if(renderedDetail&&identity.every((v,i)=>v===renderedDetail[i]))return;renderedDetail=identity;selected=row.speciesId;$('proLabPokemon').value=selected;const p=data.pokemon.find(item=>item.speciesId===row.speciesId),host=$('proDetail');host.replaceChildren();
+    host.append(el('h3',row.speciesName),PvPProDetail.pokemonTypes(p),el('p','Score '+row.score.toFixed(1),'hint'));
+    host.append(PvPProDetail.moves(row.moveset,data));
     const badge=movesetBadge(comparison(row));if(badge&&isCustom())host.append(badge);
     if(row.stats)host.append(el('p','Attack '+row.stats.atk+' · Defense '+row.stats.def+' · HP '+row.stats.hp,'hint'));
     if(row.scores?.length)host.append(el('p',row.scores.map((score,i)=>['Lead','Closer','Switch','Charger','Attacker','Consistency'][i]+': '+score).join(' · '),'hint'));
     if(row.editorScore)host.append(el('p','Editor score: '+row.editorScore+' · '+(row.editorNotes || ''),'hint'));
-    const grid=el('div',null,'snapshot-grid');
-    for(const [key,title] of [['matchups','Key wins'],['counters','Key counters']]){
-      const panel=el('section');panel.append(el('h4',title));const list=el('ul',null,'pro-matchups');
-      for(const item of row[key] || []){const li=el('li'),button=el('button',name(item.opponent),'pro-pokemon-button');button.type='button';button.addEventListener('click',()=>{const target=rows().find(p=>p.speciesId===item.opponent);if(target){stop();variants=[];selected=target.speciesId;selectedKey=rowKey(target);renderVariants();render();}});li.append(button,el('span',String(item.rating),item.rating>500?'pro-win':'pro-loss'));list.append(li);}
-      if(!list.children.length)list.append(el('li','No matchups recorded.'));panel.append(list);grid.append(panel);
-    }
-    host.append(grid,el('p','Battle Rating: above 500 = win, below 500 = loss. Overall key matchups use the Lead scenario.','hint'));
-    const pools=el('details');pools.append(el('summary','Move pools & accessibility'));
-    for(const [title,ids] of [['Fast moves',p?.fastMoves],['Charged moves',p?.chargedMoves]])pools.append(el('p',title+': '+(ids||[]).map(id=>move(id)+(p?.eliteMoves?.includes(id)?' [Elite TM]':p?.legacyMoves?.includes(id)?' [Legacy]':'')).join(', '),'hint'));
-    host.append(pools);const labButton=el('button','Open this Pokémon in Moveset Lab','secondary');labButton.type='button';labButton.addEventListener('click',()=>{subTab('lab');$('proLabPanel').scrollIntoView({behavior:'smooth',block:'start'});});host.append(labButton);$('proEvaluate').disabled=!!worker||filterPending;
+    const targets=isCustom()?(custom._targets||[...new Set(custom.overall.map(r=>r.speciesId))].map(speciesId=>({speciesId,weight:1,moveset:leagueData.overall.find(r=>r.speciesId===speciesId)?.moveset}))).filter(t=>t.moveset):leagueData.overall.map(r=>({speciesId:r.speciesId,moveset:r.moveset,weight:1}));
+    PvPProDetail.mount({host,data,cp:cp(),published:leagueData.overall,row,category:$('proCategory').value,targets,custom:isCustom(),historical:isCustom()&&!custom._targets,
+      categoryRow:slug=>custom?.[slug]?.find(r=>rowKey(r)===rowKey(row)),battleHost:$('proBattlePanel')});
+    const labButton=el('button','Open this Pokémon in Moveset Lab','secondary');labButton.type='button';labButton.addEventListener('click',()=>{subTab('lab');$('proLabPanel').scrollIntoView({behavior:'smooth',block:'start'});});host.append(labButton);$('proEvaluate').disabled=!!worker||filterPending;
   }
   function renderVariants(){
     const host=$('proVariants');host.replaceChildren();
@@ -261,7 +257,7 @@
     table.append(el('caption',name(selected)+' · '+shown.length+' / '+variants.length+' movesets shown'));
     const head=table.createTHead().insertRow();for(const text of ['Moveset','Weighted Battle Rating','Below best']){const th=el('th',text);th.scope='col';head.append(th);}
     const body=table.createTBody();
-    for(const row of shown){const tr=body.insertRow(),comp=comparison(row,true);highlightMoveset(tr,comp);tr.insertCell().textContent=row.moveset.map(move).join(' · ');const badge=movesetBadge(comp,true);if(badge)tr.cells[0].append(badge);tr.insertCell().textContent=row.rating.toFixed(1);tr.insertCell().textContent=(variants[0].rating ? (1-row.rating/variants[0].rating)*100 : 0).toFixed(2)+'%';
+    for(const row of shown){const tr=body.insertRow(),comp=comparison(row,true);highlightMoveset(tr,comp);tr.insertCell().append(PvPProDetail.moves(row.moveset,data));const badge=movesetBadge(comp,true);if(badge)tr.cells[0].append(badge);tr.insertCell().textContent=row.rating.toFixed(1);tr.insertCell().textContent=(variants[0].rating ? (1-row.rating/variants[0].rating)*100 : 0).toFixed(2)+'%';
       const detail=el('details');detail.append(el('summary','Matchups'));for(const item of row.matches)detail.append(el('p',name(item.opponent)+' · '+item.rating,'hint'));tr.cells[0].append(detail);}
     host.append(table);
   }

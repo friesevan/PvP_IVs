@@ -15,6 +15,7 @@
   <script defer src="includes/pro/core.js"></script>
   <script defer src="includes/pro/saved.js"></script>
   <script defer src="includes/pro/search.js"></script>
+  <script defer src="includes/pro/detail.js"></script>
   <script defer src="includes/pro/ui.js"></script>
 </head>
 <body>
@@ -127,7 +128,7 @@
       <tr><td>Meta, editor notes, perfect IVs</td><td>meta · notes · 4* · hundo</td></tr><tr><td>Combine searches</td><td>water&amp;@fighting · water,fighting · !water</td></tr>
       </tbody></table></div><p class="hint">Meta uses PvPoke’s bundled league meta group. Traits, XL and perfect IVs use the league’s default Pokémon build and published recommended moveset. Notes searches entries with editor notes in the displayed report.</p>
     </details></div>
-    <p class="hint">League rankings use the published open-league data from <a href="https://github.com/pvpoke/pvpoke/tree/f627e89e53c0c7b903fff097df7a0ad0ac95decc" target="_blank" rel="noopener">PvPoke · f627e89</a>, including editor adjustments. Select a Pokémon to explore its moves, key wins and counters.</p>
+    <p class="hint">League rankings use the published open-league data from <a href="https://github.com/pvpoke/pvpoke/tree/f627e89e53c0c7b903fff097df7a0ad0ac95decc" target="_blank" rel="noopener">PvPoke · f627e89</a>, including editor adjustments. Select a Pokémon to explore its moves, all opponent matchups and simulated battles.</p>
     <div class="pro-builder-actions"><button id="proOpenBuilder" type="button" class="secondary" aria-expanded="false" aria-controls="proBuilder">Create custom rankings</button></div>
     <section id="proBuilder" class="pro-roster-card" hidden aria-labelledby="proBuilderTitle"><div class="pro-builder-heading"><div><h2 id="proBuilderTitle">Create custom rankings</h2><p class="hint">Choose your roster, set moveset limits, then generate.</p></div><button id="proCloseBuilder" type="button" class="secondary">Close</button></div>
       <p id="proRulesHelp" class="hint" hidden>Build the roster once for both views. All Include rules must match; values within a rule are alternatives. A Species rule explicitly includes its IDs regardless of the other rules, matching PvPoke. Only Pokémon in the published league population are available. Opponents always use their recommended movesets.</p>
@@ -157,6 +158,7 @@
     <div class="pro-layout">
       <section class="pro-rank-card" aria-label="League rankings"><div id="proRankings" class="table-scroll" tabindex="0"></div><div class="analysis-pagination"><span id="proPagination"></span><button id="proPrev" type="button" class="secondary">Previous</button><button id="proNext" type="button" class="secondary">Next</button></div></section>
       <aside class="pro-detail-card"><div id="proDetail"><h3>Pokémon details</h3><p>Select a Pokémon in the rankings.</p></div></aside>
+      <aside id="proBattlePanel" class="pro-battle-card" aria-label="Simulated battle" hidden></aside>
     </div>
     </section>
     <section id="proLabPanel" role="tabpanel" aria-labelledby="proLabTab" class="pro-lab" hidden>
