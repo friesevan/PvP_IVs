@@ -161,3 +161,15 @@ python3 scripts/export-neural-dashboard.py /path/to/training/runs/team-search
 ```
 
 The export checks final outcomes, common validation seeds and chronological history, and includes only compact metrics and team details. It excludes credentials, local machine paths, checkpoints, model tensors and raw fixture arrays. Publish the updated static app after exporting.
+
+### All-team rankings and deterministic replay
+
+The Team Rankings view shows every evaluated team with training, cautious selection, screening and fresh-test scores (missing evaluations display a dash), 500 per page. Twelve baseline comparison teams also have fresh test scores, marked separately from the eight finalists. Pokémon show the pinned Great League published rank and an Alternate Moveset badge; swapping charged move order is not an alternate.
+
+Export the complete team report with:
+
+```sh
+node scripts/export-neural-teams.cjs /path/to/training/runs/team-search
+```
+
+The exporter verifies the pool and simulator fingerprint, and checks that each team’s stored fixture count matches its training battle count. Matchup chunks load only when a team is selected. The browser uses the same game data and Champion code in a dedicated worker. Two seed-matched battles reconstruct each paired fixture; the viewer checks their average against the saved score. Six HP curves describe the complete team battle. Timelines are reconstructed, not recorded during training. The parity test compares portable replay outcomes, turns and remaining Pokémon with the original Node simulator. The replay initializer follows the trainer’s default IV initialization; exported IVs describe that initialization, not a custom IV override.
