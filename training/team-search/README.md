@@ -30,7 +30,7 @@ Resume a launcher-created experiment:
 node training/team-search/launch.cjs --hours 6 --workers 12 --resume
 ```
 
-Use the original settings when resuming. The launcher restores its stored validation seed; worker count and hours can change, while ensemble size stays fixed. Resume creates a new time budget. To stop a foreground run, press Ctrl+C and wait for Saved. For a detached run, use `node training/team-search/stop.cjs` (or pass its output directory). This verifies the launcher’s unique process identity and signals the Node process directly. `process.json` records its PID, start/end times, and exit code. The search catches SIGINT/SIGTERM, stops dispatch, drains active work, and saves. It preserves every fully evaluated team within an incomplete round.
+Use the original algorithm code and settings when resuming. Checkpoints fingerprint both the learning/search code and the battle engine. Pool inputs must also match the bundled Game Master, rankings and weights; scouting caches fingerprint their scoring code. Use `--warm-start` with a new output directory after algorithm changes; raw evidence remains reusable if the simulator mechanics match. The launcher restores its stored validation seed; worker count and hours can change, while ensemble size stays fixed. Resume creates a new time budget. To stop a foreground run, press Ctrl+C and wait for Saved. For a detached run, use `node training/team-search/stop.cjs` (or pass its output directory). This verifies the launcher’s unique process identity and signals the Node process directly. `process.json` records its PID, start/end times, and exit code. The search catches SIGINT/SIGTERM, stops dispatch, drains active work, and saves. It preserves every fully evaluated team within an incomplete round.
 
 An absolute deadline can replace a relative budget:
 
@@ -93,7 +93,7 @@ For a proposed team's estimated overall score, average each network's prediction
 - Start with 128 random legal teams. Each round evaluates 24 teams against 64 **new** opponent fixtures, with sides exchanged: 128 battles per candidate.
 - Propose 12,000 unseen ordered teams each round, mixing mutations of observed leaders and fresh random teams. Half the evaluation slots target neural predictions, a quarter explores disagreement, and the remaining slots include genuine uniform exploration and a leader retest.
 - Log the average score of neural, uncertainty, random and retest groups on their shared opponent batch. This measures proposal quality; it is not an equal-total-compute proof that neural search beats every alternative.
-- Retain raw per-opponent outcomes. A fixed hash reserves approximately 20% of candidate identities from fitting. Prediction diagnostics compare the neural model with a constant-score baseline on those identities. At most 12,000 labeled training fixtures are sampled per fit to keep fitting bounded.
+- Retain raw per-opponent outcomes. A fixed hash reserves approximately 20% of candidate identities from fitting. Prediction diagnostics compare the neural model with a constant-score baseline on those identities. At most 48,000 distinct labeled training fixtures are uniformly sampled without replacement per fit (`--fit-fixtures`), keeping fitting bounded as evidence grows. Increasing the cap from 12,000 to 48,000 reduced mean held-out team error by about 30% across three ensemble seeds on 56,640 unique fixtures, at the cost of more training steps. Each ensemble member then bootstraps that subset once; avoiding a duplicate-heavy initial subset improved mean team error by another 12% in a separate 24,000-fixture, three-seed comparison.
 - Training leaders use a cautious selection heuristic: shrink their fixture-score average toward 0.5 with eight pseudo-fixtures, then subtract 1.28 posterior-standard-deviation units. This heuristic reduces noise but is not a frequentist confidence bound or enough by itself to prevent multiple-comparison selection bias.
 
 Six epochs per fit reduced held-out team-average error by about 9% versus ten in a three-seed comparison, although per-matchup error was slightly higher. Team selection uses expected overall performance, so six is the current default. Extra per-charged-move type features worsened this pilot and were not retained. Parallel inference preserved all 12,000 candidate predictions exactly and reduced a controlled benchmark from about 8.4 seconds to 1.5 seconds.
@@ -102,10 +102,10 @@ The initial average-score regression model failed to outperform a constant predi
 
 ## Screening, final testing and baselines
 
-Reserve the final 20% of wall-clock budget for evaluation:
+Reserve at least the final 20% of wall-clock budget for evaluation. After 512 completed battles, continually estimate the requested screening/final/baseline work using measured end-to-end throughput and a 25% time margin. Slow runs stop proposing earlier if that work needs a larger reserve; this check also runs inside a large first batch:
 
 1. Screen up to 24 training leaders on a separately seeded batch of 512 fresh opponent fixtures. These outcomes never fit the network. Select up to eight finalists from screening results, rather than noisy training scores.
-2. Evaluate the screened finalists on another independently seeded set of 512 opponent fixtures. The primary team is selected **before** this final set. The detached launcher generates a fresh validation seed for a new experiment, preventing reuse of inspected pilot validation fixtures.
+2. Evaluate the screened finalists on another independently seeded set of 512 opponent fixtures. The primary team is selected **before** this final set. The detached launcher generates a fresh validation seed for a new experiment, and derives a distinct screening seed from it. Both seeds are checked against any earlier evaluations absorbed into training, preventing those fixtures from being reused for screening or final testing.
 3. Evaluate twelve fixed baseline teams on the same final opponent fixtures: four uniform-random teams, four weight-sampled teams with each member's best scouted moveset, and four deterministic greedy coverage teams. Coverage baselines maximize weighted best-member scout ratings over the first 24 scouted opponents, with different weak-link penalties, bounded coordinate swaps and lead orders. They are fixed before final opponent testing.
 4. Compare the primary team with each baseline group using a paired bootstrap over whole opponent fixtures, preserving correlated mirrored battles. Intervals are conditional on these particular baseline teams and the pinned simulator.
 
@@ -116,12 +116,13 @@ Each default screened/validated team gets 1,024 battles. Work checks the deadlin
 Within the selected output directory:
 
 - `pool.json`: population, selected variants, stats/IVs, scouting settings, source-input hash and pool hash.
-- `checkpoint.json`: raw fixture labels, models, pending-round progress, diagnostics, screening, final testing and baselines; atomically saved after completed teams and rounds.
+- `checkpoint.json`: raw fixture labels, models, pending-round progress, diagnostics, screening, final testing and baselines; atomically saved after completed teams and rounds. Fresh warm-starts advance past any already labeled partial round; ordinary resume preserves pending progress.
 - `history.jsonl`: timestamped round summaries and neural-versus-random proposal scores.
+- `opponent-analysis.json`: every completed primary final fixture, opponent movesets and battle seed; conditional scores for teams containing each opponent. These are team outcomes, not 1v1 ratings.
 - `models.json`: serialized ensemble.
 - `recommendations.json`: teams, movesets, simulation IVs/levels/CPs, training estimates, screening/final results and comparisons.
 - `report.html` / `findings.md`: readable results. Open the HTML report locally; it needs no server or external assets.
-- `training.log` / `launch.json` / `process.json`: detached execution log, verified process identity, start/end times and deadline metadata. Checkpoint runtime telemetry records throughput, peak sampled process memory, worker heap and recycling.
+- `training.log` / `launch.json` / `process.json`: detached execution log, verified process identity, start/end times and deadline metadata. Checkpoint runtime telemetry records throughput, average CPU cores busy, peak sampled process memory, worker heap and recycling.
 
 Preparation's `.chunks` directory stores reusable scouting work. It is separate from the original strategy run.
 
@@ -135,7 +136,7 @@ node training/team-search/remap.cjs MERGED.json OLD_POOL.json NEW_POOL.json REMA
 node training/team-search/search.cjs --pool NEW_POOL.json --warm-start REMAPPED.json --out NEW_DIRECTORY
 ```
 
-A merged inherited battle counter represents unique retained labeled battles; it excludes discarded pilot work and pilot validations. Subsequent execution adds actual completed battles.
+A merged inherited battle counter represents unique retained labeled battles; it includes any explicitly absorbed earlier evaluations, and excludes discarded or unabsorbed pilot work. Subsequent execution adds actual completed battles.
 
 Finished pilots' screening, final testing and baseline battles can also supply labels for a **new** experiment:
 
@@ -143,7 +144,7 @@ Finished pilots' screening, final testing and baseline battles can also supply l
 node training/team-search/absorb-evaluation.cjs FINISHED_CHECKPOINT.json POOL.json NEW_EVIDENCE.json
 ```
 
-The source report remains unchanged. The tool reconstructs seeded fixtures, checks/deduplicates outcomes and clears old models/evaluation. It marks the old evaluation seeds as used; a warm-start search rejects reusing them for final testing. Use the detached launcher to generate a fresh validation seed. This makes efficient use of pilot simulations without treating fitted data as a final test of the new experiment.
+The source report remains unchanged. The tool reconstructs seeded fixtures, checks/deduplicates outcomes and clears old models/evaluation. It marks the old evaluation seeds as used; a warm-start search rejects reusing them for screening or final testing. Use the detached launcher to generate a fresh validation seed. This makes efficient use of pilot simulations without treating fitted data as a final test of the new experiment.
 
 ## Remaining limits
 

@@ -13,6 +13,12 @@ function moveEffects(row){
 const digest=value=>crypto.createHash('sha256').update(JSON.stringify(value)).digest('hex');
 // Fingerprint simulator code as well as data, preventing reuse across changed mechanics.
 function mechanicsHash(){const root=path.resolve(__dirname,'..'),vendor=path.resolve(root,'../includes/pro/vendor');const files=[...['GameMaster','DamageCalculator','ActionLogic','TimelineEvent','TimelineAction','DecisionOption','Battle','Pokemon'].map(n=>path.join(vendor,n+'.js')),path.join(root,'engine.cjs'),path.join(root,'utils.cjs'),path.join(root,'vendor/TrainingAI.js'),path.join(root,'vendor/Player.js'),path.join(root,'vendor/aiArchetypes.json')];return digest(files.map(f=>[path.basename(f),fs.readFileSync(f,'utf8')]));}
+function dataHash(){const base=path.resolve(__dirname,'../../includes/pro/data');return digest([require(base+'/league-1500.json').overall,require(base+'/overrides-1500.json'),require(base+'/gamemaster.json')]);}
+function algorithmHash(){const names=['search.cjs','common.cjs','neural.cjs','interaction.cjs','fit-interaction.cjs','interaction-worker.cjs','propose.cjs','predict.cjs','predict-worker.cjs','evaluation.cjs','budget.cjs'];return digest(names.map(name=>[name,fs.readFileSync(path.join(__dirname,name),'utf8')]));}
+function screeningSeed(validationSeed){let result=parseInt(digest(['screening',validationSeed]).slice(0,8),16)||1;if(result===validationSeed)result=(result^0x5a5a5a5a)>>>0||1;return result;}
+function freshEvaluationSeeds(validationSeed,used=[]){return !used.includes(validationSeed)&&!used.includes(screeningSeed(validationSeed));}
+function nextRound(state){return (state.observations||[]).reduce((round,o)=>Number.isInteger(o.round)?Math.max(round,o.round+1):round,state.round||0);}
+function sampleFixtures(rows,cap,r){if(!Number.isInteger(cap)||cap<1)throw Error('Fixture sample cap must be positive');if(rows.length<=cap)return rows;const out=rows.slice();for(let i=0;i<cap;i++){const j=i+Math.floor(r()*(out.length-i));[out[i],out[j]]=[out[j],out[i]];}return out.slice(0,cap);}
 function atomic(file,data){fs.mkdirSync(path.dirname(file),{recursive:true});fs.writeFileSync(file+'.tmp',JSON.stringify(data));fs.renameSync(file+'.tmp',file);}
 function population(published,overrides,n=300){
  const weights=new Map(overrides.map(r=>[r.speciesId,r.weight]));
@@ -35,4 +41,4 @@ function features(team,variants){
  return base;
 }
 function options(args,defaults){const o={...defaults};for(let i=0;i<args.length;i++){const a=args[i];if(a==='--resume'){o.resume=true;continue;}if(a==='--help'){o.help=true;continue;}const k=a.replace(/^--/,'').replace(/-([a-z])/g,(_,c)=>c.toUpperCase());if(!a.startsWith('--')||!(k in defaults)||args[i+1]===undefined)throw Error('Unknown argument '+a);o[k]=typeof defaults[k]==='number'?Number(args[++i]):args[++i];}return o;}
-module.exports={TYPES,VERSION,FEATURE_VERSION,moveEffects,digest,mechanicsHash,atomic,population,validTeam,teamKey,randomTeam,mutateTeam,weightedTeam,fixtures,features,options};
+module.exports={TYPES,VERSION,FEATURE_VERSION,moveEffects,digest,mechanicsHash,dataHash,algorithmHash,screeningSeed,freshEvaluationSeeds,nextRound,sampleFixtures,atomic,population,validTeam,teamKey,randomTeam,mutateTeam,weightedTeam,fixtures,features,options};

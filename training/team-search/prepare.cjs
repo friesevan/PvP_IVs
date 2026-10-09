@@ -11,7 +11,7 @@ async function prepare({species=300,movesets=5,shortlist=32,scoutOpponents=8,wor
  const lookup=new Map(data.pokemon.map(p=>[p.speciesId,p]));const speciesRows=rows.map(r=>({...r,dex:lookup.get(r.speciesId).dex}));
  // A weighted and type-diverse scout panel; all full team opponents still come from the entire eligible pool.
  const remaining=rows.slice(),targets=[],covered=new Set();while(targets.length<Math.min(scoutOpponents,rows.length)&&remaining.length){let best=-1,index=0;remaining.forEach((r,i)=>{const types=lookup.get(r.speciesId).types;const score=r.weight*(1+types.filter(t=>!covered.has(t)).length);if(score>best){best=score;index=i;}});const r=remaining.splice(index,1)[0];targets.push(r);lookup.get(r.speciesId).types.forEach(t=>covered.add(t));}
- const inputHash=digest([published,overrides,data]);const config={version:VERSION,cp:1500,species,movesets,shortlist,scoutOpponents,inputHash,exhaustive:shortlist>=10000};
+ const inputHash=digest([published,overrides,data]);const config={version:VERSION,cp:1500,species,movesets,shortlist,scoutOpponents,inputHash,scoutingHash:digest([fs.readFileSync(path.join(__dirname,'prepare-worker.cjs'),'utf8'),fs.readFileSync(path.join(base,'../core.js'),'utf8'),require('./common.cjs').mechanicsHash()]),exhaustive:shortlist>=10000};
  const pool=new BattlePool(workers,()=>new BattleRunner({workerFile:path.join(__dirname,'prepare-worker.cjs'),heapMb:192}));let done=0;
  try{console.log('Preparing '+species+' species · up to '+movesets+' movesets each · '+workers+' workers');let results;
  if(shortlist>=10000){

@@ -39,10 +39,12 @@ Its final score was **62.1%** over 512 mirrored battles. It beat two uniform-ran
 ## Refinements tested
 
 - Six versus ten fit epochs, three ensemble seeds, identical sampled training data: mean held-out team error improved from 0.005534 to 0.005024 (**9.2%**); per-fixture error was slightly worse. Six epochs are now the default because candidate selection uses overall expected team performance.
+- Increasing the training fixture cap from 12,000 to 48,000 on 56,640 unique fixtures: three seeds reduced mean unseen-team error from 0.005479 to 0.003827 (**30.1%**), and per-fixture error from 0.13628 to 0.12248 (**10.1%**). The 48,000 cap is retained; that experiment used all 44,704 training fixtures.
+- Sampling the bounded fit subset without replacement, then bootstrapping once per ensemble member, reduced mean team error from 0.004732 to 0.004166 (**12.0%**) at a 24,000 cap. All three seeds improved; this sampling change is retained for larger datasets.
 - Aligning buff features to charge-energy order made essentially no difference. Adding per-charged-move type indicators worsened mean team error to 0.006261; these changes were not retained.
 - Parallel candidate inference on all 12 CPU cores reduced 12,000-candidate scoring from approximately **8.4 seconds to 1.5 seconds**, preserving every prediction exactly.
 - Caching compiled simulator scripts did not improve throughput and was reverted.
 - Larger heaps/recycling intervals barely changed speed across 512 seeded battles and increased memory; the established 128 MB/eight-battle limits were retained. All seeded outcomes matched across the four configurations.
 - Numerical gradient checks, cyclic-counter learning, deterministic worker-count comparisons, exhaustive chunk/cache equivalence, checkpoint interruption/resume, detached deadline shutdown and safe stop were verified.
 
-Completed earlier pilots' evaluations can become training evidence for a new experiment. Their seeds are marked as used and cannot serve as that new experiment's final test. The final launcher selects a fresh validation seed.
+Completed earlier pilots' evaluations can become training evidence for a new experiment. Their seeds are marked as used and cannot serve as that new experiment's screening or final test. The final launcher selects a fresh validation seed.

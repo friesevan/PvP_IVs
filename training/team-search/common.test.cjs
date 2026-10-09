@@ -20,3 +20,12 @@ test('move-effect features distinguish self buffs, opponent debuffs and Shadow c
 });
 
 test('both-target moves retain self and opponent effects',()=>{const {moveEffects}=require('./common.cjs');assert.deepEqual(moveEffects({speciesId:'obstagoon',moveset:['COUNTER','OBSTRUCT']}).slice(0,4),[0,.25,0,-.25]);});
+
+test('screening and final fixture seeds are fresh after absorbing earlier pilot evidence',()=>{
+ const {screeningSeed,freshEvaluationSeeds}=require('./common.cjs');
+ for(const seed of [1,20261009,0xffffffff]){const screening=screeningSeed(seed);assert.ok(Number.isInteger(screening)&&screening>0&&screening<=0xffffffff);assert.notEqual(screening,seed);assert.equal(screeningSeed(seed),screening);assert.equal(freshEvaluationSeeds(seed,[]),true);assert.equal(freshEvaluationSeeds(seed,[seed]),false);assert.equal(freshEvaluationSeeds(seed,[screening]),false);}
+});
+
+test('fresh warm-start rounds skip existing raw evidence while ordinary resume retains pending progress',()=>{const {nextRound}=require('./common.cjs');assert.equal(nextRound({round:8,observations:[{round:7}]}),8);assert.equal(nextRound({round:8,observations:[{round:8}]}),9);assert.equal(nextRound({round:0,observations:[]}),0);});
+
+test('bounded training samples are reproducible, distinct and do not alter source evidence',()=>{const {sampleFixtures}=require('./common.cjs');const rows=Array.from({length:100},(_,i)=>({i})),original=rows.slice();const a=sampleFixtures(rows,40,random(18));assert.equal(a.length,40);assert.equal(new Set(a).size,40);assert.deepEqual(a,sampleFixtures(rows,40,random(18)));assert.notDeepEqual(a,sampleFixtures(rows,40,random(19)));assert.deepEqual(rows,original);assert.equal(sampleFixtures(rows,200,random(18)),rows);assert.throws(()=>sampleFixtures(rows,0,random(1)),/cap/);});

@@ -5,3 +5,5 @@ test('merging deduplicates seeded fixture evidence and rejects nondeterministic 
 });
 
 test('merge rejects different simulator mechanics',()=>{const a={config:{poolHash:'p',mechanicsHash:'a'},observations:[{team:[0,1,2],opponent:['x','y','z'],seed:1,score:.5}],round:1},b={...a,config:{poolHash:'p',mechanicsHash:'b'}};assert.throws(()=>merge([a,b]),/mechanics/);});
+
+test('a merged warm start skips fixture rounds already partly labeled',()=>{const o={team:[0,1,2],opponent:['a','b','c'],seed:1,score:.5,round:7};const a={config:{poolHash:'p'},round:7,pending:{completed:['0,1,2']},observations:[o]};const b={...a,round:6,observations:[{...o,seed:2,round:5}]};assert.equal(merge([a,b]).round,8);});
