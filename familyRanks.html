@@ -17,6 +17,8 @@
   <script defer src="includes/pro/search.js"></script>
   <script defer src="includes/pro/detail.js"></script>
   <script defer src="includes/pro/ui.js"></script>
+  <script defer src="includes/pro/neural.js"></script>
+  <link rel="stylesheet" href="includes/pro/neural.css">
 </head>
 <body>
 <main>
@@ -111,7 +113,27 @@
   </section>
   <section id="proPanel" role="tabpanel" aria-labelledby="proTab" hidden>
     <div class="pro-info-bar"><a class="pro-info-link" href="includes/pro/README.html" target="_blank" rel="noopener" title="Read the ranking logic guide in a new tab" aria-label="PvPoke Pro ranking logic README"><span class="pro-info-icon" aria-hidden="true">i</span> How rankings work</a></div>
-    <nav id="proSubTabs" class="analysis-switches" role="tablist" aria-label="PvPoke Pro views"><button id="proRankTab" role="tab" type="button" aria-controls="proRankPanel" aria-selected="true">Rankings</button><button id="proLabTab" role="tab" type="button" aria-controls="proLabPanel" aria-selected="false" tabindex="-1">Moveset Lab</button></nav>
+    <nav id="proSubTabs" class="analysis-switches" role="tablist" aria-label="PvPoke Pro views"><button id="proRankTab" role="tab" type="button" aria-controls="proRankPanel" aria-selected="true">Rankings</button><button id="proLabTab" role="tab" type="button" aria-controls="proLabPanel" aria-selected="false" tabindex="-1">Moveset Lab</button><button id="proNeuralTab" role="tab" type="button" aria-controls="proNeuralPanel" aria-selected="false" tabindex="-1">Full Team Neural Network</button></nav>
+    <section id="proNeuralPanel" role="tabpanel" aria-labelledby="proNeuralTab" hidden>
+      <div class="nn-heading"><div><p class="nn-eyebrow">GREAT LEAGUE · FULL 3-V-3 SEARCH</p><h2>Full Team Neural Network</h2></div><button id="nnInfo" class="pro-info-button" type="button" aria-label="How the full team neural network works" aria-haspopup="dialog">i</button></div>
+      <div id="nnReport" aria-live="polite">Loading completed search…</div>
+      <dialog id="nnHelp" class="pro-help-dialog" aria-labelledby="nnHelpTitle"><div class="pro-builder-heading"><h2 id="nnHelpTitle">How the team search works</h2><button id="nnClose" class="secondary" type="button">Close</button></div>
+      <p>This model searches for three-Pokémon teams and their movesets. Each label comes from a complete three-on-three battle using PvPoke’s existing Champion strategy on both sides. It learns team strength and counter relationships; it does not learn a new switching or catching strategy.</p>
+      <h3>1. Eligible Pokémon and movesets</h3><p>The pool contains the top 300 Great League entries by positive Default PvPoke weight (rank breaks ties). Forms are separate entries; a team cannot contain two entries with the same Pokédex number. Up to five movesets per entry are retained from exhaustive one-on-one scouting of all legal combinations across five shield/energy scenarios against the 300 recommended opponents. Those simulations use weighted Battle Rating.</p>
+      <h3>2. Full-team training data</h3><p>Opposing teams are sampled without replacement by Pokédex number, proportional to PvPoke Default weights, using recommended movesets. Each fixture is played with the two teams swapping sides. A win earns 1, a draw ½, and a loss 0. Team order is retained, so the lead matters. Opponents are independently sampled teams, rather than observed human lineups.</p>
+      <h3>3. Neural matchup model</h3><p>Twelve bootstrapped neural networks each use 366 team features and a 16-unit tanh hidden layer. Features describe typing, bulk, published scores and weights, move damage, energy, duration, coverage, effects, and team order. Adam fits binary cross-entropy for six epochs on up to 48,000 distinct fixtures per network.</p>
+      <pre>h(T) = tanh(Wx(T) + b)
+s(T) = vᵀh(T) + c
+P(A,B) = sigmoid(s(A) − s(B) + h(A)ᵀKh(B))
+K = −Kᵀ</pre><p>The antisymmetric interaction term can represent cyclic counters. Swapping teams gives complementary predictions. Roughly 20% of candidate team identities are held out from fitting for diagnostics. Ensemble disagreement guides exploration; it is not a calibrated confidence interval.</p>
+      <h3>4. Search and selection</h3><p>Each round scores 12,000 proposed teams: 60% mutations of leaders and 40% fresh random teams. It simulates 24: twelve neural picks, six uncertainty picks, five random picks, and one leader retest. Each plays 64 fresh opponent fixtures on both sides. Neural predictions are averaged over 256 fixed reference opponents.</p><p>A cautious training selection score favors consistent evidence:</p><pre>n = games / 2
+m = (reward / 2 + 4) / (n + 8)
+selection = m − 1.28 × √(m × (1 − m) / (n + 9))</pre><p>This is a selection heuristic, not a formal confidence bound. The graph shows the raw training score of the leader selected by this heuristic, a separate diagnostic that can be optimistic.</p>
+      <h3>5. Independent evaluation</h3><p>Twenty-four leaders enter screening; the top eight then play 512 fresh opponent fixtures on both sides (1,024 battles each). The primary team is chosen by screening before final testing. Four teams per baseline method play the same final opponents. Comparison intervals use a paired opponent-fixture bootstrap and are conditional on these baseline teams. Pilot evaluation evidence was absorbed into training; current screening and test seeds are fresh.</p>
+      <h3>Reading the graphs</h3><p>Time starts at the unattended run, which resumed pilot evidence. Proposal quality uses a five-round trailing average of actual simulated scores. Held-out MSE measures team-mean prediction error; lower is better, and the comparison predicts one constant mean. Training and held-out diagnostics are not final validation scores. Finalist cards show fresh test outcomes; test scores were measured once at the end.</p>
+      <h3>What the result means</h3><p>The leader was already found in the pilot, and this run confirmed it. These are simulation scores under fixed, full-information AI and a weighted opponent distribution, not human win rates or proof of an optimal team. Restricting each Pokémon to five individually scouted movesets can miss useful team-specific combinations. CPU workers run the battle engine; this run did not use the GPU or Neural Engine.</p>
+      <p><a href="training/team-search/README.md" target="_blank" rel="noopener">Technical README ↗</a></p></dialog>
+    </section>
     <div class="pro-toolbar">
       <label>League<select id="proLeague"><option value="500">Little · 500 CP</option><option value="1500" selected>Great · 1,500 CP</option><option value="2500">Ultra · 2,500 CP</option><option value="10000">Master · Unlimited</option></select></label>
       <label class="pro-rank-control">Rankings<select id="proSource"><option value="published">Great League</option><option value="custom" disabled hidden>Generated custom roster</option></select></label>

@@ -14,13 +14,18 @@
   const labels={none:'Mono-type',ultrabeast:'Ultra Beast',shadoweligible:'Shadow Eligible',0:'No evolution',1:'First stage',2:'Middle stage',3:'Final stage'};
   const rowKey=row=>row.variantId||row.speciesId;
   function subTab(which){
-    const lab=which==='lab';$('proRankPanel').hidden=lab;$('proLabPanel').hidden=!lab;
-    for(const [id,on] of [['proRankTab',!lab],['proLabTab',lab]]){$(id).setAttribute('aria-selected',String(on));$(id).tabIndex=on?0:-1;}
-    for(const node of document.querySelectorAll('.pro-rank-control'))node.hidden=lab;
+    const lab=which==='lab',neural=which==='neural';$('proRankPanel').hidden=lab||neural;$('proLabPanel').hidden=!lab;$('proNeuralPanel').hidden=!neural;
+    $('proPanel').classList.toggle('neural-active',neural);
+    for(const [id,on] of [['proRankTab',!lab&&!neural],['proLabTab',lab],['proNeuralTab',neural]]){$(id).setAttribute('aria-selected',String(on));$(id).tabIndex=on?0:-1;}
+    for(const node of document.querySelectorAll('.pro-rank-control'))node.hidden=lab||neural;
     $('proOpenBuilder').textContent=lab?'Configure roster':'Create custom rankings';updateSavedControls();
+    const url=new URL(location.href);if(which==='rank')url.searchParams.delete('view');else url.searchParams.set('view',which);history.replaceState(null,'',url);
+    if(neural)document.dispatchEvent(new Event('neural-open'));
   }
-  $('proRankTab').addEventListener('click',()=>subTab('rank'));$('proLabTab').addEventListener('click',()=>subTab('lab'));
-  $('proSubTabs').addEventListener('keydown',event=>{if(!['ArrowLeft','ArrowRight','Home','End'].includes(event.key))return;event.preventDefault();const lab=event.key==='End'||event.key!=='Home'&&$('proLabPanel').hidden;subTab(lab?'lab':'rank');$(lab?'proLabTab':'proRankTab').focus();});
+  const proViews=[['proRankTab','rank'],['proLabTab','lab'],['proNeuralTab','neural']];
+  for(const [id,view] of proViews)$(id).addEventListener('click',()=>subTab(view));
+  $('proSubTabs').addEventListener('keydown',event=>{if(!['ArrowLeft','ArrowRight','Home','End'].includes(event.key))return;event.preventDefault();let i=proViews.findIndex(([id])=>$(id).getAttribute('aria-selected')==='true');i=event.key==='Home'?0:event.key==='End'?2:(i+(event.key==='ArrowRight'?1:2))%3;subTab(proViews[i][1]);$(proViews[i][0]).focus();});
+  const initialProView=new URL(location.href).searchParams.get('view');if(['lab','neural'].includes(initialProView))setTimeout(()=>subTab(initialProView),0);
   $('proLabPokemon').addEventListener('change',()=>{stop();selected=$('proLabPokemon').value;variants=[];renderVariants();});
   function renderFilters(){
     $('proFilters').replaceChildren();

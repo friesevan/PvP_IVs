@@ -149,3 +149,15 @@ The source report remains unchanged. The tool reconstructs seeded fixtures, chec
 ## Remaining limits
 
 The simulator inherits full-information Champion heuristics and the existing virtual-timer adapter. Dedicated catch-timing, side-parity and comprehensive mechanics comparisons remain necessary before competitive claims. Uniformly random candidate teams and independently weight-sampled opponent teams do not represent every human meta lineup. Only up to five individually scored movesets are explored; an excluded moveset might still be useful for a particular team. Better neural predictions do not automatically imply better recommendations, which is why screening and untouched final comparisons are required.
+
+## Published results dashboard
+
+In PvPoke Pro, select **Full Team Neural Network** to view the completed run’s search-quality, held-out error, simulation-count and baseline charts, plus all eight independently tested finalists. The info button opens the algorithm documentation. `?app=pro&view=neural` links directly to this tab.
+
+The dashboard is a snapshot, not a live trainer. To update its public data after another completed run, from the application repository:
+
+```sh
+python3 scripts/export-neural-dashboard.py /path/to/training/runs/team-search
+```
+
+The export checks final outcomes, common validation seeds and chronological history, and includes only compact metrics and team details. It excludes credentials, local machine paths, checkpoints, model tensors and raw fixture arrays. Publish the updated static app after exporting.
