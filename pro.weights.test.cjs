@@ -59,3 +59,12 @@ test('saved reports missing charger metadata can be reweighted with battle simul
  for(const slug of ['leads','closers','switches','chargers','attackers'])for(const row of report[slug])delete row.chargerFactor;
  const updated=run('reweight',{report,settings:{mode:'equal'},forbidSimulations:true}).find(m=>m.type==='reweighted');assert.equal(updated.simulations,0);assert.deepEqual(updated.report.overall.map(r=>[r.variantId,r.score]),report.overall.map(r=>[r.variantId,r.score]));
 });
+
+test('top N opponents use assigned weights, default fallback and deterministic ties',()=>{
+ const rows=[{speciesId:'a',weight:1},{speciesId:'b',weight:8},{speciesId:'c',weight:1},{speciesId:'d',weight:0}];assert.deepEqual(PvPPro.chooseOpponents(rows,2,{a:10,c:30}).map(r=>r.speciesId),['b','c']);assert.deepEqual(PvPPro.chooseOpponents([{speciesId:'a'},{speciesId:'b'},{speciesId:'c'}],2,{a:2,b:30,c:10}).map(r=>r.speciesId),['b','c']);assert.deepEqual(PvPPro.chooseOpponents(rows,null),rows);assert.throws(()=>PvPPro.chooseOpponents(rows,1));
+});
+test('opponent limit retains all candidates, reduces simulations, and supports extra score snapshots',()=>{
+ const result=run('generate',{weightMode:'equal',topN:1,opponentLimit:2}).find(m=>m.type==='result');assert.equal(result.targets.length,2);assert.equal(result.rows.length,5);assert.equal(result.summary.opponents,2);assert.equal(result.summary.simulations,40);for(const category of result.categories)for(const row of category.rows)assert.equal(row.matches.length,result.targets.some(t=>t.speciesId===row.speciesId)?1:2);
+ const report={_targets:result.targets,overall:result.rows,...Object.fromEntries(result.categories.map(c=>[c.slug,c.rows]))},before=JSON.stringify(report),rescored=PvPPro.rescoreRankings(report,{mode:'equal'}),column=PvPPro.scoreColumn(rescored,{mode:'equal',id:'extra'});assert.equal(JSON.stringify(report),before);assert.equal(column.label,'Equal');assert.equal(column.targets.length,2);assert.equal(Object.keys(column.scores.overall).length,5);for(const row of report.overall)assert.equal(column.scores.overall[row.variantId],row.score);
+ const calculated=PvPPro.rescoreRankings(report,{mode:'calculate',guidance:.5});assert.ok(calculated.overall.every(r=>Number.isFinite(r.score)));assert.equal(PvPPro.scoreColumn(calculated,{mode:'calculate',guidance:.5}).label,'50%');
+});

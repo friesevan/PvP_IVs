@@ -117,10 +117,12 @@ function generate(request){
   const eligible=gm.generateFilteredPokemonList(battle,cup.include,[],published,[{cup:'custom',league:cp,pokemon:overrides}]);
   const found=new Set(eligible.map(p=>p.speciesId)),missing=roster.filter(p=>!found.has(p.speciesId));
   if(missing.length)throw new Error('Upstream eligibility rules excluded: '+missing.map(p=>p.speciesId).join(', '));
-  const targets=roster.map(item=>({...item,moveset:published.find(p=>p.speciesId===item.speciesId).moveset}));
+  const candidateTargets=roster.map(item=>({...item,moveset:published.find(p=>p.speciesId===item.speciesId).moveset}));
+  const targets=PvPPro.chooseOpponents(candidateTargets,request.opponentLimit,request.defaultWeights);
+  PvPPro.validateRoster(targets,new Set(published.map(r=>r.speciesId)));
   const targetPokemon=targets.map(t=>createPokemon(t.speciesId,1,battle,t.moveset));
   const candidates=[],baselines=[],counts=[];let totalCombinations=0;
-  for(const target of targets){
+  for(const target of candidateTargets){
     self.postMessage({type:'progress',text:'Projecting movesets for '+target.speciesId+'…'});
     const sample=createPokemon(target.speciesId,0,battle,target.moveset),cache=new Map();
     const project=moves=>{
@@ -167,7 +169,7 @@ function generate(request){
     candidates.splice(0,candidates.length,...kept);
   }
   for(const item of counts)item.selected=candidates.filter(row=>row.speciesId===item.speciesId).length;
-  const ranked=rankRecords(candidates,baselines,targets,data,battle,cache,'Ranking',!!weightModel);
+  const ranked=rankRecords(candidates,targets.map(t=>baselines.find(r=>r.speciesId===t.speciesId)),targets,data,battle,cache,'Ranking',!!weightModel);
   self.postMessage({type:'result',...ranked,targets,weightModel,summary:{counts,totalCombinations,selectedCombinations:candidates.length,shortlistedCombinations,opponents:targets.length,simulations:ranked.simulations+scoutSimulations+(weightModel&&!request.weightModel?weightModel.simulations:0),weightSimulations:weightModel&&!request.weightModel?weightModel.simulations:0,scoutSimulations,scoutOpponents,fallbacks:ranked.fallbacks+scoutFallbacks,policy,topN}});
 }
 function rankRecords(candidates,baselines,targets,data,battle,cache,phase,fixedMeta=false){
@@ -180,7 +182,7 @@ function rankRecords(candidates,baselines,targets,data,battle,cache,phase,fixedM
   }));
   let simulations=0,progress=0,fallbacks=0;
   const categories=[],allScores=new Map(candidates.map(row=>[row,[]]));
-  const expected=data.rankingScenarios.length*records.length*(targets.length-1);
+  const expected=data.rankingScenarios.length*records.reduce((sum,row)=>sum+targets.length-(targets.some(t=>t.speciesId===row.speciesId)?1:0),0);
   for(const scenario of data.rankingScenarios){
     const matches=new Map();
     for(const row of records){
