@@ -229,7 +229,7 @@
     current.postMessage({mode,data,opponentLimit:$('proAllOpponents').checked?null:Number($('proOpponentLimit').value),weightMode:weightMode(),weightGuidance:Number($('proWeightGuidance').value)/100,defaultWeights:Object.fromEntries(overrides.map(r=>[r.speciesId,r.weight??1])),weightModel:mode==='weights'?null:model,cp:cp(),published:leagueData.overall,roster:accepted,speciesId:selected,limit,policy,topN,limits,shields:Number($('proShields').value)});
   }
   $('proGenerate').addEventListener('click',()=>launch('generate'));$('proEvaluate').addEventListener('click',()=>launch('variants'));$('proCancel').addEventListener('click',()=>{stop();renderWeightControls();status('Calculation cancelled.');});
-  $('proCategory').addEventListener('change',()=>{page=0;render();});
+  $('proCategory').addEventListener('change',()=>{clearTimeout(headerClickTimer);page=0;sortKey='score';descending=true;expandedKey='';pendingDifference=null;render();});
   $('proSource').addEventListener('change',selectSource);
   $('proSearch').addEventListener('input',()=>{page=0;render();});
   $('proPrev').addEventListener('click',()=>{page--;render();});$('proNext').addEventListener('click',()=>{page++;render();});
@@ -257,7 +257,7 @@
     if(!list.some(row=>rowKey(row)===selectedKey))selectedKey=rowKey(list.find(row=>row.speciesId===selected)||list[0]);
     const columns=scoreColumns(),columnMaps=new Map(columns.map(c=>[c.id,c.scores[$('proCategory').value]||{}]));
     const differences=(custom?._differenceColumns||[]).filter(d=>columnMaps.has(d.left)&&columnMaps.has(d.right));
-    const scoreValue=(row,id)=>columnMaps.get(id)?.[row.variantId];
+    const scoreValue=(row,id)=>id==='primary'?row.score:columnMaps.get(id)?.[row.variantId];
     const value=(row,key)=>{if(key==='speciesName')return row.speciesName;if(key==='score')return row.score;if(key.startsWith('score:'))return scoreValue(row,key.slice(6));const d=differences.find(d=>'diff:'+d.id===key);return d?scoreValue(row,d.left)-scoreValue(row,d.right):undefined;};
     if(!['score','speciesName'].includes(sortKey)&&!columns.some(c=>'score:'+c.id===sortKey)&&!differences.some(d=>'diff:'+d.id===sortKey))sortKey='score';
     const baseHeaders=[{id:'rank',label:'Rank'},{id:'pokemon',label:'Pokémon',key:'speciesName'},...(columns.length?columns.map(c=>({id:'score:'+c.id,label:'Score ('+c.label+')',key:'score:'+c.id,column:c})):[{id:'score',label:'Score',key:'score'}]),...differences.map(d=>({id:'diff:'+d.id,label:'Difference ('+columns.find(c=>c.id===d.left).label+' − '+columns.find(c=>c.id===d.right).label+')',key:'diff:'+d.id,difference:d})),{id:'moves',label:isCustom()?'Moveset':'Recommended moveset'}];
@@ -268,7 +268,7 @@
     const rankMap=new Map(ranked.map((row,i)=>[rowKey(row),i+1]));
     if($('proRankBestOnly').checked&&isCustom()){const seen=new Set();list=list.slice().sort((a,b)=>rankMap.get(rowKey(a))-rankMap.get(rowKey(b))).filter(row=>{if(seen.has(row.speciesId))return false;seen.add(row.speciesId);return true;});}
     const matches=PvPProSearch.compile(query,data);
-    const filtered=query?(searchIndex?list.filter(row=>matches(row,searchIndex)):[]):list;
+    const filtered=query?(searchIndex?list.filter(row=>matches(row,searchIndex)):[]):list.slice();
     filtered.sort((a,b)=>(sortKey==='speciesName'?a.speciesName.localeCompare(b.speciesName):(value(a,sortKey)??-Infinity)-(value(b,sortKey)??-Infinity))*(descending?-1:1));
     const pages=Math.max(1,Math.ceil(filtered.length/rankingPageSize));page=Math.max(0,Math.min(page,pages-1));
     document.querySelector('.pro-layout').classList.toggle('pro-has-score-columns',columns.length>1);

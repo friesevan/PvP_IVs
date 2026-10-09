@@ -394,3 +394,5 @@ Expanded details omit the name, typing, score, displayed moveset and category ra
 For a simpler matchup display, raw Battle Rating 500 ties are included in the Losses list (ascending), rather than a separate Ties section. Battle results still identify a tie and the underlying rating/scoring calculations are unchanged.
 
 Inline fast and charged move cards share fixed 180px × 140px dimensions. Their former explanatory footer is removed; move values, flags, and tooltip information remain available.
+
+Changing ranking categories resets display sorting to the leftmost score, highest first. The primary score reads that category’s retained row score directly; cached comparison snapshots cannot override it. Display sorting uses a copy and never changes stored category row order.
