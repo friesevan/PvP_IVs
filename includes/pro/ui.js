@@ -3,7 +3,7 @@
   const $=id=>document.getElementById(id),el=(tag,text,cls)=>{const n=document.createElement(tag);if(text!=null)n.textContent=text;if(cls)n.className=cls;return n;};
   let data, leagueData, overrides=[], weights=new Map(), custom=null, selected='', variants=[], variantContext='', worker, loading=0, loadedCp=0, page=0, sortKey='score',descending=true;
   let filters=[],filterWorker,filterTimer,filterPending=false,combinationCounts={},selectedKey='';
-  let calculatedModel=null;
+  let calculatedModel=null,autoWeightTimer;
   let savedRankings=[],activeSaved='',saveBusy=false,sourceRequest=0,generatedSnapshot=null;
   let searchWorker,searchIndex=null,searchError='';const searchCache=new Map();
   const isCustom=()=>$('proSource').value!=='published';
@@ -67,7 +67,7 @@
     current.onmessage=event=>{if(current!==filterWorker)return;const result=event.data;current.terminate();filterWorker=null;
       if(result.type==='error'){$('proFilterStatus').textContent=result.error;return;}
       if(result.type!=='filtered')return;
-      const ids=new Set(result.ids);for(const [id,state] of weights)state.accepted=ids.has(id);combinationCounts=result.counts;filterPending=false;applyWeightMode();stop();renderRoster();$('proFilterStatus').textContent=ids.size.toLocaleString()+' eligible Pokémon selected.';
+      const ids=new Set(result.ids);for(const [id,state] of weights)state.accepted=ids.has(id);combinationCounts=result.counts;filterPending=false;applyWeightMode();stop();renderRoster();$('proFilterStatus').textContent=ids.size.toLocaleString()+' eligible Pokémon selected.';scheduleAutoWeights();
     };
     current.onerror=event=>{current.terminate();filterWorker=null;$('proFilterStatus').textContent='Filter failed: '+event.message;};
     current.postMessage({mode:'filter',data,cp:cp(),published:leagueData.overall,filters:activeFilters.filter(f=>f.filterType!=='id'||f.values.length).map(({filterType,values})=>({filterType,values})),excludedIds:activeFilters.flatMap(f=>f.excludedValues||[])});
@@ -79,7 +79,7 @@
   $('proAddFilter').addEventListener('click',()=>{filters.push({filterType:'tag',values:[]});renderFilters();scheduleFilter();});
   for(const node of document.querySelectorAll('input[name=proMovesMode],#proMovesTopN'))node.addEventListener('change',()=>{$('proMovesTopControl').hidden=movesLimit()===1&&document.querySelector('input[name=proMovesMode]:checked').value==='recommended';invalidate();updateRosterCount();});
   $('proMovesInfo').addEventListener('click',()=>$('proMovesHelp').showModal());$('proCloseMovesHelp').addEventListener('click',()=>$('proMovesHelp').close());
-  for(const node of document.querySelectorAll('input[name=proWeightMode]'))node.addEventListener('change',()=>{applyWeightMode();invalidate();if(leagueData)renderRoster();});
+  for(const node of document.querySelectorAll('input[name=proWeightMode]'))node.addEventListener('change',()=>{applyWeightMode();invalidate();if(leagueData)renderRoster();scheduleAutoWeights();});
   const weightMode=()=>document.querySelector('input[name=proWeightMode]:checked').value;
   const weightScope=()=>JSON.stringify([cp(),Number($('proWeightGuidance').value),roster().map(r=>r.speciesId).sort()]);
   const currentWeightModel=()=>!filterPending&&calculatedModel?.scope===weightScope()?calculatedModel:null;
@@ -96,11 +96,12 @@
     const mode=weightMode(),model=currentWeightModel();$('proCalculateControls').hidden=mode!=='calculate';$('proGuidanceValue').textContent=$('proWeightGuidance').value+'%';
     $('proCalculateWeights').disabled=!!worker||filterPending||loadedCp!==cp()||roster().length<2;
     $('proCalculateWeights').textContent=model?'Recalculate weights':'Calculate weights';
-    $('proWeightStatus').textContent=mode==='equal'?'Every accepted opponent has equal weight.':mode==='default'?'Uses bundled PvPoke weights; missing weights use 1. A weight of 0 keeps a Pokémon in the rankings but excludes it from the opponent score.':model?(model.converged?'Weights converged':'Iteration limit reached; final estimates retained')+' after '+model.iterations+' updates. Estimated performance, not measured usage. Weights are saved with the report.':'Weights need calculating for this roster and guidance setting. Click Calculate weights to preview, or Generate to calculate and rank together.';
+    $('proWeightStatus').textContent=mode==='equal'?'Every accepted opponent has equal weight.':mode==='default'?'Uses bundled PvPoke weights; missing weights use 1. A weight of 0 keeps a Pokémon in the rankings but excludes it from the opponent score.':model?(model.converged?'Weights converged':'Iteration limit reached; final estimates retained')+' after '+model.iterations+' updates. Estimated performance, not measured usage. Weights are saved with the report.':'Weights need calculating for this roster and guidance setting. Weights update automatically for the selected roster and guidance setting.';
     const host=$('proWeightMetrics');host.hidden=mode!=='calculate'||!model;host.replaceChildren();
     if(model)for(const [value,label] of [[formatWeight(model.minimum)+'–'+formatWeight(model.maximum)+'×','weight range'],[model.effectiveOpponents.toFixed(1),'effective opponents'],[(100*model.bottomHalfShare).toFixed(2)+'%','bottom half of roster · total weight']]){const metric=el('div',null,'pro-build-metric');metric.append(el('strong',value),el('span',label));host.append(metric);}
   }
-  $('proWeightGuidance').addEventListener('input',()=>{applyWeightMode();invalidate();if(leagueData)renderRoster();});
+  function scheduleAutoWeights(){clearTimeout(autoWeightTimer);if(weightMode()==='calculate'&&!filterPending&&leagueData&&roster().length>=2&&!currentWeightModel())autoWeightTimer=setTimeout(()=>launch('weights'),400);}
+  $('proWeightGuidance').addEventListener('input',()=>{applyWeightMode();invalidate();if(leagueData)renderRoster();scheduleAutoWeights();});
   $('proCalculateWeights').addEventListener('click',()=>{invalidate();launch('weights');});
   $('proWeightsInfo').addEventListener('click',()=>$('proWeightsHelp').showModal());$('proCloseWeightsHelp').addEventListener('click',()=>$('proWeightsHelp').close());
   $('proRankBestOnly').addEventListener('change',()=>{page=0;render();});
@@ -111,9 +112,11 @@
   const cp=()=>Number($('proLeague').value);
   const leagueName=()=>({500:'Little Cup',1500:'Great League',2500:'Ultra League',10000:'Master League'})[cp()];
   function rows(){return isCustom() && custom ? custom[$('proCategory').value] || [] : leagueData?.[$('proCategory').value] || [];}
-  function roster(){return [...weights].filter(([,value])=>value.accepted).map(([speciesId,value])=>({speciesId,weight:value.weight}));}
+  function eligibleRoster(){return [...weights].filter(([,value])=>value.accepted).map(([speciesId,value])=>({speciesId,weight:value.weight}));}
+  function roster(){const eligible=eligibleRoster();return PvPPro.chooseCandidates(eligible,leagueData?.overall||[],$('proAllCandidates').checked?null:Math.max(2,Math.min(10000,Math.floor(Number($('proCandidateLimit').value)||2))));}
+  function previewOpponents(){return PvPPro.chooseOpponents(roster(),$('proAllOpponents').checked?null:Math.max(2,Math.min(10000,Math.floor(Number($('proOpponentLimit').value)||2))),Object.fromEntries(overrides.map(r=>[r.speciesId,r.weight??1])));}
   async function json(path){if(cache.has(path))return cache.get(path);const r=await fetch('includes/pro/data/'+path);if(!r.ok)throw new Error('Unable to load bundled PvPoke data: '+path);const result=await r.json();cache.set(path,result);return result;}
-  function stop(){if(worker){worker.terminate();worker=null;}$('proApplyScore').disabled=!custom?._targets?.length;$('proAddScore').disabled=false; $('proCancel').hidden=true;$('proGenerate').disabled=filterPending||loadedCp!==cp()||roster().filter(row=>row.weight>0).length<2;$('proEvaluate').disabled=filterPending||!selected || loadedCp!==cp();}
+  function stop(){clearTimeout(autoWeightTimer);if(worker){worker.terminate();worker=null;}$('proApplyScore').disabled=!custom?._targets?.length;$('proAddScore').disabled=false; $('proCancel').hidden=true;$('proGenerate').disabled=filterPending||loadedCp!==cp()||roster().filter(row=>row.weight>0).length<2;$('proEvaluate').disabled=filterPending||!selected || loadedCp!==cp();}
   function invalidate(){generatedSnapshot=null;activeSaved='';updateSavedControls();stop();custom=null;variants=[];$('proSource').value='published';$('proSource').querySelector('option[value=custom]').disabled=true;$('proSource').querySelector('option[value=custom]').hidden=true;variantContext='';$('proRunSummary').textContent='';renderVariants();updateSavedControls();if(leagueData)render();status('Roster changed. Generate rankings to apply your selection and weights.');}
   function prepareSearch(league,request){
     if(searchWorker){searchWorker.terminate();searchWorker=null;}
@@ -159,12 +162,21 @@
   }
   function renderRoster(){
     const query=$('proRosterSearch').value.trim().toLowerCase(),host=$('proRoster');host.replaceChildren();
-    const matches=leagueData.overall.filter(row=>row.speciesName.toLowerCase().includes(query)||row.speciesId.includes(query)),pending=weightMode()==='calculate'&&!currentWeightModel();
+    const selectedIds=new Set(roster().map(r=>r.speciesId)),ranks=new Map(leagueData.overall.map((r,i)=>[r.speciesId,i+1]));
+    const matches=leagueData.overall.filter(row=>row.speciesName.toLowerCase().includes(query)||row.speciesId.includes(query));
     for(const row of matches){
-      const state=weights.get(row.speciesId),button=el('button',null,'pro-pokemon-tile');button.type='button';button.setAttribute('aria-pressed',String(state.accepted));button.setAttribute('aria-label',(state.accepted?'Exclude ':'Include ')+row.speciesName);
-      button.append(el('span',state.accepted?'✓':'+','pro-tile-check'),el('span',row.speciesName,'pro-tile-name'));const weight=el('small',pending?'—':formatWeight(state.weight)+'×','pro-tile-weight');weight.title=pending?'Generate or calculate to estimate this weight':'Opponent weight: '+formatWeight(state.weight)+'×';button.append(weight);const type=data.pokemon.find(p=>p.speciesId===row.speciesId)?.types?.[0];button.dataset.type=type;button.addEventListener('click',()=>toggleSpecies(row.speciesId));host.append(button);
+      const state=weights.get(row.speciesId),selected=selectedIds.has(row.speciesId),limited=state.accepted&&!selected,button=el('button',null,'pro-pokemon-tile');button.type='button';button.setAttribute('aria-pressed',String(selected));button.setAttribute('aria-label',(selected?'Exclude ':limited?'Outside candidate limit: ':'Include ')+row.speciesName);
+      button.append(el('span',selected?'✓':'+','pro-tile-check'),el('span',row.speciesName,'pro-tile-name'));const rank=el('small','#'+ranks.get(row.speciesId),'pro-tile-rank');rank.title=leagueName()+' · published PvPoke rank '+ranks.get(row.speciesId);button.append(rank);button.dataset.type=data.pokemon.find(p=>p.speciesId===row.speciesId)?.types?.[0];
+      button.title=limited?'Outside the top-ranked candidate limit. Increase the limit or narrow the filters to include this Pokémon.':rank.title;button.addEventListener('click',()=>{if(limited){$('proPreviewStatus').textContent=button.title;return;}toggleSpecies(row.speciesId);});host.append(button);
     }
-    $('proPreviewStatus').textContent=matches.length.toLocaleString()+' Pokémon shown · dimmed entries are excluded.';updateRosterCount();renderWeightControls();
+    $('proPreviewStatus').textContent=matches.length.toLocaleString()+' Pokémon shown · '+selectedIds.size+' ranking candidates · '+eligibleRoster().length+' eligible before the rank limit.';updateRosterCount();renderWeightControls();renderOpponentPreview();
+  }
+  function renderOpponentPreview(){
+    if(!leagueData)return;
+    const candidates=roster(),selected=new Set(previewOpponents().map(r=>r.speciesId)),pending=weightMode()==='calculate'&&!currentWeightModel(),query=$('proOpponentSearch').value.trim().toLowerCase();
+    const ordered=PvPPro.chooseOpponents(candidates,10000,Object.fromEntries(overrides.map(r=>[r.speciesId,r.weight??1]))),host=$('proOpponentPreview');host.replaceChildren();
+    for(const row of ordered){if(query&&!name(row.speciesId).toLowerCase().includes(query)&&!row.speciesId.includes(query))continue;const included=selected.has(row.speciesId),tile=el('div',null,'pro-pokemon-tile');tile.setAttribute('aria-pressed',String(included));tile.setAttribute('aria-label',(included?'Included opponent: ':'Excluded opponent: ')+name(row.speciesId));tile.dataset.type=data.pokemon.find(p=>p.speciesId===row.speciesId)?.types?.[0];tile.append(el('span',included?'✓':'−','pro-tile-check'),el('span',name(row.speciesId),'pro-tile-name'),el('small',pending?'—':formatWeight(row.weight)+'×','pro-tile-weight'));tile.title=pending?'Provisional selection using tapered PvPoke priors; calculate weights to finalize.':name(row.speciesId)+' · opponent weight '+row.weight+'×';host.append(tile);}
+    $('proOpponentPreviewCount').textContent=selected.size+' / '+candidates.length+' opponents';$('proOpponentPreviewStatus').textContent=pending?'Updating calculated weights. The top-N opponent preview will refresh automatically when ready.':selected.size+' opponents selected by '+(weightMode()==='equal'?'equal weights, with PvPoke default weights breaking ties':weightMode()==='calculate'?'calculated weights':'PvPoke default weights')+'. Dimmed Pokémon remain ranking candidates.';
   }
   function updateRosterCount(){
     const accepted=roster(),n=accepted.length,top=movesLimit();
@@ -173,15 +185,17 @@
     const shortlist=accepted.reduce((sum,row)=>sum+Math.min(combinationCounts[row.speciesId]||1,top===1?1:Math.max(32,top*4)+1),0);
     const opponentCount=$('proAllOpponents').checked?n:Math.min(n,Math.max(2,Number($('proOpponentLimit').value)||2));
     const sample=Math.min(8,opponentCount),estimate=pruning?5*((shortlist+n)*sample+(combinations+n)*Math.max(0,opponentCount-sample)):5*(combinations+n)*opponentCount;
-    $('proPreviewCount').textContent=n.toLocaleString()+' / '+weights.size.toLocaleString()+' selected';
+    $('proPreviewCount').textContent=n.toLocaleString()+' / '+eligibleRoster().length.toLocaleString()+' candidates';
     const host=$('proRosterCount');host.replaceChildren();for(const [value,label] of [[n,'Pokémon'],[combinations,'candidate movesets'],[opponentCount,'opponents'],[estimate,'battles · upper estimate']]){const metric=el('div',null,'pro-build-metric');metric.append(el('strong',value.toLocaleString()),el('span',label));host.append(metric);}const active=accepted.filter(row=>row.weight>0).length;if(active<2)host.append(el('p','Select at least two opponents with positive weights.','pro-weight-warning'));
   }
-  for(const id of ['proAllOpponents','proOpponentLimit'])$(id).addEventListener('input',()=>{$('proOpponentLimitControl').hidden=$('proAllOpponents').checked;invalidate();updateRosterCount();});
+  for(const id of ['proAllOpponents','proOpponentLimit'])$(id).addEventListener('input',()=>{$('proOpponentLimitControl').hidden=$('proAllOpponents').checked;invalidate();updateRosterCount();renderOpponentPreview();scheduleAutoWeights();});
+  for(const id of ['proAllCandidates','proCandidateLimit'])$(id).addEventListener('input',()=>{$('proCandidateLimitControl').hidden=$('proAllCandidates').checked;applyWeightMode();invalidate();if(leagueData)renderRoster();scheduleAutoWeights();});
+  $('proOpponentSearch').addEventListener('input',renderOpponentPreview);
   $('proRosterSearch').addEventListener('input',()=>{if(leagueData)renderRoster();});
   function launch(mode){
     if(filterPending||!data || !leagueData || loadedCp!==cp())return;
     let accepted;
-    try{accepted=PvPPro.validateRoster(roster(),new Set(leagueData.overall.map(row=>row.speciesId)));}catch(error){status(error.message);return;}
+    try{PvPPro.chooseCandidates(eligibleRoster(),leagueData.overall,$('proAllCandidates').checked?null:Number($('proCandidateLimit').value));accepted=PvPPro.validateRoster(roster(),new Set(leagueData.overall.map(row=>row.speciesId)));}catch(error){status(error.message);return;}
     if(mode==='variants' && accepted.every(row=>row.speciesId===selected)){status('Select at least one other opponent for the moveset lab.');return;}
     const limits={},policy='top',topN=movesLimit();
     try{PvPPro.chooseOpponents(accepted,$('proAllOpponents').checked?null:Number($('proOpponentLimit').value));}catch(error){status(error.message);return;}

@@ -68,3 +68,10 @@ test('opponent limit retains all candidates, reduces simulations, and supports e
  const report={_targets:result.targets,overall:result.rows,...Object.fromEntries(result.categories.map(c=>[c.slug,c.rows]))},before=JSON.stringify(report),rescored=PvPPro.rescoreRankings(report,{mode:'equal'}),column=PvPPro.scoreColumn(rescored,{mode:'equal',id:'extra'});assert.equal(JSON.stringify(report),before);assert.equal(column.label,'Equal');assert.equal(column.targets.length,2);assert.equal(Object.keys(column.scores.overall).length,5);for(const row of report.overall)assert.equal(column.scores.overall[row.variantId],row.score);
  const calculated=PvPPro.rescoreRankings(report,{mode:'calculate',guidance:.5});assert.ok(calculated.overall.every(r=>Number.isFinite(r.score)));assert.equal(PvPPro.scoreColumn(calculated,{mode:'calculate',guidance:.5}).label,'50%');
 });
+
+test('candidate rank limits use published league order within the filtered pool, independently of weights',()=>{
+ const published=[{speciesId:'a'},{speciesId:'b'},{speciesId:'c'},{speciesId:'d'},{speciesId:'e'}],eligible=[{speciesId:'e',weight:900},{speciesId:'c',weight:20},{speciesId:'b',weight:1},{speciesId:'d',weight:40}],before=JSON.stringify(eligible);
+ assert.deepEqual(PvPPro.chooseCandidates(eligible,published,3).map(r=>r.speciesId),['b','c','d']);assert.equal(JSON.stringify(eligible),before);assert.deepEqual(PvPPro.chooseCandidates(eligible,published,null),eligible);
+ const candidates=PvPPro.chooseCandidates(eligible,published,3),opponents=PvPPro.chooseOpponents(candidates,2);assert.deepEqual(opponents.map(r=>r.speciesId),['d','c']);assert.equal(candidates.length,3);
+ for(const limit of [1,0,2.5,NaN,10001])assert.throws(()=>PvPPro.chooseCandidates(eligible,published,limit));assert.deepEqual(PvPPro.chooseCandidates(eligible,published,100),[eligible[2],eligible[1],eligible[3],eligible[0]]);
+});

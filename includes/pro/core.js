@@ -131,6 +131,12 @@
       bottomHalfShare:sorted.slice(0,Math.floor(n/2)).reduce((a,b)=>a+b,0),
       lowPriorShare:rows.reduce((sum,r,i)=>sum+(customWeight(r.weight)<=1?probabilities[i]:0),0)};
   }
+  function chooseCandidates(roster,published,limit){
+    if(limit!=null&&(!Number.isInteger(limit)||limit<2||limit>10000))throw new Error('Candidate limit must be an integer from 2 to 10,000.');
+    if(limit==null)return roster.slice();
+    const ranks=new Map(published.map((row,i)=>[row.speciesId,i]));
+    return roster.slice().sort((a,b)=>(ranks.get(a.speciesId)??Infinity)-(ranks.get(b.speciesId)??Infinity)).slice(0,limit);
+  }
   function chooseOpponents(roster,limit,defaults={}){
     if(limit!=null&&(!Number.isInteger(limit)||limit<2||limit>10000))throw new Error('Opponent limit must be an integer from 2 to 10,000.');
     if(limit==null)return roster.slice();
@@ -174,5 +180,5 @@
     output.overall=report.overall.map(r=>{const values=scores.get(r.variantId),consistency=r.scores[5];return {...r,score:overallScore(values,consistency),scores:[...values,consistency]};}).sort((a,b)=>b.score-a.score||a.variantId.localeCompare(b.variantId));
     return output;
   }
-  root.PvPPro={source,customWeight,sameMoveset,compareMoveset,validateRoster,enumerate,filterVariants,key,cycleDpt,selectCandidates,categoryScores,overallScore,seededCandidates,weightPrior,calculateMetaWeights,weightModelVersion,rescoreRankings,chooseOpponents,scoreColumn};
+  root.PvPPro={source,customWeight,sameMoveset,compareMoveset,validateRoster,enumerate,filterVariants,key,cycleDpt,selectCandidates,categoryScores,overallScore,seededCandidates,weightPrior,calculateMetaWeights,weightModelVersion,rescoreRankings,chooseOpponents,chooseCandidates,scoreColumn};
 })(typeof self!=='undefined'?self:globalThis);
