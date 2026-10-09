@@ -324,4 +324,4 @@ For custom reports, the reference is the bundled **Overall** recommended moveset
 Moveset Lab uses the same neutral badges, comparing weighted Battle Rating under its own opponent roster and shield setting. Its baseline is found among all evaluated variants before the best-only/threshold display filter. The detail panel repeats the ranking row’s badge.
 
 
-Saved ranking controls, name, save/rename/delete actions, display options, run context and status are grouped inside the collapsed **Edit Saved Ranking** disclosure. Newly generated reports use **Save Ranking & Options**. Detailed move cards are collapsed under **Move details** and use compact typography and spacing when expanded.
+Saved ranking controls, name, save/rename/delete actions, display options, run context and status are grouped inside the collapsed **Edit Saved Ranking** disclosure. Newly generated reports use **Save Ranking & Options**. Detailed move cards are always visible under **Move details**, with compact typography and spacing.
