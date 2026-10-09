@@ -60,16 +60,17 @@
     }
     function drawMoves(info){
       moveHost.replaceChildren(el('h4','Move details'));const grid=el('div',null,'pro-move-pools');const p=lookup(row.speciesId),recommended=config.custom?(config.published.find(r=>r.speciesId===row.speciesId)?.moveset||[]):row.moveset;
-      for(const kind of ['fast','charged']){const column=el('section');column.append(el('h4',kind==='fast'?'Fast moves':'Charged moves'));
-        for(const m of info.filter(m=>m.kind===kind)){
-          const card=typed(el('article',null,'pro-move-card'),m.type),chosen=row.moveset.includes(m.id),rec=recommended.includes(m.id);if(chosen)card.classList.add('pro-chosen-move');
+      for(const kind of ['fast','charged']){const column=el('section'),extraCards=[];column.append(el('h4',kind==='fast'?'Fast moves':'Charged moves'));
+        const pool=info.filter(m=>m.kind===kind).sort((a,b)=>Number(row.moveset.includes(b.id))-Number(row.moveset.includes(a.id))||Number(recommended.includes(b.id))-Number(recommended.includes(a.id)));
+        for(const [index,m] of pool.entries()){
+          const card=typed(el('article',null,'pro-move-card'),m.type),chosen=row.moveset.includes(m.id),rec=recommended.includes(m.id);if(chosen)card.classList.add('pro-chosen-move');if(index>=4){card.hidden=true;card.id='pro-extra-'+kind+'-'+index;extraCards.push(card);}
           const header=el('div',null,'pro-move-card-header');header.append(el('strong',m.name+(m.elite||p?.eliteMoves?.includes(m.id)?'*':m.legacy||p?.legacyMoves?.includes(m.id)?'†':'')),el('span',m.archetype||m.type));card.append(header);
           const power=Math.round(m.power*100)/100;
           card.append(el('p',kind==='fast'?+(power/m.turns).toFixed(2)+' DPT · '+(m.energyGain/m.turns).toFixed(2)+' EPT · '+m.turns+' turns':power+' power · '+m.energy+' energy · '+(power/m.energy).toFixed(2)+' DPE','pro-move-stats'));
           if(m.buffs)card.append(el('p',Math.round(m.buffChance*100)+'% chance · '+m.buffs.map((b,i)=>(b>0?'+':'')+b+' '+(i?'Def':'Atk')).join(' / ')+' · '+m.buffTarget,'pro-move-stats'));
           if(kind==='charged'){const fast=info.find(m=>m.id===row.moveset[0]),gain=fast?.energyGain;let energy=0;const counts=[];for(let i=0;i<4&&gain>0;i++){const count=Math.ceil(Math.max(0,m.energy-energy)/gain);energy=Math.min(100,energy+count*gain)-m.energy;counts.push(count);}card.append(el('p','Fast move count: '+(counts.length?counts.join(' – '):'Cannot generate energy'),'pro-move-stats'));}
           card.append(el('span',[chosen?'Selected moveset':'',rec?'PvPoke recommended':''].filter(Boolean).join(' · '),'pro-move-flags'));column.append(card);
-        }grid.append(column);
+        }if(extraCards.length){const toggle=el('button','Show More','secondary pro-show-more-moves');toggle.type='button';toggle.setAttribute('aria-expanded','false');toggle.setAttribute('aria-controls',extraCards.map(card=>card.id).join(' '));toggle.addEventListener('click',()=>{const expanded=toggle.getAttribute('aria-expanded')!=='true';for(const card of extraCards)card.hidden=!expanded;toggle.setAttribute('aria-expanded',String(expanded));toggle.textContent=expanded?'Show Less':'Show More';});column.append(toggle);}grid.append(column);
       }moveHost.append(grid);
     }
     select.addEventListener('change',request);request();

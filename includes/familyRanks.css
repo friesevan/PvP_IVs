@@ -455,3 +455,6 @@ main:has(#proPanel:not([hidden])){max-width:1800px}
 .pro-pokemon-summary>.pro-types,.pro-pokemon-summary>.pro-move-chips{display:flex;flex-wrap:wrap;gap:4px;margin:6px 0}
 .pro-build-summary{display:grid;grid-template-columns:1fr auto;gap:4px 12px;margin:10px 0 0;font-size:11px}
 .pro-build-summary dt{color:var(--muted)}.pro-build-summary dd{margin:0;font-weight:650;font-variant-numeric:tabular-nums;color:var(--accent)}
+
+.pro-sidebar-content .pro-move-card[hidden]{display:none!important}
+.pro-show-more-moves{justify-self:start;font-size:11px;padding:4px 8px;margin:2px 0}
