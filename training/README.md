@@ -7,7 +7,7 @@ This is a runnable CPU-only starting point for improving PvPoke's existing Champ
 Install Node.js 20 or later from https://nodejs.org/ if necessary. No npm packages, Python environment or GPU are required. In a checkout of this repository:
 
 ```sh
-node --test training/engine.test.cjs training/runner.test.cjs
+node --test training/engine.test.cjs training/runner.test.cjs training/pool.test.cjs
 node training/train.cjs --hours 8
 ```
 
@@ -17,7 +17,7 @@ On macOS, keep the computer awake while the command runs:
 caffeinate -i node training/train.cjs --hours 8
 ```
 
-Close neither the terminal nor the laptop lid. Battles run sequentially in one worker, so the program mainly uses one CPU core. The worker is recycled every eight battles and has a 128 MB V8 old-generation limit; the main process retains checkpoints and aggregate results rather than simulation contexts. Eight hours is a wall-clock budget checked between battles; an in-progress battle may finish after the deadline. Training throughput depends on hardware and selected teams. No eight-hour run has been performed as part of creating this code.
+Close neither the terminal nor the laptop lid. Independent battles run concurrently across a pool of workers. By default it uses all CPU cores reported by Node, capped by an estimated memory budget of 256 MB per worker using up to half of system RAM. On this 12-core, 64 GB M2 Max, that means 12 workers. Each worker is recycled every eight battles and has a 128 MB V8 old-generation limit; the main process retains checkpoints and aggregate results rather than simulation contexts. Eight hours is a wall-clock budget checked between battles; an in-progress battle may finish after the deadline. Training throughput depends on hardware and selected teams. No eight-hour run has been performed as part of creating this code.
 
 To resume for another eight hours:
 
@@ -39,12 +39,12 @@ For a quick end-to-end test:
 node training/train.cjs --generations 1 --population 2 --games 1 --eval-games 1 --eval-every 1 --out training/runs/smoke
 ```
 
-A startup message shows the deadline and checkpoint path. Progress messages appear approximately every ten seconds between completed battles, with cumulative battle count, process RSS and the current worker heap. Generation results still appear as JSON. Ctrl+C saves progress after the current battle pair. Interrupted candidate batches are discarded; the last completed generation remains the incumbent. Checkpoints use atomic replacement. Unexpected battle timeouts stop training instead of silently being rewarded as draws.
+A startup message shows the deadline and checkpoint path. Progress messages appear approximately every ten seconds as battles complete, with cumulative battle count, active pool size, process RSS and the largest measured worker heap. Generation results still appear as JSON. Ctrl+C stops scheduling new jobs, waits for active battles, and saves progress. An incomplete generation is discarded. Interrupted candidate batches are discarded; the last completed generation remains the incumbent. Checkpoints use atomic replacement. Unexpected battle timeouts stop training instead of silently being rewarded as draws.
 
 ## What happens during training
 
 1. Load the pinned league's top 60 recommended Pokémon and movesets. One quarter of species are held out entirely for evaluation; the others form training teams. Three distinct species are randomly selected per team; lead order varies.
-2. Start with Champion's unmodified strategy preferences. The five multipliers affect basic switching, farming before switching, shield baiting, farming, and shielding versus not shielding. Champion's underlying legal actions, timing, damage calculations, and replacement-selection rules remain in use.
+2. Start with Champion's unmodified strategy preferences. Candidate results are accumulated in a fixed job order even when battles complete out of order, so worker count does not alter seeded results or tie-breaking. The five multipliers affect basic switching, farming before switching, shield baiting, farming, and shielding versus not shielding. Champion's underlying legal actions, timing, damage calculations, and replacement-selection rules remain in use.
 3. Each generation includes the incumbent and five log-normal mutations, bounded to 0.1–10. Each candidate plays the **same eight team-pair fixtures**, twice with sides exchanged. This reduces team and side bias, although random decisions can still diverge between policies.
 4. Opponents are the original Champion policy 75% of the time once the archive exists, otherwise 100%. The remaining opponents are sampled from up to twelve past incumbents. The mixture reduces narrow exploitation of one policy.
 5. Choose the best candidate by mean game reward: win = 1, draw = 0.5, loss = 0. The incumbent wins exact ties. This is evolutionary parameter optimization; it is not policy-gradient reinforcement learning or a formal equilibrium solver.
@@ -129,3 +129,23 @@ node --max-old-space-size=128 training/soak.cjs 2048
 This checks 2,048 full battles, periodically reports RSS and worker recycling, and fails on engine timeouts or excessive worker heap. Process RSS includes all threads and is greater than the worker's JavaScript heap limit. It is a bounded-memory regression test, not an overnight evaluation of strategic improvement.
 
 Validation of the memory fix on Node 20.18.1: 2,048 full battles completed in 487 seconds, with peak sampled process RSS of 370 MB and peak sampled worker heap of 55 MB. Seeded battle/recycling tests, original first-generation result parity, checkpoint resume, Ctrl+C and automatic deadline exit also passed. This is a regression check beyond the observed failure point, not a claim that a six-hour run has been completed.
+
+## M2 Max / multicore execution
+
+The unchanged command now auto-selects 12 workers on a 12-core M2 Max:
+
+```sh
+caffeinate -i node training/train.cjs --hours 6 --resume
+```
+
+To specify the count explicitly:
+
+```sh
+caffeinate -i node training/train.cjs --hours 6 --resume --workers 12
+```
+
+For less CPU usage during other work, use `--workers 8` or a smaller number. Changing worker count does not invalidate checkpoints. Candidate and matchup seeds, score reduction order, and incumbent-first tie-breaking remain independent of execution order. New jobs stop at the time budget or on Ctrl+C; already-running battles finish before checkpointing and worker shutdown. The CPU pool does not use the GPU or Neural Engine: the existing simulator is branching JavaScript code, rather than a GPU tensor workload.
+
+An existing process keeps the code it loaded at startup. To activate the multicore update, press Ctrl+C in that process's terminal, wait for the final Saved message, and restart with the resume command. Runtime updates do not migrate a live process or extend its deadline automatically.
+
+Multicore validation on this M2 Max / Node 20.18.1: an identical 96-battle generation took 26.2 seconds with one worker and 7.2 seconds with 12 workers (about 3.6× faster), with identical scores and selected policy. A 384-battle parallel recycling check peaked at 1,209 MB sampled process RSS and 56 MB worker heap. Deadline exit, Ctrl+C and resuming an existing checkpoint with 12 workers passed. Short benchmark speedup may differ during sustained training.

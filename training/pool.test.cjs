@@ -1,0 +1,5 @@
+const test=require('node:test'),assert=require('node:assert/strict');const {BattlePool}=require('./pool.cjs');const rows=require('../includes/pro/data/league-1500.json').overall;
+const jobs=Array.from({length:12},(_,i)=>[rows.slice(0,3),rows.slice(3,6),undefined,undefined,{seed:i+1}]);
+test('parallel and serial pools preserve identical ordered battle results',async()=>{const serial=new BattlePool(1),parallel=new BattlePool(4);try{const expected=await serial.map(jobs),actual=await parallel.map(jobs);assert.deepEqual(actual,expected);assert.equal(serial.recycles,1);}finally{await Promise.all([serial.close(),parallel.close()]);}});
+test('cancellation drains active battles without dispatching the remainder',async()=>{const pool=new BattlePool(2);let completed=0;try{const result=await pool.map(jobs,{shouldStop:()=>completed>0,onResult:()=>completed++});assert.equal(result,null);assert.ok(completed>=1&&completed<=2);}finally{await pool.close();}});
+test('failure drains the pool and rejects rather than hanging',async()=>{const pool=new BattlePool(2);try{await assert.rejects(pool.map([[[],[]],...jobs]),/Error|TypeError/);}finally{await pool.close();}});
