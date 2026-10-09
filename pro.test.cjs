@@ -108,9 +108,9 @@ test('published zero weights cannot make an explicitly included custom roster in
   const roster=published.map(row=>({speciesId:row.speciesId,weight:PvPPro.customWeight(weights.get(row.speciesId))}));
   assert.equal(validateRoster(roster,new Set(published.map(row=>row.speciesId))).length,published.length);
  }
- for(const value of [0,-1,NaN,undefined,Infinity,1001])assert.equal(PvPPro.customWeight(value),1);
- assert.equal(PvPPro.customWeight(.5),.5);assert.equal(PvPPro.customWeight(1000),1000);
- assert.throws(()=>validateRoster([{speciesId:'a',weight:1},{speciesId:'b',weight:0}],new Set(['a','b'])),/b: enter a matchup weight/);
+ for(const value of [-1,NaN,undefined,Infinity,1001])assert.equal(PvPPro.customWeight(value),1);
+ assert.equal(PvPPro.customWeight(0),0);assert.equal(PvPPro.customWeight(.5),.5);assert.equal(PvPPro.customWeight(1000),1000);
+ assert.throws(()=>validateRoster([{speciesId:'a',weight:1},{speciesId:'b',weight:0}],new Set(['a','b'])),/at least two Pokémon with weights greater than 0/);
 });
 
 test('moveset highlights ignore ordinary charged order but retain fast and extra move differences',()=>{
@@ -163,4 +163,17 @@ test('detail reconstruction includes all opponents, ties and accurate move bonus
  const shock=result.moveInfo.find(m=>m.id==='THUNDER_SHOCK');assert.equal(shock.energyGain/shock.turns,4.5);
  const retained=[{opponent:targets[1].speciesId,rating:500,adjRating:500}];
  const saved=run('details',{row,targets,scenario:'leads',matches:retained}).find(m=>m.type==='details');assert.deepEqual(saved.matches,retained);
+});
+
+test('zero-weight candidates remain rankable while excluded from opponent scoring',()=>{
+ const published=JSON.parse(fs.readFileSync(path.join(base,'data/league-1500.json'))).overall;
+ const roster=published.slice(0,3).map((p,i)=>({speciesId:p.speciesId,weight:i===0?0:1}));
+ const result=run('generate',{roster,policy:'top',topN:1}).find(m=>m.type==='result');
+ assert.ok(result);assert.equal(result.rows.length,3);assert.ok(result.rows.every(r=>Number.isFinite(r.score)));assert.equal(result.targets[0].weight,0);
+});
+test('preview exclusions are exact species IDs and cannot be overridden by Includes',()=>{
+ const filters=[{filterType:'type',values:['fire']},{filterType:'id',values:['melmetal']}];
+ const filtered=run('filter',{filters,excludedIds:['ninetales_shadow']}).find(m=>m.type==='filtered');
+ assert.ok(filtered.ids.includes('melmetal'));assert.ok(filtered.ids.includes('ninetales'));assert.ok(!filtered.ids.includes('ninetales_shadow'));
+ const none=run('filter',{filters:[{filterType:'type',values:[]}]}).find(m=>m.type==='filtered');assert.equal(none.ids.length,0);
 });

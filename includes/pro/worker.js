@@ -46,7 +46,8 @@ function filterRoster(request){
   const {data,cp,published,filters}=request;
   const {gm,cup}=setup(data,cp,published,[]);cup.include=filters;const battle=new Battle();battle.setCP(cp);battle.setCustomCup(cup);
   const allowed=new Set(published.map(row=>row.speciesId));
-  const ids=gm.generateFilteredPokemonList(battle,filters,[]).filter(p=>allowed.has(p.speciesId)).map(p=>p.speciesId);
+  const excluded=new Set(request.excludedIds||[]);
+  const ids=gm.generateFilteredPokemonList(battle,filters,[]).filter(p=>allowed.has(p.speciesId)&&!excluded.has(p.speciesId)).map(p=>p.speciesId);
   const counts=Object.fromEntries(ids.map(id=>[id,pools(new Pokemon(id,0,battle)).length]));
   self.postMessage({type:'filtered',ids,counts});
 }

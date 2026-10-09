@@ -29,7 +29,8 @@
       const remove=el('button','Remove filter '+(index+1),'secondary');remove.type='button';remove.addEventListener('click',()=>{filters.splice(index,1);renderFilters();scheduleFilter();});controls.append(select,remove);card.append(controls);
       const values=el('div',null,'pro-filter-values');
       if(choices[filter.filterType]){
-        for(const value of choices[filter.filterType]){const label=el('label'),input=el('input');input.type='checkbox';input.checked=filter.values.includes(value);input.addEventListener('change',()=>{filter.values=input.checked?[...filter.values,value]:filter.values.filter(v=>v!==value);scheduleFilter();});
+        const all=choices[filter.filterType],toggle=el('button',filter.values.length===all.length?'Deselect all':'Select all','secondary pro-select-all');toggle.type='button';toggle.addEventListener('click',()=>{filter.values=filter.values.length===all.length?[]:[...all];renderFilters();scheduleFilter();});controls.insertBefore(toggle,remove);
+        for(const value of choices[filter.filterType]){const label=el('label'),input=el('input');input.type='checkbox';input.checked=filter.values.includes(value);input.addEventListener('change',()=>{filter.values=input.checked?[...filter.values,value]:filter.values.filter(v=>v!==value);toggle.textContent=filter.values.length===all.length?'Deselect all':'Select all';scheduleFilter();});
           const title=filter.filterType==='evolution'?labels[value]:filter.filterType==='distance'?value+' km':filter.filterType==='cost'?value.toLocaleString():labels[value]||value[0].toUpperCase()+value.slice(1);
           label.append(input,document.createTextNode(title));values.append(label);}
       }else{
@@ -39,7 +40,9 @@
         input.addEventListener('input',()=>{filter.preset=false;filter.raw=input.value;try{filter.values=parseFilterInput(filter.filterType,input.value);filter.error='';}catch(error){filter.error=error.message;}scheduleFilter();});values.append(input);
         card.append(el('p',filter.filterType==='id'?'Species IDs override other Include criteria. Separate IDs with commas.':filter.filterType==='dex'?'Inclusive ranges, separated by commas. A single number is also accepted.':'Learnable move IDs, separated by commas. These do not force move selection.','hint'));
       }
-      card.append(values);$('proFilters').append(card);
+      card.append(values);
+      if(filter.filterType==='id'&&filter.excludedValues?.length){const excluded=el('div',null,'pro-species-exclusions');excluded.append(el('span','Excluded:'));for(const id of filter.excludedValues){const restore=el('button',name(id)+' ×','secondary');restore.type='button';restore.setAttribute('aria-label','Restore '+name(id));restore.addEventListener('click',()=>{filter.excludedValues=filter.excludedValues.filter(v=>v!==id);renderFilters();scheduleFilter();});excluded.append(restore);}card.append(excluded);}
+      $('proFilters').append(card);
     });
     if(!filters.length)$('proFilters').append(el('p','No Include rules: all eligible Pokémon in the published population are accepted.','hint'));
   }
@@ -53,9 +56,7 @@
   }
   function applyFilters(){
     if(!data||!leagueData)return;
-    const top=Number($('proTopCount').value);
-    if(rosterMode()==='top'&&(!Number.isInteger(top)||top<2||top>10000)){$('proFilterStatus').textContent='Enter a Pokémon count from 2 to 10,000.';return;}
-    const activeFilters=rosterMode()==='top'?[{filterType:'id',values:leagueData.overall.slice(0,top).map(row=>row.speciesId)}]:filters;
+    const activeFilters=filters;
     const error=activeFilters.find(f=>f.error);if(error){$('proFilterStatus').textContent=error.error;return;}
     for(const filter of activeFilters){
       if(filter.filterType==='id'&&filter.values.some(id=>!data.pokemon.some(p=>p.speciesId===id))){$('proFilterStatus').textContent='Unknown species ID. Use the suggested lowercase IDs.';return;}
@@ -65,23 +66,20 @@
     current.onmessage=event=>{if(current!==filterWorker)return;const result=event.data;current.terminate();filterWorker=null;
       if(result.type==='error'){$('proFilterStatus').textContent=result.error;return;}
       if(result.type!=='filtered')return;
-      const ids=new Set(result.ids);for(const [id,state] of weights)state.accepted=ids.has(id);combinationCounts=result.counts;filterPending=false;stop();renderRoster();$('proFilterStatus').textContent=(rosterMode()==='top'?'Top Pokémon selected. ':'Custom rules applied. ')+ids.size+' eligible Pokémon.';
+      const ids=new Set(result.ids);for(const [id,state] of weights)state.accepted=ids.has(id);combinationCounts=result.counts;filterPending=false;stop();renderRoster();$('proFilterStatus').textContent=ids.size.toLocaleString()+' eligible Pokémon selected.';
     };
     current.onerror=event=>{current.terminate();filterWorker=null;$('proFilterStatus').textContent='Filter failed: '+event.message;};
-    current.postMessage({mode:'filter',data,cp:cp(),published:leagueData.overall,filters:activeFilters.map(({filterType,values})=>({filterType,values}))});
+    current.postMessage({mode:'filter',data,cp:cp(),published:leagueData.overall,filters:activeFilters.filter(f=>f.filterType!=='id'||f.values.length).map(({filterType,values})=>({filterType,values})),excludedIds:activeFilters.flatMap(f=>f.excludedValues||[])});
   }
-  function rosterMode(){return $('proRosterMode').value;}
-  function updateRosterMode(){
-    const top=rosterMode()==='top';$('proTopControl').hidden=!top;$('proCustomRules').hidden=top;$('proRulesHelp').hidden=top;
-    renderFilters();scheduleFilter();
-  }
+  const movesLimit=()=>document.querySelector('input[name=proMovesMode]:checked').value==='recommended'?1:Number($('proMovesTopN').value);
   function openBuilder(open){$('proBuilder').hidden=!open;$('proOpenBuilder').setAttribute('aria-expanded',String(open));updateSavedControls();}
   $('proOpenBuilder').addEventListener('click',()=>openBuilder($('proBuilder').hidden));
   $('proCloseBuilder').addEventListener('click',()=>openBuilder(false));
-  $('proRosterMode').addEventListener('change',updateRosterMode);
-  $('proTopCount').addEventListener('input',()=>{if(rosterMode()==='top')scheduleFilter();});
-  $('proAddFilter').addEventListener('click',()=>{filters.push({filterType:'type',values:[]});renderFilters();scheduleFilter();});
-  for(const id of ['proMovesPolicy','proMovesTopN'])$(id).addEventListener('change',()=>{$('proMovesTopControl').hidden=$('proMovesPolicy').value!=='top';invalidate();updateRosterCount();});
+  $('proAddFilter').addEventListener('click',()=>{filters.push({filterType:'tag',values:[]});renderFilters();scheduleFilter();});
+  for(const node of document.querySelectorAll('input[name=proMovesMode],#proMovesTopN'))node.addEventListener('change',()=>{$('proMovesTopControl').hidden=movesLimit()===1&&document.querySelector('input[name=proMovesMode]:checked').value==='recommended';invalidate();updateRosterCount();});
+  $('proMovesInfo').addEventListener('click',()=>$('proMovesHelp').showModal());$('proCloseMovesHelp').addEventListener('click',()=>$('proMovesHelp').close());
+  for(const node of document.querySelectorAll('input[name=proWeightMode]'))node.addEventListener('change',()=>{applyWeightMode();invalidate();renderRoster();});
+  function applyWeightMode(){const equal=document.querySelector('input[name=proWeightMode]:checked').value==='equal',original=new Map(overrides.map(row=>[row.speciesId,row.weight]));for(const [id,state] of weights)state.weight=equal?1:PvPPro.customWeight(original.get(id));$('proWeightStatus').textContent=equal?'Every accepted opponent has equal weight.':'Uses bundled PvPoke weights; missing weights use 1. A weight of 0 keeps a Pokémon in the rankings but excludes it from the opponent score.';}
   $('proRankBestOnly').addEventListener('change',()=>{page=0;render();});
 
   const cache=new Map();const status=text=>{$('proStatus').textContent=text;};
@@ -92,7 +90,7 @@
   function rows(){return isCustom() && custom ? custom[$('proCategory').value] || [] : leagueData?.[$('proCategory').value] || [];}
   function roster(){return [...weights].filter(([,value])=>value.accepted).map(([speciesId,value])=>({speciesId,weight:value.weight}));}
   async function json(path){if(cache.has(path))return cache.get(path);const r=await fetch('includes/pro/data/'+path);if(!r.ok)throw new Error('Unable to load bundled PvPoke data: '+path);const result=await r.json();cache.set(path,result);return result;}
-  function stop(){if(worker){worker.terminate();worker=null;} $('proCancel').hidden=true;$('proGenerate').disabled=filterPending||loadedCp!==cp();$('proEvaluate').disabled=filterPending||!selected || loadedCp!==cp();}
+  function stop(){if(worker){worker.terminate();worker=null;} $('proCancel').hidden=true;$('proGenerate').disabled=filterPending||loadedCp!==cp()||roster().filter(row=>row.weight>0).length<2;$('proEvaluate').disabled=filterPending||!selected || loadedCp!==cp();}
   function invalidate(){generatedSnapshot=null;activeSaved='';updateSavedControls();stop();custom=null;variants=[];$('proSource').value='published';$('proSource').querySelector('option[value=custom]').disabled=true;$('proSource').querySelector('option[value=custom]').hidden=true;variantContext='';$('proRunSummary').textContent='';renderVariants();updateSavedControls();if(leagueData)render();status('Roster changed. Generate rankings to apply your selection and weights.');}
   function prepareSearch(league,request){
     if(searchWorker){searchWorker.terminate();searchWorker=null;}
@@ -116,10 +114,9 @@
       const result=await Promise.all([data?Promise.resolve(data):json('gamemaster.json'),json('league-'+league+'.json'),json('overrides-'+league+'.json'),json('meta-'+league+'.json')]);
       if(loading!==request)return;
       [data,leagueData,overrides,leagueMeta]=result;loadedCp=league;custom=null;variants=[];page=0;selected='';$('proSource').value='published';$('proSource').querySelector('option[value=custom]').disabled=true;$('proSource').querySelector('option[value=custom]').hidden=true;
-      weights=new Map(leagueData.overall.map((row,i)=>[row.speciesId,{accepted:i<30,weight:1}]));
+      weights=new Map(leagueData.overall.map((row,i)=>[row.speciesId,{accepted:true,weight:1}]));
       $('proCategory').replaceChildren(...Object.keys(leagueData).map(category=>{const option=el('option',category[0].toUpperCase()+category.slice(1));option.value=category;return option;}));
-      filters=[];
-      $('proRosterMode').value='top';$('proTopControl').hidden=false;$('proCustomRules').hidden=true;$('proRulesHelp').hidden=true;
+      filters=[{filterType:'type',values:[...choices.type]}];applyWeightMode();
       $('proSource').querySelector('option[value=published]').textContent=leagueName();
       $('proLabPokemon').replaceChildren(...leagueData.overall.map(row=>{const option=el('option',row.speciesName);option.value=row.speciesId;return option;}));
       $('proSpeciesIds').replaceChildren(...leagueData.overall.map(row=>{const option=el('option',row.speciesName);option.value=row.speciesId;return option;}));
@@ -131,37 +128,37 @@
   }
   document.addEventListener('pvp-tab-change',event=>{if(event.detail==='pro'&&!data)load();});
   $('proLeague').addEventListener('change',()=>{sourceRequest++;load();});
+  function toggleSpecies(id){
+    const accepted=weights.get(id).accepted;let filter=filters.find(f=>f.filterType==='id');if(!filter){filter={filterType:'id',values:[],excludedValues:[]};filters.push(filter);}
+    filter.excludedValues=filter.excludedValues||[];filter.raw=undefined;filter.error='';
+    if(accepted){filter.values=filter.values.filter(v=>v!==id);if(!filter.excludedValues.includes(id))filter.excludedValues.push(id);}else{filter.excludedValues=filter.excludedValues.filter(v=>v!==id);if(!filter.values.includes(id))filter.values.push(id);}
+    weights.get(id).accepted=!accepted;renderFilters();renderRoster();scheduleFilter();
+  }
   function renderRoster(){
     const query=$('proRosterSearch').value.trim().toLowerCase(),host=$('proRoster');host.replaceChildren();
-    const matches=leagueData.overall.filter(row=>weights.get(row.speciesId).accepted&&(row.speciesName.toLowerCase().includes(query) || row.speciesId.includes(query)));
+    const matches=leagueData.overall.filter(row=>row.speciesName.toLowerCase().includes(query)||row.speciesId.includes(query));
     for(const row of matches){
-      const line=el('div',null,'pro-roster-row');line.append(el('span',row.speciesName));
-      const input=el('input');input.type='number';input.min='.01';input.max='1000';input.step='any';input.value=weights.get(row.speciesId).weight;input.setAttribute('aria-label',row.speciesName+' matchup weight');
-      input.addEventListener('input',()=>{weights.get(row.speciesId).weight=Number(input.value);invalidate();});
-      const limit=el('input');limit.type='number';limit.min='1';limit.max='10000';limit.placeholder='Default';limit.value=weights.get(row.speciesId).limit??'';limit.setAttribute('aria-label',row.speciesName+' moveset limit');
-      limit.addEventListener('input',()=>{weights.get(row.speciesId).limit=limit.value===''?null:Number(limit.value);invalidate();updateRosterCount();});line.append(input,limit);host.append(line);
+      const state=weights.get(row.speciesId),button=el('button',null,'pro-pokemon-tile');button.type='button';button.setAttribute('aria-pressed',String(state.accepted));button.setAttribute('aria-label',(state.accepted?'Exclude ':'Include ')+row.speciesName);
+      button.append(el('span',state.accepted?'✓':'+','pro-tile-check'),el('span',row.speciesName,'pro-tile-name'));const weight=el('small',state.weight.toLocaleString()+'×','pro-tile-weight');weight.title='Opponent weight';button.append(weight);const type=data.pokemon.find(p=>p.speciesId===row.speciesId)?.types?.[0];button.dataset.type=type;button.addEventListener('click',()=>toggleSpecies(row.speciesId));host.append(button);
     }
-    updateRosterCount();
+    $('proPreviewStatus').textContent=matches.length.toLocaleString()+' Pokémon shown · dimmed entries are excluded.';updateRosterCount();
   }
   function updateRosterCount(){
-    const accepted=roster(),n=accepted.length,top=Number($('proMovesTopN').value),policy=$('proMovesPolicy').value;
-    const combinations=accepted.reduce((sum,row)=>sum+Math.min(combinationCounts[row.speciesId]||0,weights.get(row.speciesId).limit??(policy==='top'?top:Infinity)),0);
-    const pruning=accepted.some(row=>{const limit=weights.get(row.speciesId).limit??(policy==='top'?top:Infinity);return limit>1&&limit<(combinationCounts[row.speciesId]||0);});
-    const shortlist=accepted.reduce((sum,row)=>{const limit=weights.get(row.speciesId).limit??(policy==='top'?top:Infinity);return sum+Math.min(combinationCounts[row.speciesId]||0,limit===1?1:Math.max(32,limit*4)+1);},0);
+    const accepted=roster(),n=accepted.length,top=movesLimit();
+    const combinations=accepted.reduce((sum,row)=>sum+Math.min(combinationCounts[row.speciesId]||1,top),0);
+    const pruning=top>1&&accepted.some(row=>top<(combinationCounts[row.speciesId]||0));
+    const shortlist=accepted.reduce((sum,row)=>sum+Math.min(combinationCounts[row.speciesId]||1,top===1?1:Math.max(32,top*4)+1),0);
     const sample=Math.min(8,n),estimate=pruning?5*((shortlist+n)*sample+(combinations+n)*Math.max(0,n-sample)):5*(combinations+n)*Math.max(0,n-1);
-    $('proRosterCount').textContent=n+' / '+weights.size+' Pokémon accepted · '+(Number.isFinite(combinations)?combinations.toLocaleString():'Invalid limit')+' candidate movesets · up to about '+estimate.toLocaleString()+' battles before cache reuse'+(pruning?' (including scouting)':'');
+    $('proPreviewCount').textContent=n.toLocaleString()+' / '+weights.size.toLocaleString()+' selected';
+    const host=$('proRosterCount');host.replaceChildren();for(const [value,label] of [[n,'Pokémon'],[combinations,'candidate movesets'],[estimate,'battles · upper estimate']]){const metric=el('div',null,'pro-build-metric');metric.append(el('strong',value.toLocaleString()),el('span',label));host.append(metric);}const active=accepted.filter(row=>row.weight>0).length;if(active<2)host.append(el('p','Select at least two opponents with positive weights.','pro-weight-warning'));
   }
   $('proRosterSearch').addEventListener('input',()=>{if(leagueData)renderRoster();});
-  $('proUniform').addEventListener('click',()=>{for(const state of weights.values())state.weight=1;invalidate();renderRoster();});
-  $('proPublishedWeights').addEventListener('click',()=>{const original=new Map(overrides.map(row=>[row.speciesId,row.weight??1]));for(const [id,state] of weights)state.weight=PvPPro.customWeight(original.get(id));invalidate();renderRoster();});
   function launch(mode){
     if(filterPending||!data || !leagueData || loadedCp!==cp())return;
     let accepted;
     try{accepted=PvPPro.validateRoster(roster(),new Set(leagueData.overall.map(row=>row.speciesId)));}catch(error){status(error.message);return;}
     if(mode==='variants' && accepted.every(row=>row.speciesId===selected)){status('Select at least one other opponent for the moveset lab.');return;}
-    const limits=Object.fromEntries([...weights].filter(([id,state])=>state.accepted&&state.limit!=null).map(([id,state])=>[id,state.limit]));
-    if(Object.values(limits).some(n=>!Number.isInteger(n)||n<1||n>10000)){status('Individual moveset limits must be integers from 1 to 10,000.');return;}
-    const policy=$('proMovesPolicy').value,topN=Number($('proMovesTopN').value);
+    const limits={},policy='top',topN=movesLimit();
     try{PvPPro.selectCandidates([],policy,topN);}catch(error){status(error.message);return;}
     const limit=Number($('proLimit').value);if(!Number.isInteger(limit)||limit<1||limit>10000){status('Moveset limit must be an integer from 1 to 10,000.');return;}
     stop();worker=new Worker('includes/pro/worker.js');const current=worker;
