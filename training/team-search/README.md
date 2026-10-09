@@ -116,7 +116,7 @@ Each default screened/validated team gets 1,024 battles. Work checks the deadlin
 Within the selected output directory:
 
 - `pool.json`: population, selected variants, stats/IVs, scouting settings, source-input hash and pool hash.
-- `checkpoint.json`: raw fixture labels, models, pending-round progress, diagnostics, screening, final testing and baselines; atomically saved after completed teams and rounds. Fresh warm-starts advance past any already labeled partial round; ordinary resume preserves pending progress.
+- `checkpoint.json`: raw fixture labels, models, pending-round progress, latest fit diagnostics (including warm-start fitting), screening, final testing and baselines; atomically saved after completed teams and rounds. Fresh warm-starts advance past any already labeled partial round; ordinary resume preserves pending progress.
 - `history.jsonl`: timestamped round summaries and neural-versus-random proposal scores.
 - `opponent-analysis.json`: every completed primary final fixture, opponent movesets and battle seed; conditional scores for teams containing each opponent. These are team outcomes, not 1v1 ratings.
 - `models.json`: serialized ensemble.
