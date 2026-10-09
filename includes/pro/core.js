@@ -131,5 +131,39 @@
       bottomHalfShare:sorted.slice(0,Math.floor(n/2)).reduce((a,b)=>a+b,0),
       lowPriorShare:rows.reduce((sum,r,i)=>sum+(customWeight(r.weight)<=1?probabilities[i]:0),0)};
   }
-  root.PvPPro={source,customWeight,sameMoveset,compareMoveset,validateRoster,enumerate,filterVariants,key,cycleDpt,selectCandidates,categoryScores,overallScore,seededCandidates,weightPrior,calculateMetaWeights,weightModelVersion};
+  // Reweight only retained battle outcomes; never invokes the battle engine.
+  function rescoreRankings(report,{mode='equal',guidance=.75,defaultWeights={},published=[]}={}){
+    const slugs=['leads','closers','switches','chargers','attackers'],targets=report._targets;
+    if(!targets?.length||slugs.some(slug=>!report[slug]?.length))throw new Error('This report lacks stored battle results. Regenerate it once to enable weight comparisons.');
+    const baseline=(slug,target)=>report[slug].find(r=>r.speciesId===target.speciesId&&sameMoveset(r.moveset,target.moveset));
+    const aligned=(row)=>{const matches=new Map((row.matches||[]).map(m=>[m.opponent,m]));return targets.map(t=>{
+      if(t.speciesId===row.speciesId)return {opponent:t.speciesId,rating:500,adjRating:500};
+      const match=matches.get(t.speciesId);
+      if(!match||!Number.isFinite(match.rating)||!Number.isFinite(match.adjRating))throw new Error('Stored matchups are incomplete. Regenerate this report to compare weights.');
+      return match;
+    });};
+    for(const slug of slugs)for(const target of targets)if(!baseline(slug,target))throw new Error('Recommended baseline missing. Regenerate this report to compare weights.');
+    const reference=report._weightReference||{targets:targets.map(t=>({...t})),fixedMeta:!!report._weightModel,model:report._weightModel||null,scores:Object.fromEntries(['overall',...slugs].map(slug=>[slug,report[slug].map((r,i)=>({variantId:r.variantId,score:r.score,rank:i+1}))]))};
+    let model=null,nextTargets;
+    if(mode==='original'){nextTargets=reference.targets.map(t=>({...t}));model=reference.model;}
+    else if(mode==='calculate'){
+      const prior=targets.map(t=>({speciesId:t.speciesId,score:published.find(r=>r.speciesId===t.speciesId)?.score||0,weight:customWeight(defaultWeights[t.speciesId])}));
+      const battles=slugs.map(slug=>targets.map(t=>aligned(baseline(slug,t))));
+      const matrix=targets.map((t,i)=>targets.map((o,j)=>battles.reduce((sum,rows)=>sum+rows[i][j].rating,0)/(slugs.length*1000)));
+      model=calculateMetaWeights(prior,matrix,{guidance,peak:Math.max(1,...Object.values(defaultWeights).map(customWeight))});
+      nextTargets=targets.map((t,i)=>({...t,weight:model.entries[i].weight}));
+    }else if(['equal','default','manual'].includes(mode))nextTargets=targets.map(t=>({...t,weight:mode==='equal'?1:mode==='default'?customWeight(defaultWeights[t.speciesId]):t.weight}));
+    else throw new Error('Unknown weighting mode.');
+    validateRoster(nextTargets,new Set(targets.map(t=>t.speciesId)));
+    const output={...report,_targets:nextTargets,_weightModel:model,_weightReference:reference,_weightSettings:{mode,guidance}},scores=new Map();
+    for(const slug of slugs){
+      const candidates=report[slug].map(r=>({...r,matches:aligned(r)})),baselines=targets.map(t=>candidates.find(r=>r.variantId===baseline(slug,t).variantId));
+      if(candidates.some(r=>!Number.isFinite(r.chargerFactor)))throw new Error('Scoring metadata missing.');
+      const result=categoryScores(candidates,baselines,nextTargets,slug,mode==='original'?reference.fixedMeta:mode==='calculate');
+      output[slug]=report[slug].map((r,i)=>{if(!scores.has(r.variantId))scores.set(r.variantId,[]);scores.get(r.variantId).push(result.scores[i]);return {...r,score:result.scores[i]};}).sort((a,b)=>b.score-a.score||a.variantId.localeCompare(b.variantId));
+    }
+    output.overall=report.overall.map(r=>{const values=scores.get(r.variantId),consistency=r.scores[5];return {...r,score:overallScore(values,consistency),scores:[...values,consistency]};}).sort((a,b)=>b.score-a.score||a.variantId.localeCompare(b.variantId));
+    return output;
+  }
+  root.PvPPro={source,customWeight,sameMoveset,compareMoveset,validateRoster,enumerate,filterVariants,key,cycleDpt,selectCandidates,categoryScores,overallScore,seededCandidates,weightPrior,calculateMetaWeights,weightModelVersion,rescoreRankings};
 })(typeof self!=='undefined'?self:globalThis);

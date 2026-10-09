@@ -196,7 +196,7 @@ function rankRecords(candidates,baselines,targets,data,battle,cache,phase,fixedM
     const scored=PvPPro.categoryScores(input(candidates),input(baselines),targets,scenario.slug,fixedMeta);fallbacks+=scored.fallbacks;
     const rows=candidates.map((row,i)=>{
       allScores.get(row).push(scored.scores[i]);const m=matches.get(row).filter(m=>m.opponent!==row.speciesId);
-      return {...row,matches:m,scenario:scenario.slug,score:scored.scores[i],stats:metadata.get(row).stats,matchups:m.filter(m=>m.rating>500).sort((a,b)=>b.rating-a.rating).slice(0,5).map(({opponent,rating})=>({opponent,rating})),counters:m.filter(m=>m.rating<500).sort((a,b)=>a.rating-b.rating).slice(0,5).map(({opponent,rating})=>({opponent,rating}))};
+      return {...row,matches:m,scenario:scenario.slug,score:scored.scores[i],stats:metadata.get(row).stats,chargerFactor:metadata.get(row).chargerFactor,matchups:m.filter(m=>m.rating>500).sort((a,b)=>b.rating-a.rating).slice(0,5).map(({opponent,rating})=>({opponent,rating})),counters:m.filter(m=>m.rating<500).sort((a,b)=>a.rating-b.rating).slice(0,5).map(({opponent,rating})=>({opponent,rating}))};
     }).sort((a,b)=>b.score-a.score||a.variantId.localeCompare(b.variantId));categories.push({slug:scenario.slug,rows});
   }
   const rows=categories[0].rows.map(row=>{
@@ -245,4 +245,17 @@ function detail(request){
   }
   self.postMessage({type:'details',matches,moveInfo});
 }
-self.onmessage=function(event){try{if(['details','battle'].includes(event.data.mode))detail(event.data);else if(event.data.mode==='searchIndex')searchIndex(event.data);else if(event.data.mode==='filter')filterRoster(event.data);else if(event.data.mode==='weights')calculateWeights(event.data);else if(event.data.mode==='variants')variants(event.data);else generate(event.data);}catch(error){self.postMessage({type:'error',error:error.message});}};
+function reweight(request){
+  const {gm,cup}=setup(request.data,request.cp,request.published,request.report._targets||[]),battle=new Battle();battle.setCP(request.cp);battle.setCustomCup(cup);
+  // Upgrade older saved reports without running any battles.
+  const factors=new Map();
+  for(const slug of ['leads','closers','switches','chargers','attackers'])for(const row of request.report[slug]||[]){
+    if(!factors.has(row.variantId)){
+      const p=createPokemon(row.speciesId,0,battle,row.moveset),fastDpt=p.fastMove.power*p.fastMove.stab*p.shadowAtkMult*(p.stats.atk/100)/(p.fastMove.cooldown/500),carry=100-Math.min(...p.activeChargedMoves.map(m=>m.energy));
+      factors.set(row.variantId,((carry/100)**.5*(fastDpt/5)**(1/6))**(1/6));
+    }
+    row.chargerFactor=factors.get(row.variantId);
+  }
+  self.postMessage({type:'reweighted',report:PvPPro.rescoreRankings(request.report,request.settings),simulations:0});
+}
+self.onmessage=function(event){try{if(event.data.mode==='reweight')reweight(event.data);else if(['details','battle'].includes(event.data.mode))detail(event.data);else if(event.data.mode==='searchIndex')searchIndex(event.data);else if(event.data.mode==='filter')filterRoster(event.data);else if(event.data.mode==='weights')calculateWeights(event.data);else if(event.data.mode==='variants')variants(event.data);else generate(event.data);}catch(error){self.postMessage({type:'error',error:error.message});}};

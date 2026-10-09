@@ -4,6 +4,7 @@ const base=path.join(__dirname,'includes/pro');
 function run(mode='generate',options={}){
  const ctx=vm.createContext({console:{log(){}},setInterval(){},clearInterval(){},setTimeout,JSON,Math,Date});const messages=[];ctx.self=ctx;ctx.addEventListener=()=>{};ctx.postMessage=m=>messages.push(JSON.parse(JSON.stringify(m)));ctx.importScripts=(...files)=>files.forEach(f=>vm.runInContext(fs.readFileSync(path.join(base,f),'utf8'),ctx));vm.runInContext(fs.readFileSync(path.join(base,'worker.js'),'utf8'),ctx);
  const data=JSON.parse(fs.readFileSync(path.join(base,'data/gamemaster.json'))),published=JSON.parse(fs.readFileSync(path.join(base,'data/league-1500.json'))).overall,overrides=JSON.parse(fs.readFileSync(path.join(base,'data/overrides-1500.json')));
+ if(options.forbidSimulations)vm.runInContext("Battle.prototype.simulate=function(){throw new Error('Unexpected battle simulation');}",ctx);
  ctx.onmessage({data:{mode,data,cp:1500,published,roster:published.slice(0,5).map(r=>({speciesId:r.speciesId,weight:1})),defaultWeights:Object.fromEntries(overrides.map(r=>[r.speciesId,r.weight??1])),weightMode:'calculate',policy:'top',topN:1,...options}});assert.ok(!messages.some(m=>m.type==='error'),JSON.stringify(messages.filter(m=>m.type==='error')));return messages;
 }
 test('fractional floor prevents a large weak tail overwhelming a few strong opponents',()=>{
@@ -37,4 +38,24 @@ test('weight estimates are independent of candidate moveset count and available 
 test('calculated category scoring uses frozen weights without a second meta weighting',()=>{
  const targets=[{speciesId:'a',weight:10},{speciesId:'b',weight:.001},{speciesId:'c',weight:1}];const candidate=[{speciesId:'a',matches:[{adjRating:500},{adjRating:600},{adjRating:400}]}];const baselines=targets.map(t=>({speciesId:t.speciesId,matches:targets.map(()=>({adjRating:500}))}));const other=baselines.map((r,i)=>({...r,matches:targets.map(()=>({adjRating:i===0?800:100}))}));
  assert.deepEqual(PvPPro.categoryScores(candidate,baselines,targets,'leads',true),PvPPro.categoryScores(candidate,other,targets,'leads',true));
+});
+
+test('post-simulation reweighting reproduces original scores and supports repeated mode changes',()=>{
+ const result=run('generate',{topN:2}).find(m=>m.type==='result');
+ const report={_targets:result.targets,_weightModel:result.weightModel,overall:result.rows,...Object.fromEntries(result.categories.map(c=>[c.slug,c.rows]))};
+ const published=JSON.parse(fs.readFileSync(path.join(base,'data/league-1500.json'))).overall,overrides=JSON.parse(fs.readFileSync(path.join(base,'data/overrides-1500.json'))),settings={published,defaultWeights:Object.fromEntries(overrides.map(r=>[r.speciesId,r.weight??1]))};
+ const original=PvPPro.rescoreRankings(report,{...settings,mode:'original'});
+ for(const slug of ['overall','leads','closers','switches','chargers','attackers'])assert.deepEqual(original[slug].map(r=>[r.variantId,r.score]),report[slug].map(r=>[r.variantId,r.score]));
+ const equal=PvPPro.rescoreRankings(original,{...settings,mode:'equal'});assert.ok(equal._targets.every(t=>t.weight===1));assert.ok(equal.overall.some(r=>r.score!==original.overall.find(o=>o.variantId===r.variantId).score));
+ const restored=PvPPro.rescoreRankings(equal,{...settings,mode:'original'});assert.deepEqual(restored.overall.map(r=>[r.variantId,r.score]),original.overall.map(r=>[r.variantId,r.score]));
+ const calculated=PvPPro.rescoreRankings(equal,{...settings,mode:'calculate',guidance:.75});for(let i=0;i<result.targets.length;i++)assert.ok(Math.abs(calculated._targets[i].weight-result.targets[i].weight)<1e-10);
+ assert.deepEqual(report._targets,result.targets);assert.equal(report._weightReference,undefined);
+ const manual={...original,_targets:original._targets.map((t,i)=>({...t,weight:i===0?.01:1}))};const edited=PvPPro.rescoreRankings(manual,{...settings,mode:'manual'});assert.equal(edited._targets[0].weight,.01);
+ const incomplete=JSON.parse(JSON.stringify(report));incomplete.leads[0].matches=[];assert.throws(()=>PvPPro.rescoreRankings(incomplete,settings),/incomplete/);
+});
+
+test('saved reports missing charger metadata can be reweighted with battle simulation forbidden',()=>{
+ const result=run('generate',{weightMode:'equal',topN:1}).find(m=>m.type==='result'),report={_targets:result.targets,overall:result.rows,...Object.fromEntries(result.categories.map(c=>[c.slug,c.rows]))};
+ for(const slug of ['leads','closers','switches','chargers','attackers'])for(const row of report[slug])delete row.chargerFactor;
+ const updated=run('reweight',{report,settings:{mode:'equal'},forbidSimulations:true}).find(m=>m.type==='reweighted');assert.equal(updated.simulations,0);assert.deepEqual(updated.report.overall.map(r=>[r.variantId,r.score]),report.overall.map(r=>[r.variantId,r.score]));
 });

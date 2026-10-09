@@ -145,6 +145,13 @@
       <p id="proSavedStatus" class="hint" role="status">Saved in this browser on this device.</p>
     </div>
 <p id="proGeneratedContext" class="hint" hidden></p>
+    <section id="proReweight" class="pro-builder-section">
+      <h3>Compare opponent weights</h3>
+      <p class="hint">Reuse all stored battles. Scores and ranks update for the same retained movesets; no battles are rerun. Changes are compared with the original report. Save a copy to keep an experiment.</p>
+      <div class="pro-choice-row"><label>Weight mode<select id="proReportWeightMode"><option value="original">Original report</option><option value="default">Default · PvPoke</option><option value="equal">Equal</option><option value="calculate">Calculate</option><option value="manual">Individual weights</option></select></label><label id="proReportGuidanceLabel" hidden>PvPoke guidance (%)<input id="proReportGuidance" type="number" min="0" max="100" step="5" value="75"></label><button id="proApplyWeights" type="button">Apply weights · no simulations</button></div>
+      <details><summary>Opponent weights</summary><label>Find opponent<input id="proReportWeightSearch" type="search" placeholder="Pokémon name"></label><div id="proReportWeights" class="pro-report-weights"></div></details>
+      <p id="proReweightStatus" class="hint" role="status"></p>
+    </section>
     <label id="proBestFilter" class="pro-best-filter" hidden><input id="proRankBestOnly" type="checkbox"> Show best moveset per Pokémon only</label><div id="proRunSummary" class="hint"></div>
     <p id="proMovesetLegend" class="pro-moveset-legend" hidden><span class="pro-alternate-key">Alternate moveset</span><span class="pro-better-key">Beats recommended</span><span class="hint">Compared with the same Pokémon’s recommended moveset in this report and category.</span></p>
     </details>

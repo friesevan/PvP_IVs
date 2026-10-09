@@ -366,3 +366,9 @@ Moveset Lab uses the same neutral badges, comparing weighted Battle Rating under
 
 
 Saved ranking controls, name, save/rename/delete actions, display options, run context and status are grouped inside the collapsed **Edit Saved Ranking** disclosure. Newly generated reports use **Save Ranking & Options**. Detailed move cards are always visible under **Move details**, with compact typography and spacing.
+
+## 4b. Reweighting a completed report
+
+Open **Save Ranking & Options** (or **Edit Saved Ranking**) and use **Compare opponent weights**. Choose Original, Default, Equal, Calculate, or edit individual opponent weights, then Apply. This runs only scoring math in a worker: zero battle simulations. All five category matchup lists retain raw and adjusted Battle Ratings; recommended baselines supply the Calculate performance matrix. Charger factors and consistency are reused or reconstructed from move metadata for older reports without simulating battles. Scores and ranks are compared with the original report, including after repeated edits. Original restores the original weights and scoring mode. Save a copy to persist an experiment; loading does not overwrite the saved source.
+
+The opponent roster and retained candidate movesets stay fixed. Weight changes can alter which movesets would have passed scouting in a fresh generation; this comparison does not discover omitted movesets. Regenerate to reselect candidates. Reports missing complete stored category matchups or recommended baselines must be regenerated once. Published PvPoke rankings do not contain the full matrix and cannot be reweighted directly.
