@@ -13,7 +13,7 @@ function installTeamLookahead(battle, players, options) {
   }))}));
  }
  const action=battle.getTurnAction;
- battle.getTurnAction=function(p,opponent){const a=action.call(battle,p,opponent);if(a?.type==='charged'&&p.stats.atk===opponent.stats.atk){const ids=[identity(p),identity(opponent)].sort(),winner=seeded(ids.join('::')+':cmp:'+battle.getTurns())()<.5?ids[0]:ids[1];if(identity(p)===winner)a.settings.priority+=.001;}return a;};
+ battle.getTurnAction=function(p,opponent){const a=action.call(battle,p,opponent);if(a?.type==='charged'&&p.stats.atk===opponent.stats.atk){const combatKey=q=>identity(q)+'@'+players[q.index].getTeam().map(identity).join('::'),ids=[combatKey(p),combatKey(opponent)].sort(),winner=seeded(ids.join('::')+':cmp:'+battle.getTurns())()<.5?ids[0]:ids[1];if(combatKey(p)===winner)a.settings.priority+=.001;}return a;};
  const step=battle.step;
  battle.step=function(){snapshot=capture();snapshot.forEach(s=>{s.timer=Math.max(0,s.timer-500);s.team.forEach(p=>p.cooldown=Math.max(0,p.cooldown-500));});cache=new Map();return step.call(battle);};
  function clone(row,index,b){

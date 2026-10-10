@@ -81,7 +81,7 @@ The importer validates Great League/open cup, exactly three known species, Speci
 
 Regression tests cover reproducibility, bench/side invariance, policy mapping, live-state preservation, team feature invariance, observed-frequency sampling and import validation. A complete 12-worker smoke experiment exercised fitting, screening, final testing, baselines and report writing.
 
-`node training/next/controller-check.cjs 128` gives both controllers both rosters against a matched opponent panel. The first 128-fixture check gave lookahead 50.0%, with an approximate 95% normal interval of 44.5–55.5%. **There is no demonstrated controller strength improvement yet.** This panel is exploratory and must not become the final test set after parameter tuning.
+`node training/next/controller-check.cjs 128` gives both controllers both rosters against a matched opponent panel. The first 128-fixture check gave lookahead 50.8%, with an approximate 95% normal interval of 45.2–56.3%. **There is no demonstrated controller strength improvement yet.** This panel is exploratory and must not become the final test set after parameter tuning.
 
 `node training/next/benchmark.cjs` tests controller/distribution sensitivity on three fixed teams. These short tests cannot rank all teams or predict a human win rate. See NEXT_RUN_AUDIT.md for the complete interpretation of the completed search and research sources.
 

@@ -33,7 +33,7 @@ Individual replay examples also showed Surf and Cramorant's form effects contrib
 
 Side/bench regression tests and live-state preservation pass, and complete 12-worker smoke searches exercised the full training/evaluation/report pipeline without timeouts.
 
-A 128-fixture controller comparison gave each controller both rosters. Lookahead's win share was **50.0%**, with an approximate interval **44.5–55.5%** across 256 battles and zero timeouts. That is **not evidence of stronger strategy**. It is a useful parity check and an honest reason to keep the new switching policy experimental.
+A 128-fixture controller comparison gave each controller both rosters. Lookahead's win share was **50.8%**, with an approximate interval **45.2–56.3%** across 256 battles and zero timeouts. That is **not evidence of stronger strategy**. It is a useful parity check and an honest reason to keep the new switching policy experimental.
 
 Initial short controller/distribution sensitivity tests also changed the apparent standings of the three example teams. Such small exploratory tests are for debugging and hypothesis generation. They cannot replace sealed final tests, and their seeds must not be reused to claim unbiased improvement after tuning.
 

@@ -2,12 +2,14 @@
   "fixtures": 128,
   "battles": 256,
   "workers": 12,
-  "lookaheadWinShare": 0.5,
+  "lookaheadWinShare": 0.5078125,
   "interval95": [
-    0.4445730600764273,
-    0.5554269399235727
+    0.45240221730893676,
+    0.5632227826910633
   ],
   "timeouts": 0,
-  "seconds": 19.259,
-  "note": "Both controllers get both rosters for each fixture. Independent exploratory seeds; small-sample normal interval. Champion charge/shield decisions on both; only lookahead switching is changed."
+  "seconds": 17.646,
+  "note": "Both controllers get both rosters for each fixture. Independent exploratory seeds; small-sample normal interval. Champion charge/shield decisions on both; only lookahead switching is changed.",
+  "mechanicsHash": "23e2c44db2959f76d4cb426abcfa3eba533ed0135b16fcb6d6adea4e6a9caae9",
+  "fixtureSeed": 814976
 }
