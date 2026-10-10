@@ -102,3 +102,16 @@ test('single-term team searches preserve all ranking predicates',()=>{
   assert.deepEqual(published.filter(row=>team([row],records)).map(row=>row.speciesId),published.filter(row=>single(row,records)).map(row=>row.speciesId),query);
  }
 });
+
+test('lead-scoped team searches restrict all supported predicates to the first member',()=>{
+ const {published,records}=fixture(1500),team=['melmetal','cramorant','poliwrath'].map(id=>published.find(r=>r.speciesId===id));
+ const match=query=>PvPProSearch.compileTeam(query,data)(team,records);
+ assert.equal(match('lead:melmetal&cramorant'),true);
+ assert.equal(match('lead:cramorant'),false);
+ assert.equal(match('lead:@thunder shock'),true);
+ assert.equal(match('lead:melmetal/@thunder shock'),true);
+ assert.equal(match('lead:steel&!lead:water'),true);
+ assert.equal(match('lead:@counter'),false);
+ assert.equal(match('lead:cramorant,lead:melmetal'),true);
+ assert.equal(match('lead:'),false);
+});

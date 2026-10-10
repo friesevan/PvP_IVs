@@ -35,6 +35,10 @@
       // Each positive term may match a different member; NOT excludes the whole team.
       function teamMatches(term){
         if(term[0]==='!'&&term.length>1)return !teamMatches(term.slice(1));
+        if(term.startsWith('lead:')){
+          const row=team[0],record=row&&index.get(row.speciesId);
+          return !!record&&term.slice(5).split('/').every(part=>matches(part.trim(),record,row));
+        }
         return team.some(row=>{const record=index.get(row.speciesId);return !!record&&matches(term,record,row);});
       }
       return groups.some(group=>group.every(teamMatches));
