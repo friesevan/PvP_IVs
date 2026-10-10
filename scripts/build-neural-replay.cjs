@@ -9,12 +9,14 @@ let source=read('training/engine-v2-core.cjs');
 let body=source.slice(source.indexOf('function play('),source.indexOf('\nmodule.exports='));
 const start=body.indexOf(' const math=Object.create(Math);'),end=body.indexOf(' context.input=',start);
 if(start<0||end<0)throw Error('Trainer bootstrap changed; update replay generator');
+const vendor=['GameMaster','DamageCalculator','ActionLogic','TimelineEvent','TimelineAction','DecisionOption','Battle','Pokemon'].map(name=>read('includes/pro/vendor/'+name+'.js')).concat(read('training/vendor/TrainingAI.js'),read('training/vendor/Player.js'),read('training/next/lookahead.js')).join('\n');
 body=body.slice(0,start)+` Math.random=rng;
  globalThis.setTimeout=(fn,ms)=>schedule(fn,ms,0);globalThis.setInterval=(fn,ms)=>schedule(fn,ms,ms);globalThis.clearTimeout=key=>timers.delete(key);globalThis.clearInterval=key=>timers.delete(key);
- importScripts('vendor/GameMaster.js','vendor/DamageCalculator.js','vendor/ActionLogic.js','vendor/TimelineEvent.js','vendor/TimelineAction.js','vendor/DecisionOption.js','vendor/Battle.js','vendor/Pokemon.js','vendor/training/TrainingAI.js','vendor/training/Player.js','team-lookahead-v3.js');
+ // Fresh simulator declarations and singleton state for every battle, matching the trainer VM.
+ ${vendor}
 `+body.slice(end);
 body=body.replace('function play(','function replayCore(').replace(' context.input=', ' const input=').replace(' vm.runInContext(`','').replace(' `,context);','').replace('const b=context.battle,players=context.players;','const b=battle;').replace('context.plannerStats','plannerStats');
-if(body.includes('context')||body.includes('vm.'))throw Error('Unexpected VM-only source remains');
+if(body.includes('context.input')||body.includes('vm.runInContext'))throw Error('Unexpected VM-only source remains');
 const utils=read('training/utils.cjs').replace("'use strict';",'').replace(/module\.exports=.*;/,'');
 let wrapper=read('training/engine-v2.cjs').replace("'use strict';",'').replace("const legacy=require('./engine-v2-core.cjs');","const legacy={play:replayCore,defaults};").replace("const {random}=require('./utils.cjs');",'').replace(/module\.exports=.*;/,'');
 const manifest={engine:'neural-team-search-v3',mechanicsHash:mechanicsHash(),dataHash:dataHash(),legacyMechanicsHash:mechanicsHash({version:'v1'})};

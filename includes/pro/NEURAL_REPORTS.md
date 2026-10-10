@@ -89,3 +89,15 @@ Worker reuse was benchmarked on identical seeded outcomes. The controlled 8-vs-3
 ## Completed refined run
 
 The October 10 refined run finished at 6:51 p.m. Eastern, exit code 0, with 265,728 battles and 3,647 training teams. All 24 screening candidates completed 512 fixtures; eight finalists and twelve baselines completed another common 512-fixture panel. The screening-selected primary (Shadow Houndoom lead / Melmetal / Mimikyu) scored 73.34%, counting draws as half wins. Several finalist differences remain unresolved under the simultaneous bootstrap. The hosted viewer defaults to this report and keeps earlier archives selectable. The missing `meta-1500.json` export dependency was restored in the Desktop installation, and the report was regenerated successfully from the unchanged checkpoint.
+
+## Reading Search Performance
+
+The performance view computes its analysis from the loaded report, rather than using a fixed success claim. The final baseline chart compares the preselected primary with baseline group means (primary score minus the saved paired delta), on the common final panel. Each baseline group contains only a few teams; this is not an equally budgeted optimizer comparison.
+
+New-team suggestion curves use a trailing, team-count-weighted average of up to ten rounds. Early/middle/late summaries exclude initialization and split neural rounds into quarters/half. The leading training estimate is the saved `bestTraining` field for the selection leader; it is not a monotonic best-so-far curve or independent validation. Held-out prediction error is interpreted relative to the constant-prediction baseline in the same round. Changes across rounds cannot be read as a controlled learning curve because the held-out population changes.
+
+Finalist bars show common-panel scores; the simultaneous paired uncertainty table determines whether a difference is resolved. Draws count as half a win. Simulated scores are conditional on the estimated meta, controller and data snapshot, not measured live-player win rates. Historical reports remain separate.
+
+### Repeated replay safety
+
+The v3 replay generator now bundles the trusted simulator into the scope of each `replayCore` call. Every encounter gets fresh class declarations and singleton state, matching the trainer's isolated VM. Re-importing global scripts on each encounter previously raised `Identifier 'DamageMultiplier' has already been declared` on the second battle in a comparison worker. This viewer fix does not change trainer mechanics or invalidate report hashes. Comparison batches skip trace collection; individual battle replays retain their graphs. Regression checks cover several fixtures and a subsequent request in the same worker, as well as exact trainer parity.
