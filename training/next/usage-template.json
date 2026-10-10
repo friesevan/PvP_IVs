@@ -1,0 +1,11 @@
+{
+  "source": "Example only — replace with your authorized GBL opponent logs",
+  "cp": 1500,
+  "cup": "all",
+  "collectedAt": "2026-10-09",
+  "rank": "Replace with your rating range",
+  "teams": [
+    { "members": ["melmetal", "jumpluff", "cramorant"], "count": 1 },
+    { "members": ["cramorant", "jumpluff", "melmetal"], "count": 1 }
+  ]
+}

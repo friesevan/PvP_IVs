@@ -1,0 +1,239 @@
+{
+  "createdAt": "2026-10-10T00:56:23.991Z",
+  "workers": 12,
+  "fixturesPerPanel": 64,
+  "panels": [
+    {
+      "meta": {
+        "mode": "independent",
+        "weightPower": 1,
+        "observedShare": 0,
+        "source": "Synthetic PvPoke prior",
+        "usageHash": null,
+        "observedCount": 0,
+        "collectedAt": null,
+        "rank": null,
+        "proportions": {
+          "independent": 1
+        },
+        "movesets": "Published recommended movesets; observed moves are not inferred as fact"
+      },
+      "seconds": 28.214,
+      "battles": 384,
+      "battlesPerSecond": 13.61026440774084,
+      "timeouts": 0,
+      "rows": [
+        {
+          "team": [
+            {
+              "speciesId": "melmetal",
+              "moveset": [
+                "THUNDER_SHOCK",
+                "DOUBLE_IRON_BASH",
+                "DYNAMIC_PUNCH"
+              ]
+            },
+            {
+              "speciesId": "jumpluff",
+              "moveset": [
+                "FAIRY_WIND",
+                "ACROBATICS",
+                "ENERGY_BALL"
+              ]
+            },
+            {
+              "speciesId": "quagsire_shadow",
+              "moveset": [
+                "MUD_SHOT",
+                "AQUA_TAIL",
+                "STONE_EDGE"
+              ]
+            }
+          ],
+          "canonicalChampion": 0.8125,
+          "lookahead": 0.6875,
+          "delta": -0.125
+        },
+        {
+          "team": [
+            {
+              "speciesId": "melmetal",
+              "moveset": [
+                "THUNDER_SHOCK",
+                "DOUBLE_IRON_BASH",
+                "DYNAMIC_PUNCH"
+              ]
+            },
+            {
+              "speciesId": "jumpluff",
+              "moveset": [
+                "FAIRY_WIND",
+                "ACROBATICS",
+                "ENERGY_BALL"
+              ]
+            },
+            {
+              "speciesId": "cramorant",
+              "moveset": [
+                "PECK",
+                "HYDRO_PUMP",
+                "SURF"
+              ]
+            }
+          ],
+          "canonicalChampion": 0.6171875,
+          "lookahead": 0.671875,
+          "delta": 0.0546875
+        },
+        {
+          "team": [
+            {
+              "speciesId": "melmetal",
+              "moveset": [
+                "THUNDER_SHOCK",
+                "DOUBLE_IRON_BASH",
+                "DYNAMIC_PUNCH"
+              ]
+            },
+            {
+              "speciesId": "jumpluff",
+              "moveset": [
+                "FAIRY_WIND",
+                "ACROBATICS",
+                "ENERGY_BALL"
+              ]
+            },
+            {
+              "speciesId": "cramorant",
+              "moveset": [
+                "PECK",
+                "DIVE",
+                "FLY"
+              ]
+            }
+          ],
+          "canonicalChampion": 0.6875,
+          "lookahead": 0.7890625,
+          "delta": 0.1015625
+        }
+      ]
+    },
+    {
+      "meta": {
+        "mode": "hybrid",
+        "weightPower": 1.25,
+        "observedShare": 0,
+        "source": "Synthetic PvPoke prior",
+        "usageHash": null,
+        "observedCount": 0,
+        "collectedAt": null,
+        "rank": null,
+        "proportions": {
+          "independent": 0.5,
+          "coherent": 0.5
+        },
+        "movesets": "Published recommended movesets; observed moves are not inferred as fact"
+      },
+      "seconds": 27.575,
+      "battles": 384,
+      "battlesPerSecond": 13.925657298277425,
+      "timeouts": 0,
+      "rows": [
+        {
+          "team": [
+            {
+              "speciesId": "melmetal",
+              "moveset": [
+                "THUNDER_SHOCK",
+                "DOUBLE_IRON_BASH",
+                "DYNAMIC_PUNCH"
+              ]
+            },
+            {
+              "speciesId": "jumpluff",
+              "moveset": [
+                "FAIRY_WIND",
+                "ACROBATICS",
+                "ENERGY_BALL"
+              ]
+            },
+            {
+              "speciesId": "quagsire_shadow",
+              "moveset": [
+                "MUD_SHOT",
+                "AQUA_TAIL",
+                "STONE_EDGE"
+              ]
+            }
+          ],
+          "canonicalChampion": 0.734375,
+          "lookahead": 0.6796875,
+          "delta": -0.0546875
+        },
+        {
+          "team": [
+            {
+              "speciesId": "melmetal",
+              "moveset": [
+                "THUNDER_SHOCK",
+                "DOUBLE_IRON_BASH",
+                "DYNAMIC_PUNCH"
+              ]
+            },
+            {
+              "speciesId": "jumpluff",
+              "moveset": [
+                "FAIRY_WIND",
+                "ACROBATICS",
+                "ENERGY_BALL"
+              ]
+            },
+            {
+              "speciesId": "cramorant",
+              "moveset": [
+                "PECK",
+                "HYDRO_PUMP",
+                "SURF"
+              ]
+            }
+          ],
+          "canonicalChampion": 0.5859375,
+          "lookahead": 0.609375,
+          "delta": 0.0234375
+        },
+        {
+          "team": [
+            {
+              "speciesId": "melmetal",
+              "moveset": [
+                "THUNDER_SHOCK",
+                "DOUBLE_IRON_BASH",
+                "DYNAMIC_PUNCH"
+              ]
+            },
+            {
+              "speciesId": "jumpluff",
+              "moveset": [
+                "FAIRY_WIND",
+                "ACROBATICS",
+                "ENERGY_BALL"
+              ]
+            },
+            {
+              "speciesId": "cramorant",
+              "moveset": [
+                "PECK",
+                "DIVE",
+                "FLY"
+              ]
+            }
+          ],
+          "canonicalChampion": 0.671875,
+          "lookahead": 0.765625,
+          "delta": 0.09375
+        }
+      ]
+    }
+  ],
+  "warning": "Small controller/distribution sensitivity check, not proof of stronger human play. Same controlled roster; both sides use the selected controller."
+}

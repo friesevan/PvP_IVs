@@ -1,10 +1,12 @@
 #!/usr/bin/env node
 'use strict';
 const fs=require('node:fs'),path=require('node:path');
-const {fixtures,teamKey,mechanicsHash,dataHash}=require('../training/team-search/common.cjs');
+const {fixtures,mechanicsHash,dataHash}=require('../training/team-search/common.cjs');
+const teamKey=team=>team.join(','); // Historical v1 identities retain bench order.
 const run=path.resolve(process.argv[2]||''),out=path.resolve(process.argv[3]||'includes/pro/data/team-teams');
 const state=JSON.parse(fs.readFileSync(path.join(run,'checkpoint.json'))),pool=JSON.parse(fs.readFileSync(path.join(run,'pool.json')));
-if(state.runtime.phase!=='finished'||state.config.poolHash!==pool.hash||state.config.mechanicsHash!==mechanicsHash()||pool.config.inputHash!==dataHash())throw Error('Require completed run with identical pool and simulator');
+if(state.config.version!=='neural-team-search-v1')throw Error('v2 reports require a v2 browser replay adapter; refuse to publish them with the historical runtime');
+if(state.runtime.phase!=='finished'||state.config.poolHash!==pool.hash||state.config.mechanicsHash!==mechanicsHash({version:'v1'})||pool.config.inputHash!==dataHash())throw Error('Require completed run with identical pool and simulator');
 fs.mkdirSync(out,{recursive:true});
 const published=new Map(pool.species.map(p=>[p.speciesId,p]));
 const compact=p=>({...Object.fromEntries(['speciesId','speciesName','types','moveset','ivs','cp','level'].map(k=>[k,p[k]])),publishedRank:published.get(p.speciesId)?.rank??null,recommended:published.get(p.speciesId)?.moveset||[]});

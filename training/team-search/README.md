@@ -1,3 +1,7 @@
+# v2 next-run update
+
+Use `node training/team-search/launch-next.cjs --hours 8` for the new side/bench-invariant lookahead experiment. See [next-run instructions](../next/README.md) and [result audit](../next/NEXT_RUN_AUDIT.md). The technical notes below describe the original v1 experiment; v2 changes and remaining limitations are documented in those files.
+
 # Neural search for Great League teams
 
 This system learns a neural matchup model from **complete three-on-three battles**, then uses it to search for strong teams and movesets. It is separate from the earlier five-parameter strategy tuner. It optimizes team composition under Champion's existing battle strategy and an explicit opponent distribution; it cannot certify the globally optimal team or a human win rate.

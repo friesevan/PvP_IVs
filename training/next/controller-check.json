@@ -1,0 +1,13 @@
+{
+  "fixtures": 128,
+  "battles": 256,
+  "workers": 12,
+  "lookaheadWinShare": 0.5,
+  "interval95": [
+    0.4445730600764273,
+    0.5554269399235727
+  ],
+  "timeouts": 0,
+  "seconds": 19.259,
+  "note": "Both controllers get both rosters for each fixture. Independent exploratory seeds; small-sample normal interval. Champion charge/shield decisions on both; only lookahead switching is changed."
+}

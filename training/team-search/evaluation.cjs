@@ -1,8 +1,8 @@
 'use strict';
 const {random}=require('../utils.cjs');const {randomTeam,weightedTeam}=require('./common.cjs');
-function summarize(scores,{team,fixtureSeed,kind='finalist'}={}){
- const pairs=Array.from({length:scores.length/2},(_,i)=>(scores[i*2]+scores[i*2+1])/2),mean=scores.reduce((a,b)=>a+b,0)/scores.length,variance=pairs.length>1?pairs.reduce((s,v)=>s+(v-mean)**2,0)/(pairs.length-1):0;
- return {team,kind,score:mean,games:scores.length,wins:scores.filter(s=>s===1).length,draws:scores.filter(s=>s===.5).length,losses:scores.filter(s=>s===0).length,standardError:Math.sqrt(variance/pairs.length),pairs,fixtureSeed};
+function summarize(scores,{team,fixtureSeed,kind='finalist',paired=true}={}){
+ const pairs=paired?Array.from({length:scores.length/2},(_,i)=>(scores[i*2]+scores[i*2+1])/2):scores.slice(),mean=scores.reduce((a,b)=>a+b,0)/scores.length,variance=pairs.length>1?pairs.reduce((s,v)=>s+(v-mean)**2,0)/(pairs.length-1):0;
+ return {team,kind,paired,score:mean,games:scores.length,wins:scores.filter(s=>s===1).length,draws:scores.filter(s=>s===.5).length,losses:scores.filter(s=>s===0).length,standardError:Math.sqrt(variance/pairs.length),pairs,fixtureSeed};
 }
 // Fixed coverage baselines provide a stronger comparator than random team draws.
 function coverageTeam(pool,penalty=0,order=0){
