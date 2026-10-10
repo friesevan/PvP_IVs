@@ -79,3 +79,9 @@ Top level: `format: "pvp-team-report"`, `schemaVersion: 1`, `id`, `engineVersion
 Finalist intervals compare `primary − challenger`, using shared fixtures and adjustment across finalists. Preserve the screening-selected primary even if another finalist has a higher final point estimate. `finalPanel.completedFixtures < requestedFixtures` means partial final evidence.
 
 For a redesigned UI, this contract is sufficient to render scores, charts and comparisons without Node or training code. The browser adapter is only needed to reconstruct battle graphs. Keep results from different engines/metas in different reports.
+
+## Reliability and speed refinement (October 10)
+
+The v2 overnight run hibernated at 1% battery after about 61 minutes. The watchdog expired on waking; screening was never reached. Duration-based `--hours` runs now exclude event-loop suspension gaps exceeding 30 seconds, and the battle watchdog allows 120 awake seconds. `--until` remains an absolute wall-clock deadline. Long main-thread stalls are indistinguishable from suspension and can also extend a duration run; keep the Mac on AC power. Runtime metadata records excluded time.
+
+Worker reuse was benchmarked on identical seeded outcomes. The controlled 8-vs-32 comparison initially measured 8.434 vs 8.415 seconds for 144 fixtures (negligible), with higher memory for reuse; the existing eight-battle restart policy remains. Workers can additionally recycle on measured heap pressure. Battle mechanics and learned targets are unchanged. Search code fingerprints prevent resuming across algorithm changes; use a fresh output directory.

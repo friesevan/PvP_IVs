@@ -1,0 +1,3 @@
+const test=require('node:test'),assert=require('node:assert/strict'),{ActiveClock}=require('./active-clock.cjs');
+test('duration budgets exclude a hibernation gap while retaining ordinary computation time',()=>{let wall=1000;const c=new ActiveClock({wall:()=>wall,schedule:false});const start=c.now();wall+=1000;assert.equal(c.now()-start,1000);wall+=8*3600000;assert.equal(c.now()-start,2000);assert.equal(c.pausedMs,8*3600000-1000);wall+=12000;assert.equal(c.now()-start,14000);c.close();});
+test('backwards clock adjustment does not count as sleep',()=>{let wall=5000;const c=new ActiveClock({wall:()=>wall,schedule:false});wall=4000;c.now();assert.equal(c.pausedMs,0);c.close();});
