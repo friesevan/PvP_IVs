@@ -3,7 +3,7 @@
 function validate(d){
  const fail=m=>{throw Error('Invalid neural report: '+m);};
  if(!d||d.format!=='pvp-team-report'||d.schemaVersion!==1)fail('unsupported format/version');
- if(!['neural-team-search-v1','neural-team-search-v3'].includes(d.engineVersion)||d.fixtureMode!==(d.engineVersion==='neural-team-search-v1'?'paired':'single'))fail('engine/fixture mismatch');
+ if(!['neural-team-search-v1','neural-team-search-v2','neural-team-search-v3'].includes(d.engineVersion)||d.fixtureMode!==(d.engineVersion==='neural-team-search-v1'?'paired':'single'))fail('engine/fixture mismatch');
  const table=d.table;if(!table||!Array.isArray(table.rows)||table.rows.length>30000||!Array.isArray(table.variants)||table.variants.length>10000||!Array.isArray(table.opponents)||table.opponents.length>2000||!table.matches)fail('missing or oversized tables');
  const pokemon=p=>p&&typeof p.speciesId==='string'&&typeof p.speciesName==='string'&&Array.isArray(p.moveset)&&p.moveset.length>=2&&p.moveset.length<=4&&p.moveset.every(m=>typeof m==='string'&&m.length<100)&&Array.isArray(p.recommended);
  if(!table.variants.every(pokemon)||!table.opponents.every(pokemon))fail('invalid Pokémon');
