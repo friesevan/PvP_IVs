@@ -14,7 +14,8 @@ test('generated v3 browser replay preserves the exact training outcome and compl
  for(const [x,y,seed] of [[a,b,17],[b,a,17],[a,b,551],[a,a,19]]){
   const training=play(x,y,defaults,defaults,{seed}),traced=play(x,y,defaults,defaults,{seed,trace:true}),browser=replay(x,y,seed);
   assert.equal(traced.score,training.score);assert.equal(traced.turns,training.turns);
-  assert.deepEqual(JSON.parse(JSON.stringify(browser)),JSON.parse(JSON.stringify(traced)));
+  const plain=JSON.parse(JSON.stringify(browser));plain.timeline.forEach(e=>{delete e.values;delete e.detail;});assert.deepEqual(plain,JSON.parse(JSON.stringify(traced)));
+  assert.ok(browser.timeline.filter(e=>e.type.startsWith('charged ')).every(e=>e.detail&&e.values));
   assert.ok(browser.samples.length>3);assert.equal(browser.teamStats.length,2);
   assert.ok(browser.samples.every(s=>s[2].length===6&&s[2].every(hp=>hp>=0)));
  }
@@ -24,8 +25,8 @@ test('one browser worker compares multiple fixtures and accepts subsequent repla
  const ctx=vm.createContext({structuredClone,console:{log(){}},Math:Object.create(Math),fetch:async file=>({ok:true,json:async()=>JSON.parse(fs.readFileSync(path.join(base,file),'utf8'))}),postMessage:m=>messages.push(JSON.parse(JSON.stringify(m)))});
  ctx.importScripts=(...files)=>files.forEach(f=>vm.runInContext(fs.readFileSync(path.join(base,f),'utf8'),ctx));ctx.importScripts('team-replay-v3-worker.js');
  const options={lookahead:true,horizon:8,interval:4,neutralPriority:true};
- await ctx.onmessage({data:{mode:'compare',teams:[a,b],fixtures:[{opponent:b,opponents:[0,1,2],seed:17},{opponent:a,opponents:[3,4,5],seed:551}],mechanicsHash:mechanicsHash(),dataHash:dataHash(),engineOptions:options}});
- assert.ok(!messages.some(m=>m.error),JSON.stringify(messages));const rows=messages.at(-1).rows;assert.equal(rows.length,2);
+ await ctx.onmessage({data:{mode:'compare',explain:true,teams:[a,b],fixtures:[{opponent:b,opponents:[0,1,2],seed:17},{opponent:a,opponents:[3,4,5],seed:551}],mechanicsHash:mechanicsHash(),dataHash:dataHash(),engineOptions:options}});
+ assert.ok(!messages.some(m=>m.error),JSON.stringify(messages));const rows=messages.at(-1).rows;assert.equal(rows.length,2);assert.ok(rows[0].evidence.a.some(e=>e.detail));
  for(const [i,opponent,seed] of [[0,b,17],[1,a,551]]){assert.equal(rows[i].a,play(a,opponent,defaults,defaults,{...options,seed}).score);assert.equal(rows[i].b,play(b,opponent,defaults,defaults,{...options,seed}).score);}
  messages.length=0;await ctx.onmessage({data:{teams:[a,b],seed:17,mechanicsHash:mechanicsHash(),dataHash:dataHash(),engineOptions:options}});
  assert.ok(!messages.some(m=>m.error),JSON.stringify(messages));assert.equal(messages.at(-1).pairedScore,rows[0].a);assert.ok(messages.at(-1).a.samples.length>3);

@@ -16,6 +16,16 @@ body=body.slice(0,start)+` Math.random=rng;
  ${vendor}
 `+body.slice(end);
 body=body.replace('function play(','function replayCore(').replace(' context.input=', ' const input=').replace(' vm.runInContext(`','').replace(' `,context);','').replace('const b=context.battle,players=context.players;','const b=battle;').replace('context.plannerStats','plannerStats');
+// Viewer-only observation: capture resolved attack context without modifying battle decisions.
+body=body.replace(' const b=battle;',` const b=battle;
+ if(trace){const originalMove=b.useMove;b.useMove=function(attacker,defender,move,...args){
+   const before={attacker:attacker.speciesId,attackerName:attacker.speciesName,defender:defender.speciesId,defenderName:defender.speciesName,hpBefore:Math.max(0,defender.hp),maxHP:defender.stats.hp,energyBefore:attacker.energy,shieldsBefore:players[defender.index].getShields()},length=b.getTimeline().length;
+   const returned=originalMove.call(b,attacker,defender,move,...args);
+   for(const event of b.getTimeline().slice(length))if(event.name===move.name&&event.actor===attacker.index){event.detail={...before,moveId:move.moveId,energyCost:move.energy||0,hpAfter:Math.max(0,defender.hp),energyAfter:attacker.energy,shielded:players[defender.index].getShields()<before.shieldsBefore,knockout:defender.hp<=0};}
+   return returned;
+ };}
+`);
+body=body.replace('actor:e.actor}', 'actor:e.actor,values:Array.from(e.values||[]),...(e.detail?{detail:e.detail}:{})}');
 if(body.includes('context.input')||body.includes('vm.runInContext'))throw Error('Unexpected VM-only source remains');
 const utils=read('training/utils.cjs').replace("'use strict';",'').replace(/module\.exports=.*;/,'');
 let wrapper=read('training/engine-v2.cjs').replace("'use strict';",'').replace("const legacy=require('./engine-v2-core.cjs');","const legacy={play:replayCore,defaults};").replace("const {random}=require('./utils.cjs');",'').replace(/module\.exports=.*;/,'');

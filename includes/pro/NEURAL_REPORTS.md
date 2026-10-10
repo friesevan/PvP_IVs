@@ -101,3 +101,11 @@ Finalist bars show common-panel scores; the simultaneous paired uncertainty tabl
 ### Repeated replay safety
 
 The v3 replay generator now bundles the trusted simulator into the scope of each `replayCore` call. Every encounter gets fresh class declarations and singleton state, matching the trainer's isolated VM. Re-importing global scripts on each encounter previously raised `Identifier 'DamageMultiplier' has already been declared` on the second battle in a comparison worker. This viewer fix does not change trainer mechanics or invalidate report hashes. Comparison batches skip trace collection; individual battle replays retain their graphs. Regression checks cover several fixtures and a subsequent request in the same worker, as well as exact trainer parity.
+
+## Explaining a team comparison
+
+V3 matched comparisons now collect viewer-only resolved attack observations: attacker and target identities, damage values, HP before/after, energy before/after, shield use and direct knockouts. `Explain this comparison` reconstructs an evenly spaced subset of up to 64 common fixtures and verifies outcomes against the displayed scores before interpreting them. A newly run matched comparison includes these observations automatically. Imported report files remain data-only; executable replay code comes from the site's trusted, hash-matched adapter.
+
+The explanation distinguishes move cost/timing and type-bonus damage potential from observed attack use, shields and direct knockouts. Aggregate numbers describe the sampled replay panel; target/game-state differences prevent treating per-use damage averages as a controlled damage experiment. A changed move can also alter the controller's decisions without being fired. Changed battle examples identify the first differing action sequence and link to both replays; they do not claim a single decisive causal event.
+
+Battle graphs use separate HP tracks for each of the six Pokémon, a common battle-turn axis, attack markers, team-level shield/switch/faint markers, visible attack ledgers and linked turn inspectors. This avoids six overlapping lines and misleading independent time scales. Viewer observation fields do not change trainer outcomes or report mechanics hashes; exact replay parity remains tested. Older archives lack this detailed attack context and explicitly report that limitation.

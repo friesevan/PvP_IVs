@@ -10107,6 +10107,13 @@ function installTeamLookahead(battle, players, options) {
  for(var i=0;i<2;i++)battle.setNewPokemon(players[i].getTeam()[0],i,false);
 
  const b=battle;
+ if(trace){const originalMove=b.useMove;b.useMove=function(attacker,defender,move,...args){
+   const before={attacker:attacker.speciesId,attackerName:attacker.speciesName,defender:defender.speciesId,defenderName:defender.speciesName,hpBefore:Math.max(0,defender.hp),maxHP:defender.stats.hp,energyBefore:attacker.energy,shieldsBefore:players[defender.index].getShields()},length=b.getTimeline().length;
+   const returned=originalMove.call(b,attacker,defender,move,...args);
+   for(const event of b.getTimeline().slice(length))if(event.name===move.name&&event.actor===attacker.index){event.detail={...before,moveId:move.moveId,energyCost:move.energy||0,hpAfter:Math.max(0,defender.hp),energyAfter:attacker.energy,shielded:players[defender.index].getShields()<before.shieldsBefore,knockout:defender.hp<=0};}
+   return returned;
+ };}
+
  const samples=[];
  const capture=()=>{if(!trace)return;const row=[time/1000,b.getTurns()||0,Array.from(players,p=>Array.from(p.getTeam(),m=>Math.max(0,m.hp))).flat(),Array.from(b.getPokemon(),p=>p.speciesId),Array.from(players,p=>p.getShields())];const last=samples.at(-1);if(!last||JSON.stringify(row.slice(2))!==JSON.stringify(last.slice(2)))samples.push(row);};
  const teamStats=trace?Array.from(players,p=>Array.from(p.getTeam(),m=>({speciesId:m.speciesId,name:m.speciesName,maxHP:m.stats.hp}))):null;
@@ -10138,7 +10145,7 @@ function installTeamLookahead(battle, players, options) {
  }
  if(result===null){timeouts++;result=.5;}
  capture();const timeline=b.getTimeline();b.stop();timers.clear();
- return {...(trace?{samples,teamStats,timeline:Array.from(timeline,e=>({turn:e.turn,time:e.time,type:e.type,name:e.name,actor:e.actor})).filter(e=>/^(fast |charged |switch|faint|shield)/.test(e.type))}:{}),score:result,turns:b.getTurns(),timedOut:!!timeouts,charged:timeline.filter(e=>e.type.startsWith('charged ')).length,remaining:Array.from(players,p=>p.getRemainingPokemon()),...(lookahead?{planner:{...plannerStats}}:{})};
+ return {...(trace?{samples,teamStats,timeline:Array.from(timeline,e=>({turn:e.turn,time:e.time,type:e.type,name:e.name,actor:e.actor,values:Array.from(e.values||[]),...(e.detail?{detail:e.detail}:{})})).filter(e=>/^(fast |charged |switch|faint|shield)/.test(e.type))}:{}),score:result,turns:b.getTurns(),timedOut:!!timeouts,charged:timeline.filter(e=>e.type.startsWith('charged ')).length,remaining:Array.from(players,p=>p.getRemainingPokemon()),...(lookahead?{planner:{...plannerStats}}:{})};
 }
 const legacy={play:replayCore,defaults};
 
