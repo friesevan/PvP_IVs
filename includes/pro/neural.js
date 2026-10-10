@@ -4,7 +4,7 @@ const $=id=>document.getElementById(id),el=(tag,text,cls)=>{const n=document.cre
 const pct=x=>(100*x).toFixed(1)+'%',number=x=>x.toLocaleString('en-US'),move=x=>x.toLowerCase().replaceAll('_',' ').replace(/\b\w/g,c=>c.toUpperCase());
 const colors={steel:'#9aafb9',grass:'#86be63',flying:'#a5a5e8',water:'#75b3ef',ground:'#d1b376',dark:'#a49890',fire:'#ed9567',bug:'#bec867',normal:'#b8b5ac',dragon:'#a192ed',electric:'#dfcb69'};
 let pending,publishedData;
-let portable;function loadPortable(){return portable||=(async()=>{for(const file of ['neural-report-core.js','team-replay-v3-manifest.js','neural-portable.js'])await new Promise((resolve,reject)=>{const script=document.createElement('script');script.src='includes/pro/'+file+'?v=portable-2';script.onload=resolve;script.onerror=()=>reject(Error('Report importer could not load'));document.head.append(script);});})();}
+let portable;function loadPortable(){return portable||=(async()=>{for(const file of ['neural-report-core.js','team-replay-v3-manifest.js','neural-portable.js'])await new Promise((resolve,reject)=>{const script=document.createElement('script');script.src='includes/pro/'+file+'?v=portable-3';script.onload=resolve;script.onerror=()=>reject(Error('Report importer could not load'));document.head.append(script);});})();}
 
 function card(title,subtitle){const c=el('section',null,'nn-card');c.append(el('h3',title),el('p',subtitle,'nn-caption'));return c;}
 function chart(title,subtitle,history,series,format,range){
@@ -41,6 +41,6 @@ function render(d){
  overview.append(el('p','Run duration '+(d.runtime.elapsedSeconds/3600).toFixed(2)+' hours · '+number(d.totalBattles)+' cumulative battles including pilot evidence · '+number(d.fixtures)+' paired training fixtures · '+h.length+' new rounds. Final held-out MSE '+d.latestDiagnostics.neuralMSE.toFixed(4)+' vs '+d.latestDiagnostics.constantMSE.toFixed(4)+' constant baseline.','nn-caption'));
  const download=el('a','Download report data ↗');download.href='includes/pro/data/team-search.json';download.download='team-search.json';overview.append(download);
 }
-async function load(){if(pending)return pending;pending=loadPortable().then(()=>{window.NeuralPortable.controls(()=>render(publishedData));return fetch('includes/pro/data/team-search.json');}).then(r=>{if(!r.ok)throw Error('Report could not be loaded');return r.json();}).then(d=>{publishedData=d;render(d);}).catch(e=>{$('nnReport').textContent=e.message+'. Reload to retry.';pending=null;});return pending;}
+async function load(){if(pending)return pending;pending=loadPortable().then(()=>{window.NeuralPortable.controls(()=>render(publishedData));return fetch('includes/pro/data/team-search.json');}).then(r=>{if(!r.ok)throw Error('Report could not be loaded');return r.json();}).then(async d=>{publishedData=d;render(d);await window.NeuralPortable.loadLatest();}).catch(e=>{$('nnReport').textContent=e.message+'. Reload to retry.';pending=null;});return pending;}
 document.addEventListener('neural-open',load);if(!$('proNeuralPanel').hidden)load();$('nnInfo').addEventListener('click',()=>$('nnHelp').showModal());$('nnClose').addEventListener('click',()=>$('nnHelp').close());
 })();
