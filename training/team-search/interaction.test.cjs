@@ -10,3 +10,16 @@ test('neural matchup interactions learn cyclic counters that a scalar strength m
  const x=[[1,0,0],[0,1,0],[0,0,1]],samples=x.flatMap((a,i)=>x.map((b,j)=>({a,b,y:i===j?.5:(i+1)%3===j?.9:.1})));const n=train(new Network(3,8,41),samples,{epochs:600,rate:.01,batch:9,seed:29});
  const mse=samples.reduce((sum,s)=>sum+(matchup(n,s.a,s.b)-s.y)**2,0)/samples.length;assert.ok(mse<.005,'Cyclic matchup MSE '+mse);const loaded=Network.fromJSON(JSON.parse(JSON.stringify(n)));assert.equal(matchup(loaded,x[0],x[1]),matchup(n,x[0],x[1]));
 });
+
+test('training rejects zero batches and invalid optimization limits instead of hanging or skipping fitting',()=>{
+ const n=new Network(2,3,10),samples=[{a:[1,0],b:[0,1],y:.5}];
+ for(const opts of [{batch:0},{batch:1.5},{epochs:0},{epochs:NaN},{rate:0},{rate:Infinity}])assert.throws(()=>train(n,samples,opts),/configuration/);
+});
+
+test('empty or nonfinite inference references fail instead of returning a NaN score',()=>{
+ const {reference,predict}=require('./interaction.cjs'),models=[new Network(2,3,8)];
+ assert.throws(()=>reference(models,[]),/reference opponents/);
+ assert.throws(()=>predict(models,[1,0],[]),/reference panel/);
+ assert.throws(()=>predict(models,[1,0],[[]]),/reference panel/);
+ assert.throws(()=>predict(models,[1,0],[[{h:[0,0,0],z:NaN}]]),/Nonfinite/);
+});

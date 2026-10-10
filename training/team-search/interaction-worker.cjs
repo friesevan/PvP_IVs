@@ -1,8 +1,14 @@
 'use strict';
 const {parentPort}=require('node:worker_threads');const {Network,train}=require('./interaction.cjs');const {random}=require('../utils.cjs');
 parentPort.on('message',([request])=>{try{
- const {featuresBuffer,pairsBuffer,targetsBuffer,input,count,hidden,epochs,seed}=request;
+ const {featuresBuffer,pairsBuffer,targetsBuffer,groupsBuffer,bootstrap='fixture',input,count,hidden,epochs,seed}=request;
  const matrix=new Float64Array(featuresBuffer),pairs=new Int32Array(pairsBuffer),targets=new Float64Array(targetsBuffer),r=random(seed);
- const samples=Array.from({length:count},()=>{const i=Math.floor(r()*count),a=pairs[i*2]*input,b=pairs[i*2+1]*input;return {a:matrix.subarray(a,a+input),b:matrix.subarray(b,b+input),y:targets[i]};});
+ let indices;
+ if(bootstrap==='team'){
+  // One whole candidate is the sampling unit: its fixture outcomes are correlated.
+  // Resampling complete candidate blocks preserves within-team opponent coverage.
+  const ids=new Int32Array(groupsBuffer),byGroup=new Map();for(let i=0;i<count;i++){if(!byGroup.has(ids[i]))byGroup.set(ids[i],[]);byGroup.get(ids[i]).push(i);}const blocks=[...byGroup.values()];indices=[];for(let i=0;i<blocks.length;i++)for(const index of blocks[Math.floor(r()*blocks.length)])indices.push(index);
+ }else indices=Array.from({length:count},()=>Math.floor(r()*count));
+ const samples=indices.map(i=>{const a=pairs[i*2]*input,b=pairs[i*2+1]*input;return {a:matrix.subarray(a,a+input),b:matrix.subarray(b,b+input),y:targets[i]};});
  const network=train(new Network(input,hidden,seed),samples,{epochs,seed});parentPort.postMessage({result:network.toJSON(),heapBytes:process.memoryUsage().heapUsed});
  }catch(error){parentPort.postMessage({error:error.stack||error.message});}});

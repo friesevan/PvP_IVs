@@ -1,3 +1,7 @@
+# Current version: v3
+
+Run `node training/team-search/launch-next.cjs --hours 8`. Results go to `training/runs/team-search-v3`; import `report.pvpteams.json.gz` in Full Team Neural Network. See [v3 changes and portable report guide](../../includes/pro/NEURAL_REPORTS.md). Earlier instructions below describe previous experiments. Do not warm-start v3 from old labels.
+
 # v2 next-run update
 
 Use `node training/team-search/launch-next.cjs --hours 8` for the new side/bench-invariant lookahead experiment. See [next-run instructions](../next/README.md) and [result audit](../next/NEXT_RUN_AUDIT.md). The technical notes below describe the original v1 experiment; v2 changes and remaining limitations are documented in those files.

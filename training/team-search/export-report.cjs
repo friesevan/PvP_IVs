@@ -1,0 +1,35 @@
+#!/usr/bin/env node
+'use strict';
+const fs=require('node:fs'),path=require('node:path'),zlib=require('node:zlib');
+const {digest,mechanicsHash,dataHash,fixtures}=require('./common.cjs'),E=require('./evidence.cjs');
+function buildReport(state,pool){
+ const version=state.config.version;
+ if(!['neural-team-search-v1','neural-team-search-v3'].includes(version))throw Error('Only historical v1 and current v3 reports are supported');
+ const isV1=version==='neural-team-search-v1',factor=E.factor(state);
+ const expected=mechanicsHash({version:isV1?'v1':'v2'}),check={...pool};delete check.hash;
+ if(digest(check)!==pool.hash||state.config.poolHash!==pool.hash||state.config.mechanicsHash!==expected||pool.config.inputHash!==dataHash())throw Error('Export requires the original simulator, pool and data snapshot; do not relabel old results');
+ const key=t=>E.identity(state,t),species=new Map(pool.species.map((p,i)=>[p.speciesId,i])),published=new Map(pool.species.map(p=>[p.speciesId,p]));
+ const compact=p=>{const r=published.get(p.speciesId);return {speciesId:p.speciesId,speciesName:p.speciesName,types:p.types||[],moveset:p.moveset,ivs:p.ivs||null,cp:p.cp??null,level:p.level??null,publishedRank:r?.rank??null,recommended:r?.moveset||p.moveset};};
+ const entries=new Map();
+ function entry(t){const k=key(t);if(!entries.has(k))entries.set(k,{team:t,record:null,matches:{training:[],screen:[],test:[],baseline:[]},evals:{}});return entries.get(k);}
+ for(const r of state.records)entry(r.team).record=r;
+ for(const o of state.observations){const ids=o.opponent.map(id=>{if(!species.has(id))throw Error('Unknown observed opponent '+id);return species.get(id);});entry(o.team).matches.training.push([ids,o.seed,o.score]);}
+ for(const [kind,rows] of [['screen',state.screenResults||[]],['test',state.validations||[]],['baseline',state.baselineResults||[]]])for(const r of rows){
+  const panel=isV1?fixtures(pool.species,r.pairs.length,r.fixtureSeed):state.fixturePanels?.[r.fixtureSeed];
+  if(!panel||panel.length<r.pairs.length||r.games!==r.pairs.length*factor)throw Error('Missing or inconsistent sealed '+kind+' fixtures');
+  const e=entry(r.team);e.evals[kind]=r;e.matches[kind]=panel.slice(0,r.pairs.length).map((c,i)=>[c.team.map(p=>{if(!species.has(p.speciesId))throw Error('Unknown sealed opponent');return species.get(p.speciesId);}),c.seed,r.pairs[i]]);
+ }
+ const matches={},rows=[...entries.values()].map((e,id)=>{
+  const r=e.record,games=r?.games||0,n=games/factor,m=((r?.reward||0)/factor+4)/(n+8);
+  if(r&&(e.matches.training.length*factor!==games||Math.abs(e.matches.training.reduce((s,m)=>s+m[2]*factor,0)-r.reward)>1e-8))throw Error('Training evidence mismatch '+key(e.team));
+  matches[id]=e.matches;
+  const comparison=state.finalistComparisons?.comparisons.find(c=>key(c.team)===key(e.team));
+  return {id,team:e.team,training:games?r.reward/games:null,selection:games?m-1.28*Math.sqrt(m*(1-m)/(n+9)):null,games,screen:e.evals.screen?.score??null,test:e.evals.test?.score??e.evals.baseline?.score??null,finalist:!!e.evals.test,primary:state.finalistTeams?.length?key(e.team)===key(state.finalistTeams[0]):key(e.team)===key(state.validations?.[0]?.team||[]),baseline:e.evals.baseline?.kind||null,comparison:comparison?{delta:comparison.delta,interval95:comparison.interval95,distinguishable:comparison.distinguishable}:null,matchCounts:Object.fromEntries(Object.entries(e.matches).map(([k,v])=>[k,v.length]))};
+ });
+ const base=path.resolve(__dirname,'../../includes/pro/data'),snapshot={gameMaster:JSON.parse(fs.readFileSync(path.join(base,'gamemaster.json'))),published:JSON.parse(fs.readFileSync(path.join(base,'league-1500.json'))).overall,overrides:JSON.parse(fs.readFileSync(path.join(base,'overrides-1500.json'))),meta:JSON.parse(fs.readFileSync(path.join(base,'meta-1500.json')))};
+ const safeRuntime=Object.fromEntries(['phase','workers','startedAt','elapsedSeconds','newBattles','averageCoresUsed','peakRssMB','battlesPerSecond'].map(k=>[k,state.runtime?.[k]??null]));
+ return {format:'pvp-team-report',schemaVersion:1,id:digest([state.config,pool.hash]).slice(0,24),createdAt:new Date().toISOString(),engineVersion:version,mechanicsHash:expected,dataHash:dataHash(),fixtureMode:isV1?'paired':'single',engineOptions:{horizon:state.config.lookaheadTurns||24,interval:state.config.decisionInterval||4},meta:state.config.meta||{mode:'independent',weightPower:1,source:'Historical PvPoke prior'},population:{cp:pool.config.cp,species:pool.species.length,variants:pool.variants.length,movesets:pool.config.movesets},runtime:safeRuntime,totalBattles:state.battles,history:state.history||[],diagnostics:state.latestDiagnostics||null,screenPanel:state.screenPanel||null,finalPanel:state.finalPanel||null,finalistComparisons:state.finalistComparisons||null,baselines:state.comparisons||{},snapshot,table:{rows,variants:pool.variants.map(compact),opponents:pool.species.map(compact),counts:{teams:rows.length,screened:state.screenResults?.length||0,tested:state.validations?.length||0,baselines:state.baselineResults?.length||0,trainingFixtures:state.observations.length},matches}};
+}
+function writeReportBundle(state,pool,out){const report=buildReport(state,pool),data=zlib.gzipSync(JSON.stringify(report));fs.mkdirSync(path.dirname(out),{recursive:true});fs.writeFileSync(out+'.tmp',data);fs.renameSync(out+'.tmp',out);return {out,bytes:data.length,teams:report.table.rows.length};}
+if(require.main===module){const run=path.resolve(process.argv[2]||'training/runs/team-search-v3'),out=path.resolve(process.argv[3]||path.join(run,'report.pvpteams.json.gz'));console.log(JSON.stringify(writeReportBundle(JSON.parse(fs.readFileSync(path.join(run,'checkpoint.json'))),JSON.parse(fs.readFileSync(path.join(run,'pool.json'))),out)));}
+module.exports={buildReport,writeReportBundle};

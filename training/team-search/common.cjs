@@ -2,7 +2,7 @@
 const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto');
 const {random}=require('../utils.cjs');
 const TYPES=['bug','dark','dragon','electric','fairy','fighting','fire','flying','ghost','grass','ground','ice','normal','poison','psychic','rock','steel','water'];
-const VERSION='neural-team-search-v2',FEATURE_VERSION='team-features-v4-canonical-bench';
+const VERSION='neural-team-search-v3',FEATURE_VERSION='team-features-v4-canonical-bench';
 let moveMap;
 function moveEffects(row){
  if(!moveMap){const gm=require('../../includes/pro/data/gamemaster.json');moveMap=new Map(gm.moves.map(m=>[m.moveId,m]));}

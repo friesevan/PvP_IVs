@@ -1,3 +1,7 @@
+# Current v3 update
+
+The launcher now creates `training/runs/team-search-v3`. Read [the v3 guide](../../includes/pro/NEURAL_REPORTS.md) for changes, import/export, and current commands. The v2 notes below describe the preceding implementation.
+
 # Next-run team search (v2)
 
 This version is installed directly in Desktop/Projects/PvPokeTeamTrainer. It prepares a **new experiment**, preserving the completed v1 run and historical browser replays. It is not an optimal-play agent. The neural network predicts team outcomes; the battle controller still uses Champion charge/farm/shield logic, with bounded lookahead for switching.

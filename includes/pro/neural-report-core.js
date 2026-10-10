@@ -1,0 +1,33 @@
+(function(root){
+'use strict';
+function validate(d){
+ const fail=m=>{throw Error('Invalid neural report: '+m);};
+ if(!d||d.format!=='pvp-team-report'||d.schemaVersion!==1)fail('unsupported format/version');
+ if(!['neural-team-search-v1','neural-team-search-v3'].includes(d.engineVersion)||d.fixtureMode!==(d.engineVersion==='neural-team-search-v1'?'paired':'single'))fail('engine/fixture mismatch');
+ const table=d.table;if(!table||!Array.isArray(table.rows)||table.rows.length>30000||!Array.isArray(table.variants)||table.variants.length>10000||!Array.isArray(table.opponents)||table.opponents.length>2000||!table.matches)fail('missing or oversized tables');
+ const pokemon=p=>p&&typeof p.speciesId==='string'&&typeof p.speciesName==='string'&&Array.isArray(p.moveset)&&p.moveset.length>=2&&p.moveset.length<=4&&p.moveset.every(m=>typeof m==='string'&&m.length<100)&&Array.isArray(p.recommended);
+ if(!table.variants.every(pokemon)||!table.opponents.every(pokemon))fail('invalid Pokémon');
+ if(!d.snapshot?.gameMaster?.pokemon||!Array.isArray(d.snapshot.gameMaster.moves)||!Array.isArray(d.snapshot.published)||!Array.isArray(d.snapshot.overrides)||!Array.isArray(d.snapshot.meta))fail('missing pinned search data');
+ const ids=new Set();let fixtures=0;
+ for(const row of table.rows){
+  if(!Number.isInteger(row.id)||row.id<0||ids.has(row.id)||!Array.isArray(row.team)||row.team.length!==3||row.team.some(i=>!Number.isInteger(i)||!table.variants[i]))fail('invalid or duplicate team');ids.add(row.id);
+  for(const field of ['training','selection','screen','test'])if(row[field]!=null&&(!Number.isFinite(row[field])||row[field]<-1||row[field]>1))fail('invalid score');
+  if(!Number.isSafeInteger(row.games)||row.games<0)fail('invalid battle count');
+  const matches=table.matches[row.id];if(!matches)fail('missing battles');
+  for(const key of ['training','screen','test','baseline']){
+   if(!Array.isArray(matches[key]))fail('missing battle stage');fixtures+=matches[key].length;if(fixtures>3000000)fail('too many battles');
+   for(const m of matches[key])if(!Array.isArray(m)||m.length!==3||!Array.isArray(m[0])||m[0].length!==3||m[0].some(i=>!Number.isInteger(i)||!table.opponents[i])||!Number.isInteger(m[1])||m[1]<0||m[1]>0xffffffff||!Number.isFinite(m[2])||m[2]<0||m[2]>1)fail('malformed battle');
+  }
+ }
+ return d;
+}
+async function verifySnapshot(d){const raw=JSON.stringify([d.snapshot.published,d.snapshot.overrides,d.snapshot.gameMaster]),hash=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(raw))),b=>b.toString(16).padStart(2,'0')).join('');if(hash!==d.dataHash)throw Error('The report’s pinned data failed its integrity check');return d;}
+async function readFile(file){
+ if(file.size>128*1024*1024)throw Error('Report exceeds 128 MB');
+ const gzip=/\.gz$/i.test(file.name);if(gzip&&!globalThis.DecompressionStream)throw Error('This browser needs an uncompressed .json report');
+ const reader=(gzip?file.stream().pipeThrough(new DecompressionStream('gzip')):file.stream()).getReader(),chunks=[];let size=0;
+ try {for(;;){const {done,value}=await reader.read();if(done)break;size+=value.length;if(size>256*1024*1024){await reader.cancel();throw Error('Expanded report exceeds 256 MB');}chunks.push(value);}}finally{reader.releaseLock();}
+ const bytes=new Uint8Array(size);let offset=0;chunks.forEach(c=>{bytes.set(c,offset);offset+=c.length;});return verifySnapshot(validate(JSON.parse(new TextDecoder().decode(bytes))));
+}
+const api={validate,verifySnapshot,readFile};if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.NeuralReportCore=api;
+})(globalThis);

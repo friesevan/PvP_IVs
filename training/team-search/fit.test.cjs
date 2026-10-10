@@ -12,3 +12,18 @@ test('interaction ensemble fitting is deterministic across worker counts',async(
 });
 
 test('pairwise fitting rejects missing or invalid labels before starting workers',async()=>{const {fitParallel}=require('./fit-interaction.cjs');for(const y of [null,NaN,-.1,1.1])await assert.rejects(()=>fitParallel([{a:[1,0],b:[0,1],y}]),/Invalid pairwise/);});
+
+test('interaction fitting validates worker limits and unique feature vectors before allocating workers',async()=>{
+ const {fitParallel}=require('./fit-interaction.cjs'),sample={a:[1,0],b:[0,1],y:.5};
+ for(const opts of [{workers:0},{size:0},{hidden:0},{epochs:0},{workers:1.5}])await assert.rejects(()=>fitParallel([sample],opts),/Invalid fitting/);
+ for(const sample of [{a:[NaN,0],b:[0,1],y:.5},{a:[1,0],b:[0,null],y:.5}])await assert.rejects(()=>fitParallel([sample]),/Nonfinite/);
+});
+
+test('whole-team bootstrap preserves numerical determinism across worker counts',async()=>{
+ const {fitParallel}=require('./fit-interaction.cjs'),points=Array.from({length:6},(_,i)=>[i/5,1-i/5]);
+ const samples=points.flatMap((a,i)=>points.map((b,j)=>({a,b,y:i===j?.5:i>j?1:0,key:'team-'+i})));
+ const opts={size:3,hidden:6,epochs:10,seed:27,bootstrap:'team'};
+ const serial=await fitParallel(samples,{...opts,workers:1}),parallel=await fitParallel(samples,{...opts,workers:3});
+ assert.deepEqual(serial.map(n=>n.toJSON()),parallel.map(n=>n.toJSON()));
+ await assert.rejects(()=>fitParallel(samples,{bootstrap:'unknown'}),/Unknown bootstrap/);
+});
