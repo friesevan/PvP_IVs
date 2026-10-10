@@ -13,3 +13,26 @@ test('local mutations explore other movesets and leads without treating bench pe
  const moves=mutateCandidate(team,variants,sequence([.1,.4,.8]));assert.deepEqual(moves,[0,5,8]);assert.deepEqual(moves.map(i=>variants[i].speciesId),team.map(i=>variants[i].speciesId));
  const lead=mutateCandidate(team,variants,sequence([.4,.1]));assert.deepEqual(lead,[4,0,8]);assert.notEqual(lead[0],team[0]);assert.deepEqual(team,[0,4,8]);
 });
+
+test('promising exploration favors competitive uncertainty over uncertainty alone',()=>{
+ const {explorationScore}=require('./propose.cjs');
+ const weak={mean:.2,uncertainty:.15},strong={mean:.7,uncertainty:.05};
+ assert.ok(explorationScore(weak,'disagreement')>explorationScore(strong,'disagreement'));
+ assert.ok(explorationScore(strong)>explorationScore(weak));
+ assert.throws(()=>explorationScore(strong,'invalid'),/mode/);
+});
+test('local neighborhood covers every single-member moveset substitution and both leads',()=>{
+ const {localNeighbors,generateCandidates}=require('./propose.cjs');
+ const variants=Array.from({length:15},(_,i)=>({speciesId:'p'+Math.floor(i/5),dex:Math.floor(i/5)+1})),team=[0,5,10];
+ const neighbors=localNeighbors(team,variants);assert.equal(neighbors.length,14);
+ for(const t of neighbors)assert.ok(validTeam(t,variants));
+ assert.ok(neighbors.some(t=>t.join(',')==='0,9,10'));assert.ok(neighbors.some(t=>t[0]===10));
+ const generated=generateCandidates({variants,known:[{team}],seen:new Map([[team.join(','),true]]),seed:1,candidates:40});
+ for(const t of neighbors)assert.ok(generated.teams.some(row=>row.join(',')===t.join(',')));
+});
+test('retests rotate seven challengers and retain regular incumbent checks',()=>{
+ const {retestTeam}=require('./propose.cjs'),known=Array.from({length:10},(_,i)=>({team:[i,20,30]}));
+ const chosen=Array.from({length:12},(_,round)=>retestTeam(known,round));
+ assert.equal(chosen.filter(t=>t===known[0].team).length,4);
+ assert.equal(new Set(chosen.map(t=>t[0])).size,8);assert.equal(retestTeam([],0),null);
+});

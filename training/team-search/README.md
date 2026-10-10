@@ -1,6 +1,41 @@
+# October 10 search refinement
+
+The latest acquisition algorithm is `interaction-neural-v6-promising-exploration`. The simulator, candidate pool, feature representation and neural architecture are unchanged. The report's plateau does not establish that the best team was found. This update targets poor exploration and uneven contender evidence rather than claiming a larger network will help.
+
+- Exploration now orders candidates by **predicted mean + ensemble standard deviation**, instead of disagreement alone. This favors uncertain teams that might actually compete. The standard deviation is a search heuristic, not a calibrated confidence bound. The 25% uniform random allocation remains.
+- Each proposal pool includes every unseen single-Pokémon moveset substitution and both alternative leads around its eight highest-ranked incumbents. This checks the retained five movesets systematically; it does not add moves excluded by scouting. These neighbors still compete on neural score for simulation slots.
+- Retesting alternates the incumbent (every third round) with seven rotating contenders. This spreads common-round opponent evidence across stronger teams and moveset rivals. It does not eliminate noise or convert unequal historical scores into paired comparisons.
+- Portable reports record the acquisition algorithm and retest schedule. Sealed screening/final tests and the 20% minimum evaluation reserve remain.
+
+`--exploration disagreement` retains the old acquisition priority for controlled experiments. It still uses the new local neighborhoods/retest schedule; use the archived code to reproduce the full old optimizer. Resume requires identical algorithm fingerprints. **Do not resume an old checkpoint under changed code.** Compatible v3 raw labels can warm-start a new directory because battle mechanics have not changed.
+
+## Reuse the completed run without contaminating the new final test
+
+From `Desktop/Projects/PvPokeTeamTrainer`:
+
+```sh
+node training/team-search/absorb-evaluation.cjs training/runs/team-search-v3-refined-20261010/checkpoint.json training/runs/team-search-v3-refined-20261010/pool.json training/runs/v3-next-evidence.json
+node training/team-search/launch-next.cjs --hours 8 --warm-start training/runs/v3-next-evidence.json
+```
+
+The first command preserves the old report, converts its already-seen evaluations into training evidence, discards old fitted models, and marks those evaluation seeds as used. The launcher chooses a fresh test seed and uses all available CPU cores. New results stay in `training/runs/team-search-v3-next`. To run without inherited labels, omit `--warm-start`. If that directory already has a checkpoint, use a different `--out` for a new experiment.
+
+Check or safely stop the detached run:
+
+```sh
+node training/team-search/status.cjs training/runs/team-search-v3-next
+node training/team-search/stop.cjs training/runs/team-search-v3-next
+```
+
+## Evidence and remaining priorities
+
+See [REFINEMENT_FINDINGS.md](REFINEMENT_FINDINGS.md) for the retrospective acquisition diagnostic and fresh matched benchmark. Those tests assess proposal selection, not a completed new overnight search. The largest remaining risks are synthetic team frequencies, the full-information fixed controller, excluded movesets/IVs, and uncertain finalist differences. More rounds cannot correct a wrong meta assumption. Priorities after this patch: observed team frequencies, stress tests across plausible metas/controller styles, information-limited strategy, and independent equal-compute optimizer comparisons.
+
+The technical notes below include earlier versions and are retained as historical context.
+
 # Current version: v3
 
-Run `node training/team-search/launch-next.cjs --hours 8`. Results go to `training/runs/team-search-v3`; import `report.pvpteams.json.gz` in Full Team Neural Network. See [v3 changes and portable report guide](../../includes/pro/NEURAL_REPORTS.md). Earlier instructions below describe previous experiments. Do not warm-start v3 from old labels.
+Run `node training/team-search/launch-next.cjs --hours 8`. New runs go to `training/runs/team-search-v3-next`; import `report.pvpteams.json.gz` in Full Team Neural Network. See [v3 changes and portable report guide](../../includes/pro/NEURAL_REPORTS.md). Earlier instructions below describe previous experiments. Do not warm-start v3 from old labels.
 
 # v2 next-run update
 
