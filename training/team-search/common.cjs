@@ -2,7 +2,7 @@
 const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto');
 const {random}=require('../utils.cjs');
 const TYPES=['bug','dark','dragon','electric','fairy','fighting','fire','flying','ghost','grass','ground','ice','normal','poison','psychic','rock','steel','water'];
-const VERSION='neural-team-search-v3',FEATURE_VERSION='team-features-v4-canonical-bench';
+const VERSION='neural-team-search-v4',FEATURE_VERSION='team-features-v4-canonical-bench';
 let moveMap;
 function moveEffects(row){
  if(!moveMap){const gm=require('../../includes/pro/data/gamemaster.json');moveMap=new Map(gm.moves.map(m=>[m.moveId,m]));}
@@ -12,9 +12,9 @@ function moveEffects(row){
 
 const digest=value=>crypto.createHash('sha256').update(JSON.stringify(value)).digest('hex');
 // Fingerprint simulator code as well as data, preventing reuse across changed mechanics.
-function mechanicsHash({version='v2'}={}){const root=path.resolve(__dirname,'..'),vendor=path.resolve(root,'../includes/pro/vendor');const files=[...['GameMaster','DamageCalculator','ActionLogic','TimelineEvent','TimelineAction','DecisionOption','Battle','Pokemon'].map(n=>path.join(vendor,n+'.js')),path.join(root,'engine.cjs'),...(version==='v1'?[]:[path.join(root,'engine-v2-core.cjs'),path.join(root,'engine-v2.cjs'),path.join(root,'next/lookahead.js'),path.join(root,'battle-worker-v2.cjs')]),path.join(root,'utils.cjs'),path.join(root,'vendor/TrainingAI.js'),path.join(root,'vendor/Player.js'),path.join(root,'vendor/aiArchetypes.json')];return digest(files.map(f=>[path.basename(f),fs.readFileSync(f,'utf8')]));}
+function mechanicsHash({version='v2'}={}){const root=path.resolve(__dirname,'..'),vendor=path.resolve(root,'../includes/pro/vendor');const files=[...['GameMaster','DamageCalculator','ActionLogic','TimelineEvent','TimelineAction','DecisionOption','Battle','Pokemon'].map(n=>path.join(vendor,n+'.js')),path.join(root,'engine.cjs'),...(version==='v1'?[]:[...(version==='v4'?[path.join(root,'engine-v4-core.cjs'),path.join(root,'engine-v4.cjs'),path.join(root,'next/lookahead-v4.js'),path.join(root,'next/observations.js'),path.join(root,'battle-worker-v4.cjs')]:[path.join(root,'engine-v2-core.cjs'),path.join(root,'engine-v2.cjs'),path.join(root,'next/lookahead.js'),path.join(root,'battle-worker-v2.cjs')])]),path.join(root,'utils.cjs'),path.join(root,'vendor/TrainingAI.js'),path.join(root,'vendor/Player.js'),path.join(root,'vendor/aiArchetypes.json')];return digest(files.map(f=>[path.basename(f),fs.readFileSync(f,'utf8')]));}
 function dataHash(){const base=path.resolve(__dirname,'../../includes/pro/data');return digest([require(base+'/league-1500.json').overall,require(base+'/overrides-1500.json'),require(base+'/gamemaster.json')]);}
-function algorithmHash(){const names=['search.cjs','common.cjs','neural.cjs','interaction.cjs','fit-interaction.cjs','interaction-worker.cjs','propose.cjs','predict.cjs','predict-worker.cjs','evaluation.cjs','budget.cjs','meta.cjs','../runner.cjs','../active-clock.cjs'];return digest(names.map(name=>[name,fs.readFileSync(path.join(__dirname,name),'utf8')]));}
+function algorithmHash(){const names=['search.cjs','common.cjs','neural.cjs','interaction.cjs','fit-interaction.cjs','interaction-worker.cjs','propose.cjs','seed-teams.cjs','predict.cjs','predict-worker.cjs','evaluation.cjs','budget.cjs','meta.cjs','../runner.cjs','../active-clock.cjs'];return digest(names.map(name=>[name,fs.readFileSync(path.join(__dirname,name),'utf8')]));}
 function screeningSeed(validationSeed){let result=parseInt(digest(['screening',validationSeed]).slice(0,8),16)||1;if(result===validationSeed)result=(result^0x5a5a5a5a)>>>0||1;return result;}
 function freshEvaluationSeeds(validationSeed,used=[]){return !used.includes(validationSeed)&&!used.includes(screeningSeed(validationSeed));}
 function nextRound(state){return (state.observations||[]).reduce((round,o)=>Number.isInteger(o.round)?Math.max(round,o.round+1):round,state.round||0);}

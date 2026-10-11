@@ -1,0 +1,3 @@
+'use strict';
+const test=require('node:test'),assert=require('node:assert/strict'),{seedTeamHints}=require('./seed-teams.cjs');
+test('old finalists supply only legal deduplicated composition hints, never labels',()=>{const p={hash:'x',variants:[{dex:1},{dex:2},{dex:3},{dex:4}]},s={config:{poolHash:'x'},finalistTeams:[[0,1,2],[0,2,1],[1,2,3]],observations:[{score:1}],models:[{secret:1}]};assert.deepEqual(seedTeamHints(s,p),[[0,2,1],[1,2,3]]);assert.deepEqual(seedTeamHints(s,p,1),[[0,2,1]]);assert.throws(()=>seedTeamHints(s,{...p,hash:'y'}),/pool/);assert.throws(()=>seedTeamHints({...s,finalistTeams:[[0,0,2]]},p),/Invalid/);});

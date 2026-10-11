@@ -1,3 +1,24 @@
+# Current controller: observation-limited v4
+
+Run a fresh eight-hour experiment from `Desktop/Projects/PvPokeTeamTrainer`:
+
+```sh
+node training/team-search/launch-next.cjs --hours 8
+```
+
+The launcher uses all available CPU cores and writes `training/runs/team-search-v4`. It automatically supplies the completed v3 refined finalists as **composition hints** if that checkpoint exists; none of its battle labels, scores or neural weights are transferred. Half or more of the initial batch remains random. The expensive unchanged top-300/five-moveset scouting pool is reused. Do not pass the v3 `--warm-start` argument from the previous instructions. A v4 run can subsequently resume under identical code/settings, or supply compatible v4 evidence to a new v4 run.
+
+```sh
+node training/team-search/status.cjs training/runs/team-search-v4
+node training/team-search/stop.cjs training/runs/team-search-v4
+```
+
+Import that directory's `report.pvpteams.json.gz` in Full Team Neural Network. The updated site supports v4 reports and matching battle replay. Original v1/v3 results and adapters remain separate.
+
+See [the v4 information-boundary guide](../next/OBSERVATION_CONTROLLER.md) for precisely what the controller knows, how it predicts hidden information, and its limitations. This patch changes the **battle controller**, not the neural architecture. It is a realism correction, not a proven increase in playing strength. Full-information scores are not directly comparable with v4 scores.
+
+The search acquisition improvements below remain active in v4. Their measured benchmark was performed under v3 and must not be reported as a v4 accuracy measurement. All instructions below this section that reference v1–v3 are historical context.
+
 # October 10 search refinement
 
 The latest acquisition algorithm is `interaction-neural-v6-promising-exploration`. The simulator, candidate pool, feature representation and neural architecture are unchanged. The report's plateau does not establish that the best team was found. This update targets poor exploration and uneven contender evidence rather than claiming a larger network will help.

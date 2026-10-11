@@ -113,3 +113,11 @@ Battle graphs use separate HP tracks for each of the six Pokémon, a common batt
 ## Next acquisition refinement (October 10)
 
 New v3 runs use `interaction-neural-v6-promising-exploration`: mean-plus-disagreement exploration, systematic retained-moveset/lead neighborhoods, and rotating contender retests. Simulator mechanics and replay hashes are unchanged. Portable reports include `search.algorithm`, `search.exploration`, `search.localNeighborhoods`, and `search.retests`; older bundles may omit these fields. Their historical results must retain the historical labels. Compatible old raw labels can supply training evidence for a new report, with old test seeds excluded from its fresh tests. See `training/team-search/REFINEMENT_FINDINGS.md` for measured diagnostics; this patch is not a new final team result.
+
+## Observation-limited v4 reports
+
+v4 requires fresh labels. It uses `training/engine-v4.cjs`, `next/lookahead-v4.js`, and `next/observations.js`; v3 engine files and replay adapter are retained. `engineVersion` is `neural-team-search-v4`, fixture mode is `single`. Portable `engineOptions` now includes the exact **public** `beliefRoster`, finite joint `beliefTeams` prior bank, and `beliefSamples` used in training. These priors are generated separately from actual battle fixtures and conditioned only on observations. They are required to reproduce seeded decisions.
+
+Other environments should copy `neural-report-core.js`, `neural-portable.js`, `neural.js`, and all `team-replay-v4-*` files into their `includes/pro` directory. The v4 importer validates prior sizes and values and selects the v4 worker/manifest. Do not rename a v3 report or overwrite its replay adapter. `scripts/build-neural-replay-v4.cjs` regenerates trusted replay code from the exact trainer. Imported files contain data only. The schema remains 1 with an additional accepted engine version.
+
+No scores from the old reports are reused as v4 labels. Their team identities can be initial hints via `--seed-teams OLD_CHECKPOINT`; those teams are re-simulated. The launcher rejects old-version warm starts before starting a detached process. See `training/next/OBSERVATION_CONTROLLER.md` for decision inputs and forecasting limits.

@@ -1,0 +1,1 @@
+globalThis.NeuralReplayV4={"engine":"neural-team-search-v4","mechanicsHash":"1b33a32b427cf1fb1a775193c20b2895cea23b3cfa6f1daf13178ba1210754d9","dataHash":"ec96d756d6e5d5d63fb3c3f7b52411b4d1f85a3a3c170261caadeb4cb3a43528","legacyMechanicsHash":"a0aa220e681b1c4af6fabbdef934d1c191f200101e95388f62fd322dff6b7c20"};

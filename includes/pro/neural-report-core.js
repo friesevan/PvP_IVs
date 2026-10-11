@@ -3,11 +3,17 @@
 function validate(d){
  const fail=m=>{throw Error('Invalid neural report: '+m);};
  if(!d||d.format!=='pvp-team-report'||d.schemaVersion!==1)fail('unsupported format/version');
- if(!['neural-team-search-v1','neural-team-search-v2','neural-team-search-v3'].includes(d.engineVersion)||d.fixtureMode!==(d.engineVersion==='neural-team-search-v1'?'paired':'single'))fail('engine/fixture mismatch');
+ if(!['neural-team-search-v1','neural-team-search-v2','neural-team-search-v3','neural-team-search-v4'].includes(d.engineVersion)||d.fixtureMode!==(d.engineVersion==='neural-team-search-v1'?'paired':'single'))fail('engine/fixture mismatch');
  const table=d.table;if(!table||!Array.isArray(table.rows)||table.rows.length>30000||!Array.isArray(table.variants)||table.variants.length>10000||!Array.isArray(table.opponents)||table.opponents.length>2000||!table.matches)fail('missing or oversized tables');
  const pokemon=p=>p&&typeof p.speciesId==='string'&&typeof p.speciesName==='string'&&Array.isArray(p.moveset)&&p.moveset.length>=2&&p.moveset.length<=4&&p.moveset.every(m=>typeof m==='string'&&m.length<100)&&Array.isArray(p.recommended);
  if(!table.variants.every(pokemon)||!table.opponents.every(pokemon))fail('invalid Pokémon');
  if(!d.snapshot?.gameMaster?.pokemon||!Array.isArray(d.snapshot.gameMaster.moves)||!Array.isArray(d.snapshot.published)||!Array.isArray(d.snapshot.overrides)||!Array.isArray(d.snapshot.meta))fail('missing pinned search data');
+ if(d.engineVersion==='neural-team-search-v4'){
+  const o=d.engineOptions;if(!o||!Array.isArray(o.beliefRoster)||!o.beliefRoster.length||o.beliefRoster.length>2000||!Array.isArray(o.beliefTeams)||o.beliefTeams.length>10000||!Number.isInteger(o.beliefSamples)||o.beliefSamples<1||o.beliefSamples>16)fail('invalid observation prior');
+  const ids=new Set(o.beliefRoster.map(p=>p.speciesId));
+  if(ids.size!==o.beliefRoster.length||o.beliefRoster.some(p=>typeof p.speciesId!=='string'||!Number.isInteger(p.dex)||!Number.isFinite(p.weight)||p.weight<0||!Array.isArray(p.moveset)||p.moveset.length<2||p.moveset.length>4||p.moveset.some(m=>typeof m!=='string')))fail('invalid belief species');
+  if(o.beliefTeams.some(t=>!Array.isArray(t)||t.length!==3||new Set(t).size!==3||t.some(id=>!ids.has(id))))fail('invalid belief lineup');
+ }
  const ids=new Set();let fixtures=0;
  for(const row of table.rows){
   if(!Number.isInteger(row.id)||row.id<0||ids.has(row.id)||!Array.isArray(row.team)||row.team.length!==3||row.team.some(i=>!Number.isInteger(i)||!table.variants[i]))fail('invalid or duplicate team');ids.add(row.id);
