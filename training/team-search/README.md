@@ -1,5 +1,7 @@
 # Current controller: observation-limited v4
 
+Neural fitting and inference now reuse minibatch calculations and scratch buffers. See [performance measurements and compatibility](PERFORMANCE.md).
+
 Run a fresh eight-hour experiment from `Desktop/Projects/PvPokeTeamTrainer`:
 
 ```sh

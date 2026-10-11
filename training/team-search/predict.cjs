@@ -2,12 +2,12 @@
 const path = require('node:path');
 const { BattlePool } = require('../pool.cjs');
 const { BattleRunner } = require('../runner.cjs');
-const { predict } = require('./interaction.cjs');
+const { preparePredictor } = require('./interaction.cjs');
 
 async function predictParallel(inputs, models, references, { workers = 12 } = {}) {
   if (!inputs.length) return [];
   if (!Number.isInteger(workers) || workers < 1 || !models.length) throw Error('Invalid inference configuration');
-  if (workers === 1) return inputs.map(x => predict(models, x, references));
+  if (workers === 1) return inputs.map(preparePredictor(models, references));
   const input = models[0].input;
   const matrix = new Float64Array(new SharedArrayBuffer(inputs.length * input * 8));
   inputs.forEach((x, i) => {
